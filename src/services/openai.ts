@@ -8,7 +8,16 @@ const openai = new OpenAI({
 export const generateStory = async (keywords: string[], readingLevel: string, theme: string) => {
   const gradeLevel = readingLevel === 'k' ? 'kindergarten' : `${readingLevel}st grade`;
   
-  const prompt = `Write a children's story at a ${gradeLevel} reading level with a ${theme} theme. 
+  const themeDescriptions: { [key: string]: string } = {
+    fantasy: "a fantasy adventure theme",
+    mystery: "a mysterious and intriguing theme",
+    fairytale: "a classic fairy tale theme",
+    science: "a science fiction theme",
+    nature: "a nature and animals theme",
+    drseuss: "a whimsical Dr. Seuss-style rhyming story with playful language"
+  };
+
+  const prompt = `Write a children's story at a ${gradeLevel} reading level with ${themeDescriptions[theme]}. 
   The story MUST frequently use these keywords: ${keywords.join(', ')}. 
   Make sure each keyword appears at least 3 times in different contexts to help with learning.
   The story should be engaging and educational.
@@ -16,7 +25,7 @@ export const generateStory = async (keywords: string[], readingLevel: string, th
   {"title": "Story Title", "content": "Story content as a single string with paragraphs separated by newlines"}`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-3.5-turbo",
     messages: [
       {
         role: "system",

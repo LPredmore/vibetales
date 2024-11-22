@@ -84,6 +84,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
             <SelectItem value="fairytale">Fairy Tale</SelectItem>
             <SelectItem value="science">Science Fiction</SelectItem>
             <SelectItem value="nature">Nature & Animals</SelectItem>
+            <SelectItem value="drseuss">Dr. Seuss Style</SelectItem>
           </SelectContent>
         </Select>
       </div>
