@@ -29,7 +29,7 @@ const Index = () => {
           className="text-center mb-12"
         >
           <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
-            Story Creator
+            LexiLeap
           </h1>
           <p className="text-lg text-gray-600">
             Create magical stories with your own keywords
