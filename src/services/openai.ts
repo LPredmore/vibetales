@@ -21,30 +21,46 @@ export const generateStory = async (keywords: string[], readingLevel: string, th
   The story MUST frequently use these keywords: ${keywords.join(', ')}. 
   Make sure each keyword appears at least 3 times in different contexts to help with learning.
   The story should be engaging and educational.
-  Respond with a JSON object with 'title' and 'content' fields. Format the response EXACTLY like this:
-  {"title": "Story Title", "content": "Story content as a single string with paragraphs separated by newlines"}`;
+  Format the response as a JSON object with exactly these fields:
+  {
+    "title": "Story Title",
+    "content": "Story content with paragraphs separated by \\n"
+  }`;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo",
-    messages: [
-      {
-        role: "system",
-        content: "You are a skilled children's story writer who creates engaging, educational content."
-      },
-      {
-        role: "user",
-        content: prompt
-      }
-    ],
-    max_tokens: 1000
-  });
-
-  // Extract the content and parse it manually
-  const storyText = response.choices[0].message.content || "{}";
   try {
-    return JSON.parse(storyText);
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are a skilled children's story writer. Always respond with valid JSON containing a title and content field."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_tokens: 1000,
+      temperature: 0.7
+    });
+
+    const storyText = response.choices[0].message.content;
+    if (!storyText) {
+      throw new Error("No story content received");
+    }
+
+    try {
+      const parsedStory = JSON.parse(storyText.trim());
+      if (!parsedStory.title || !parsedStory.content) {
+        throw new Error("Invalid story format");
+      }
+      return parsedStory;
+    } catch (parseError) {
+      console.error("Failed to parse story JSON:", storyText);
+      throw new Error("Failed to generate a valid story format");
+    }
   } catch (error) {
-    console.error("Failed to parse story JSON:", storyText);
-    throw new Error("Failed to generate story");
+    console.error("Error generating story:", error);
+    throw new Error("Failed to generate story. Please try again.");
   }
 };
