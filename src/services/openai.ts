@@ -12,10 +12,11 @@ export const generateStory = async (keywords: string[], readingLevel: string, th
   The story MUST frequently use these keywords: ${keywords.join(', ')}. 
   Make sure each keyword appears at least 3 times in different contexts to help with learning.
   The story should be engaging and educational.
-  Format the response as a JSON object with 'title' and 'content' fields.`;
+  Respond with a JSON object with 'title' and 'content' fields. Format the response EXACTLY like this:
+  {"title": "Story Title", "content": "Story content as a single string with paragraphs separated by newlines"}`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4",
+    model: "gpt-4o",
     messages: [
       {
         role: "system",
@@ -26,9 +27,15 @@ export const generateStory = async (keywords: string[], readingLevel: string, th
         content: prompt
       }
     ],
-    response_format: { type: "json_object" }
+    max_tokens: 1000
   });
 
-  const story = JSON.parse(response.choices[0].message.content || "{}");
-  return story;
+  // Extract the content and parse it manually
+  const storyText = response.choices[0].message.content || "{}";
+  try {
+    return JSON.parse(storyText);
+  } catch (error) {
+    console.error("Failed to parse story JSON:", storyText);
+    throw new Error("Failed to generate story");
+  }
 };
