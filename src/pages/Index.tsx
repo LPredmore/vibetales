@@ -47,7 +47,9 @@ const Index = () => {
             </p>
           </motion.div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
+            <span className="text-sm text-gray-600">
+              Welcome, {user?.user_metadata?.name || 'User'}
+            </span>
             <Button variant="outline" onClick={logout}>
               Logout
             </Button>
