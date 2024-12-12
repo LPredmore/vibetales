@@ -45,6 +45,12 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
         <h2 className="text-2xl font-bold text-gray-800">Manage Sight Words</h2>
         <p className="text-gray-600">Add words you want to practice in your stories.</p>
         
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+          <p className="text-yellow-700 text-sm">
+            For best results, keep the sight words on this page to 20 or less at a time to ensure that your child is getting the most exposure to their words. You can use as many words as you want. But the more you have, the less frequently each will show up.
+          </p>
+        </div>
+        
         <div className="flex gap-2">
           <Input
             value={newWord}
