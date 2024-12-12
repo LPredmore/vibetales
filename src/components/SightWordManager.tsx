@@ -4,8 +4,12 @@ import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
-export const SightWordManager = () => {
-  const [words, setWords] = useState<string[]>([]);
+interface SightWordManagerProps {
+  words: string[];
+  setWords: (words: string[]) => void;
+}
+
+export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => {
   const [newWord, setNewWord] = useState("");
 
   const handleAddWord = () => {

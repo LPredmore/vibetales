@@ -13,13 +13,19 @@ const Index = () => {
   const [story, setStory] = useState<{ title: string; content: string } | null>(
     null
   );
+  const [words, setWords] = useState<string[]>([]);
   const { user, logout } = useAuth();
 
   const handleSubmit = async (data: StoryFormData) => {
+    if (words.length === 0) {
+      toast.error("Please add some sight words before generating a story");
+      return;
+    }
+
     try {
       toast.loading("Generating your story...");
       const generatedStory = await generateStory(
-        data.keywords,
+        words,
         data.readingLevel,
         data.theme
       );
@@ -45,7 +51,7 @@ const Index = () => {
               LexiLeap
             </h1>
             <p className="text-lg text-gray-600">
-              Create magical stories with your own keywords
+              Create magical stories with your sight words
             </p>
           </motion.div>
           <div className="flex items-center gap-4">
@@ -59,19 +65,19 @@ const Index = () => {
         </div>
 
         <div className="max-w-4xl mx-auto">
-          <Tabs defaultValue="story" className="w-full">
+          <Tabs defaultValue="words" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger value="story">Generate Story</TabsTrigger>
               <TabsTrigger value="words">Sight Words</TabsTrigger>
+              <TabsTrigger value="story">Generate Story</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="words">
+              <SightWordManager words={words} setWords={setWords} />
+            </TabsContent>
             
             <TabsContent value="story">
               <StoryForm onSubmit={handleSubmit} />
               {story && <StoryDisplay title={story.title} content={story.content} />}
-            </TabsContent>
-            
-            <TabsContent value="words">
-              <SightWordManager />
             </TabsContent>
           </Tabs>
         </div>
