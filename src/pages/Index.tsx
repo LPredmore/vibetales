@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
+import { SightWordManager } from "@/components/SightWordManager";
 import { motion } from "framer-motion";
 import { generateStory } from "@/services/openai";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const [story, setStory] = useState<{ title: string; content: string } | null>(
@@ -48,7 +50,7 @@ const Index = () => {
           </motion.div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">
-              Welcome, {user?.user_metadata?.name || 'User'}
+              Welcome, {user?.user_metadata?.name || "User"}
             </span>
             <Button variant="outline" onClick={logout}>
               Logout
@@ -57,8 +59,21 @@ const Index = () => {
         </div>
 
         <div className="max-w-4xl mx-auto">
-          <StoryForm onSubmit={handleSubmit} />
-          {story && <StoryDisplay title={story.title} content={story.content} />}
+          <Tabs defaultValue="story" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-8">
+              <TabsTrigger value="story">Generate Story</TabsTrigger>
+              <TabsTrigger value="words">Sight Words</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="story">
+              <StoryForm onSubmit={handleSubmit} />
+              {story && <StoryDisplay title={story.title} content={story.content} />}
+            </TabsContent>
+            
+            <TabsContent value="words">
+              <SightWordManager />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

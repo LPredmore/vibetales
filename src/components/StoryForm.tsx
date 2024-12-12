@@ -45,7 +45,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
     >
       <div className="space-y-2">
         <label className="text-sm font-medium text-gray-700">
-          Enter Keywords (separated by commas)
+          Enter Additional Keywords (separated by commas)
         </label>
         <Input
           value={keywords}
