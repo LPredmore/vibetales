@@ -5,8 +5,58 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true
 });
 
+const getReadingLevelGuidelines = (readingLevel: string) => {
+  const guidelines = {
+    k: {
+      wordCount: "50-100",
+      sentenceLength: "3-5 words",
+      vocabulary: "simple, familiar words only",
+      concepts: "concrete, immediate environment",
+      structure: "repetitive patterns, sight words frequently repeated"
+    },
+    "1": {
+      wordCount: "100-200",
+      sentenceLength: "5-7 words",
+      vocabulary: "common sight words, basic phonetic words",
+      concepts: "familiar situations, simple sequences",
+      structure: "simple sentences, clear cause-effect"
+    },
+    "2": {
+      wordCount: "200-300",
+      sentenceLength: "7-10 words",
+      vocabulary: "grade-appropriate sight words, basic compound words",
+      concepts: "expanded environments, basic problem-solving",
+      structure: "mix of simple and compound sentences"
+    },
+    "3": {
+      wordCount: "300-400",
+      sentenceLength: "8-12 words",
+      vocabulary: "more complex vocabulary with context clues",
+      concepts: "multiple events, basic character development",
+      structure: "varied sentence structures"
+    },
+    "4": {
+      wordCount: "400-500",
+      sentenceLength: "10-14 words",
+      vocabulary: "rich vocabulary with context support",
+      concepts: "more complex plots, character emotions",
+      structure: "complex sentences, paragraphs"
+    },
+    "5": {
+      wordCount: "500-600",
+      sentenceLength: "12-15 words",
+      vocabulary: "challenging vocabulary with context",
+      concepts: "abstract ideas, multiple plot lines",
+      structure: "varied paragraph lengths, dialogue"
+    }
+  };
+
+  return guidelines[readingLevel as keyof typeof guidelines];
+};
+
 export const generateStory = async (keywords: string[], readingLevel: string, theme: string) => {
   const gradeLevel = readingLevel === 'k' ? 'kindergarten' : `${readingLevel}st grade`;
+  const guidelines = getReadingLevelGuidelines(readingLevel);
   
   const themeDescriptions: { [key: string]: string } = {
     fantasy: "a fantasy adventure theme",
@@ -17,10 +67,19 @@ export const generateStory = async (keywords: string[], readingLevel: string, th
     drseuss: "a whimsical Dr. Seuss-style rhyming story with playful language"
   };
 
-  const prompt = `Write a children's story at a ${gradeLevel} reading level with ${themeDescriptions[theme]}. 
-  The story MUST frequently use these keywords: ${keywords.join(', ')}. 
-  Make sure each keyword appears at least 3 times in different contexts to help with learning.
-  The story should be engaging and educational.
+  const prompt = `Write a children's story strictly following these ${gradeLevel} reading level guidelines:
+  - Word count: ${guidelines.wordCount} words
+  - Sentence length: ${guidelines.sentenceLength}
+  - Vocabulary level: ${guidelines.vocabulary}
+  - Concept complexity: ${guidelines.concepts}
+  - Story structure: ${guidelines.structure}
+
+  The story should have ${themeDescriptions[theme]} and MUST frequently use these sight words: ${keywords.join(', ')}. 
+  Each sight word should appear at least 3 times in different contexts.
+  
+  Keep sentences simple and age-appropriate. Avoid any words that would be too advanced for this grade level.
+  Use repetition to reinforce learning.
+  
   Format the response as a JSON object with exactly these fields:
   {
     "title": "Story Title",
@@ -29,11 +88,11 @@ export const generateStory = async (keywords: string[], readingLevel: string, th
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You are a skilled children's story writer. Always respond with valid JSON containing a title and content field."
+          content: "You are a skilled children's educational writer who specializes in creating grade-appropriate content. Always respond with valid JSON containing a title and content field."
         },
         {
           role: "user",
