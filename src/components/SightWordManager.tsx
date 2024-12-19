@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SightWordManagerProps {
   words: string[];
@@ -11,8 +13,52 @@ interface SightWordManagerProps {
 
 export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => {
   const [newWord, setNewWord] = useState("");
+  const { user } = useAuth();
 
-  const handleAddWord = () => {
+  // Load words when component mounts
+  useEffect(() => {
+    const loadWords = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('sight_words')
+        .select('words')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error loading sight words:', error);
+        return;
+      }
+      
+      if (data) {
+        setWords(data.words);
+      }
+    };
+
+    loadWords();
+  }, [user, setWords]);
+
+  const saveWords = async (updatedWords: string[]) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('sight_words')
+      .upsert({
+        user_id: user.id,
+        words: updatedWords
+      }, {
+        onConflict: 'user_id'
+      });
+
+    if (error) {
+      console.error('Error saving sight words:', error);
+      toast.error("Failed to save words");
+      return;
+    }
+  };
+
+  const handleAddWord = async () => {
     if (!newWord.trim()) {
       toast.error("Please enter a word");
       return;
@@ -23,13 +69,17 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
       return;
     }
     
-    setWords([...words, newWord.trim()]);
+    const updatedWords = [...words, newWord.trim()];
+    setWords(updatedWords);
+    await saveWords(updatedWords);
     setNewWord("");
     toast.success("Word added successfully!");
   };
 
-  const handleDeleteWord = (indexToDelete: number) => {
-    setWords(words.filter((_, index) => index !== indexToDelete));
+  const handleDeleteWord = async (indexToDelete: number) => {
+    const updatedWords = words.filter((_, index) => index !== indexToDelete);
+    setWords(updatedWords);
+    await saveWords(updatedWords);
     toast.success("Word removed successfully!");
   };
 
