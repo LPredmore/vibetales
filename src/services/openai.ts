@@ -87,8 +87,10 @@ export const generateStory = async (keywords: string[], readingLevel: string, th
   }`;
 
   try {
+    console.log("Generating story with parameters:", { keywords, readingLevel, theme });
+    
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
@@ -105,12 +107,14 @@ export const generateStory = async (keywords: string[], readingLevel: string, th
 
     const storyText = response.choices[0].message.content;
     if (!storyText) {
+      console.error("No story content received from OpenAI");
       throw new Error("No story content received");
     }
 
     try {
       const parsedStory = JSON.parse(storyText.trim());
       if (!parsedStory.title || !parsedStory.content) {
+        console.error("Invalid story format received:", storyText);
         throw new Error("Invalid story format");
       }
       return parsedStory;
