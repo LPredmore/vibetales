@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
 interface StoryFormProps {
@@ -17,23 +18,30 @@ export interface StoryFormData {
   readingLevel: string;
   theme: string;
   length: string;
+  customTheme?: string;
 }
 
 export const StoryForm = ({ onSubmit }: StoryFormProps) => {
   const [readingLevel, setReadingLevel] = useState("");
   const [theme, setTheme] = useState("");
+  const [customTheme, setCustomTheme] = useState("");
   const [length, setLength] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!readingLevel || !theme || !length) {
-      toast.error("Please fill in all fields");
+    if (!readingLevel || !length) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    if (theme === "custom" && !customTheme.trim()) {
+      toast.error("Please enter a custom theme or select a predefined one");
       return;
     }
     onSubmit({
       readingLevel,
-      theme,
+      theme: theme === "custom" ? customTheme : theme,
       length,
+      customTheme: theme === "custom" ? customTheme : undefined,
     });
   };
 
@@ -72,9 +80,25 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
             <SelectItem value="science">Science Fiction</SelectItem>
             <SelectItem value="nature">Nature & Animals</SelectItem>
             <SelectItem value="drseuss">Dr. Seuss Style</SelectItem>
+            <SelectItem value="custom">Custom Theme/Topic</SelectItem>
           </SelectContent>
         </Select>
       </div>
+
+      {theme === "custom" && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            Custom Theme or Topic
+          </label>
+          <Input
+            type="text"
+            placeholder="Enter a theme, topic, or lesson (e.g., 'dealing with a new sibling')"
+            value={customTheme}
+            onChange={(e) => setCustomTheme(e.target.value)}
+            className="w-full"
+          />
+        </div>
+      )}
 
       <div className="space-y-2">
         <label className="text-sm font-medium text-gray-700">Story Length</label>
