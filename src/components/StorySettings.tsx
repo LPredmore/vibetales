@@ -15,7 +15,7 @@ export const StorySettings = ({
 }: StorySettingsProps) => {
   return (
     <div className="space-y-4">
-      <div className="flex gap-8">
+      <div className="flex justify-center gap-8">
         <div className="space-y-2">
           <label className="text-sm font-medium text-gray-700">
             Dr. Seuss Writing Style

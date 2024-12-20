@@ -41,20 +41,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-story-sage to-story-warm">
       <div className="container px-4 py-16">
-        <div className="flex justify-between items-center mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center flex-1"
-          >
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
-              LexiLeap
-            </h1>
-            <p className="text-lg text-gray-600">
-              Create magical stories with your sight words
-            </p>
-          </motion.div>
+        <div className="flex justify-end items-center mb-8">
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">
               Welcome, {user?.user_metadata?.name || "User"}
@@ -64,6 +51,20 @@ const Index = () => {
             </Button>
           </div>
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+            LexiLeap
+          </h1>
+          <p className="text-lg text-gray-600">
+            Create magical stories with your sight words
+          </p>
+        </motion.div>
 
         <div className="max-w-4xl mx-auto">
           <Tabs defaultValue="words" className="w-full">
