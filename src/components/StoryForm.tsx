@@ -84,9 +84,9 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
             <SelectValue placeholder="Select story length" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="short">Short (~100 words)</SelectItem>
-            <SelectItem value="medium">Medium (~500 words)</SelectItem>
-            <SelectItem value="long">Long (~1000 words)</SelectItem>
+            <SelectItem value="short">Short</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="long">Long</SelectItem>
           </SelectContent>
         </Select>
       </div>
