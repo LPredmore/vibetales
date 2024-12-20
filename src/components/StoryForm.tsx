@@ -21,6 +21,7 @@ export interface StoryFormData {
   length: string;
   customTheme?: string;
   isDrSeussStyle: boolean;
+  useSightWords: boolean;
 }
 
 export const StoryForm = ({ onSubmit }: StoryFormProps) => {
@@ -29,6 +30,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
   const [customTheme, setCustomTheme] = useState("");
   const [length, setLength] = useState("");
   const [isDrSeussStyle, setIsDrSeussStyle] = useState(false);
+  const [useSightWords, setUseSightWords] = useState(true);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +48,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
       length,
       customTheme: theme === "custom" ? customTheme : undefined,
       isDrSeussStyle,
+      useSightWords,
     });
   };
 
@@ -103,15 +106,32 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
         </div>
       )}
 
-      <div className="flex items-center justify-between space-x-2">
-        <label className="text-sm font-medium text-gray-700">
-          Dr. Seuss Writing Style
-        </label>
-        <Switch
-          checked={isDrSeussStyle}
-          onCheckedChange={setIsDrSeussStyle}
-          aria-label="Toggle Dr. Seuss writing style"
-        />
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            Dr. Seuss Writing Style
+          </label>
+          <div className="flex items-center">
+            <Switch
+              checked={isDrSeussStyle}
+              onCheckedChange={setIsDrSeussStyle}
+              aria-label="Toggle Dr. Seuss writing style"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            Use Sight Words
+          </label>
+          <div className="flex items-center">
+            <Switch
+              checked={useSightWords}
+              onCheckedChange={setUseSightWords}
+              aria-label="Toggle use of sight words"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">
