@@ -13,26 +13,48 @@ interface SightWordManagerProps {
 
 export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => {
   const [newWord, setNewWord] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
-  // Load words when component mounts
   useEffect(() => {
     const loadWords = async () => {
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('sight_words')
-        .select('words')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (error) {
-        console.error('Error loading sight words:', error);
+      if (!user) {
+        setIsLoading(false);
         return;
       }
-      
-      if (data) {
-        setWords(data.words);
+
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('sight_words')
+          .select('words')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (error) {
+          console.error('Error loading sight words:', error);
+          toast.error("Failed to load sight words");
+          return;
+        }
+        
+        if (data) {
+          setWords(data.words || []);
+        } else {
+          // Initialize empty array for new users
+          const { error: insertError } = await supabase
+            .from('sight_words')
+            .insert({ user_id: user.id, words: [] });
+            
+          if (insertError) {
+            console.error('Error initializing sight words:', insertError);
+            toast.error("Failed to initialize sight words");
+          }
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err);
+        toast.error("An unexpected error occurred");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -42,19 +64,24 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
   const saveWords = async (updatedWords: string[]) => {
     if (!user) return;
 
-    const { error } = await supabase
-      .from('sight_words')
-      .upsert({
-        user_id: user.id,
-        words: updatedWords
-      }, {
-        onConflict: 'user_id'
-      });
+    try {
+      const { error } = await supabase
+        .from('sight_words')
+        .upsert({
+          user_id: user.id,
+          words: updatedWords
+        }, {
+          onConflict: 'user_id'
+        });
 
-    if (error) {
-      console.error('Error saving sight words:', error);
+      if (error) {
+        console.error('Error saving sight words:', error);
+        toast.error("Failed to save words");
+        return;
+      }
+    } catch (err) {
+      console.error('Unexpected error saving words:', err);
       toast.error("Failed to save words");
-      return;
     }
   };
 
@@ -88,6 +115,10 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
       handleAddWord();
     }
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center p-8">Loading...</div>;
+  }
 
   return (
     <div className="space-y-6 w-full max-w-md mx-auto animate-fade-in">
