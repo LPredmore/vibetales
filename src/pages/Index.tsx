@@ -23,12 +23,13 @@ const Index = () => {
     }
 
     try {
-      toast.loading("Generating your story...");
+      const toastId = toast.loading("Generating your story...");
       const generatedStory = await generateStory(
         words,
         data.readingLevel,
         data.theme
       );
+      toast.dismiss(toastId);
       setStory(generatedStory);
       toast.success("Story generated successfully!");
     } catch (error) {
