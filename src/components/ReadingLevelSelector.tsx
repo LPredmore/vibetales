@@ -29,6 +29,7 @@ export const ReadingLevelSelector = ({
           <SelectItem value="3">3rd Grade</SelectItem>
           <SelectItem value="4">4th Grade</SelectItem>
           <SelectItem value="5">5th Grade</SelectItem>
+          <SelectItem value="teen">Teen</SelectItem>
         </SelectContent>
       </Select>
     </div>

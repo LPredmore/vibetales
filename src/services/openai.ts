@@ -48,6 +48,13 @@ const getReadingLevelGuidelines = (readingLevel: string) => {
       vocabulary: "challenging vocabulary with context",
       concepts: "abstract ideas, multiple plot lines",
       structure: "varied paragraph lengths, dialogue"
+    },
+    "teen": {
+      wordCount: "800-1000",
+      sentenceLength: "15-20 words",
+      vocabulary: "advanced vocabulary, literary devices",
+      concepts: "complex themes, character development, multiple subplots",
+      structure: "sophisticated narrative structure, varied writing techniques"
     }
   };
 
@@ -60,7 +67,9 @@ export const generateStory = async (
   theme: string,
   isDrSeussStyle: boolean = false
 ) => {
-  const gradeLevel = readingLevel === 'k' ? 'kindergarten' : `${readingLevel}st grade`;
+  const gradeLevel = readingLevel === 'k' ? 'kindergarten' : 
+                     readingLevel === 'teen' ? 'teen' :
+                     `${readingLevel}st grade`;
   const guidelines = getReadingLevelGuidelines(readingLevel);
   
   const themeDescriptions: { [key: string]: string } = {
