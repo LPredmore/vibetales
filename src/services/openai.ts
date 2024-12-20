@@ -54,7 +54,12 @@ const getReadingLevelGuidelines = (readingLevel: string) => {
   return guidelines[readingLevel as keyof typeof guidelines];
 };
 
-export const generateStory = async (keywords: string[], readingLevel: string, theme: string) => {
+export const generateStory = async (
+  keywords: string[], 
+  readingLevel: string, 
+  theme: string,
+  isDrSeussStyle: boolean = false
+) => {
   const gradeLevel = readingLevel === 'k' ? 'kindergarten' : `${readingLevel}st grade`;
   const guidelines = getReadingLevelGuidelines(readingLevel);
   
@@ -63,9 +68,14 @@ export const generateStory = async (keywords: string[], readingLevel: string, th
     mystery: "a mysterious and intriguing theme",
     fairytale: "a classic fairy tale theme",
     science: "a science fiction theme",
-    nature: "a nature and animals theme",
-    drseuss: "a whimsical Dr. Seuss-style rhyming story with playful language"
+    nature: "a nature and animals theme"
   };
+
+  const styleInstructions = isDrSeussStyle 
+    ? `Write in a Dr. Seuss style with playful rhyming patterns, made-up words, and whimsical language. 
+       Use simple, catchy rhymes and repetitive patterns typical of Dr. Seuss books.
+       Include fun, nonsensical elements while maintaining readability for the grade level.`
+    : `Write in a clear, engaging narrative style appropriate for children.`;
 
   const prompt = `Write a children's story strictly following these ${gradeLevel} reading level guidelines:
   - Word count: ${guidelines.wordCount} words
@@ -74,8 +84,11 @@ export const generateStory = async (keywords: string[], readingLevel: string, th
   - Concept complexity: ${guidelines.concepts}
   - Story structure: ${guidelines.structure}
 
-  The story should have ${themeDescriptions[theme]} and MUST frequently use these sight words: ${keywords.join(', ')}. 
-  Each sight word should appear at least 3 times in different contexts.
+  ${styleInstructions}
+
+  The story should have ${themeDescriptions[theme] || theme} theme.
+  ${keywords.length > 0 ? `MUST frequently use these sight words: ${keywords.join(', ')}. 
+  Each sight word should appear at least 3 times in different contexts.` : ''}
   
   Keep sentences simple and age-appropriate. Avoid any words that would be too advanced for this grade level.
   Use repetition to reinforce learning.
@@ -87,7 +100,7 @@ export const generateStory = async (keywords: string[], readingLevel: string, th
   }`;
 
   try {
-    console.log("Generating story with parameters:", { keywords, readingLevel, theme });
+    console.log("Generating story with parameters:", { keywords, readingLevel, theme, isDrSeussStyle });
     
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",

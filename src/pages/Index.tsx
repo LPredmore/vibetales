@@ -27,7 +27,8 @@ const Index = () => {
       const generatedStory = await generateStory(
         data.useSightWords ? words : [],
         data.readingLevel,
-        data.theme
+        data.theme,
+        data.isDrSeussStyle
       );
       toast.dismiss(toastId);
       setStory(generatedStory);
