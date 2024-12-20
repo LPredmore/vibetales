@@ -17,7 +17,7 @@ const Index = () => {
   const { user, logout } = useAuth();
 
   const handleSubmit = async (data: StoryFormData) => {
-    if (words.length === 0) {
+    if (data.useSightWords && words.length === 0) {
       toast.error("Please add some sight words before generating a story");
       return;
     }
@@ -25,7 +25,7 @@ const Index = () => {
     try {
       const toastId = toast.loading("Generating your story...");
       const generatedStory = await generateStory(
-        words,
+        data.useSightWords ? words : [],
         data.readingLevel,
         data.theme
       );
