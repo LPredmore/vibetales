@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
 interface StoryFormProps {
@@ -19,6 +20,7 @@ export interface StoryFormData {
   theme: string;
   length: string;
   customTheme?: string;
+  isDrSeussStyle: boolean;
 }
 
 export const StoryForm = ({ onSubmit }: StoryFormProps) => {
@@ -26,6 +28,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
   const [theme, setTheme] = useState("");
   const [customTheme, setCustomTheme] = useState("");
   const [length, setLength] = useState("");
+  const [isDrSeussStyle, setIsDrSeussStyle] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +45,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
       theme: theme === "custom" ? customTheme : theme,
       length,
       customTheme: theme === "custom" ? customTheme : undefined,
+      isDrSeussStyle,
     });
   };
 
@@ -79,7 +83,6 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
             <SelectItem value="fairytale">Fairy Tale</SelectItem>
             <SelectItem value="science">Science Fiction</SelectItem>
             <SelectItem value="nature">Nature & Animals</SelectItem>
-            <SelectItem value="drseuss">Dr. Seuss Style</SelectItem>
             <SelectItem value="custom">Custom Theme/Topic</SelectItem>
           </SelectContent>
         </Select>
@@ -99,6 +102,17 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
           />
         </div>
       )}
+
+      <div className="flex items-center justify-between space-x-2">
+        <label className="text-sm font-medium text-gray-700">
+          Dr. Seuss Writing Style
+        </label>
+        <Switch
+          checked={isDrSeussStyle}
+          onCheckedChange={setIsDrSeussStyle}
+          aria-label="Toggle Dr. Seuss writing style"
+        />
+      </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium text-gray-700">Story Length</label>
