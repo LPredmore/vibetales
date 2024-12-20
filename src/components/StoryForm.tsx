@@ -16,21 +16,24 @@ interface StoryFormProps {
 export interface StoryFormData {
   readingLevel: string;
   theme: string;
+  length: string;
 }
 
 export const StoryForm = ({ onSubmit }: StoryFormProps) => {
   const [readingLevel, setReadingLevel] = useState("");
   const [theme, setTheme] = useState("");
+  const [length, setLength] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!readingLevel || !theme) {
+    if (!readingLevel || !theme || !length) {
       toast.error("Please fill in all fields");
       return;
     }
     onSubmit({
       readingLevel,
       theme,
+      length,
     });
   };
 
@@ -69,6 +72,20 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
             <SelectItem value="science">Science Fiction</SelectItem>
             <SelectItem value="nature">Nature & Animals</SelectItem>
             <SelectItem value="drseuss">Dr. Seuss Style</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-gray-700">Story Length</label>
+        <Select value={length} onValueChange={setLength}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select story length" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="short">Short (~100 words)</SelectItem>
+            <SelectItem value="medium">Medium (~500 words)</SelectItem>
+            <SelectItem value="long">Long (~1000 words)</SelectItem>
           </SelectContent>
         </Select>
       </div>
