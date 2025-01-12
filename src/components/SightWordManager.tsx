@@ -14,7 +14,26 @@ interface SightWordManagerProps {
 export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => {
   const [newWord, setNewWord] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { user } = useAuth();
+
+  useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('check-subscription');
+        if (error) throw error;
+        setIsSubscribed(data.subscribed);
+      } catch (err) {
+        console.error('Error checking subscription:', err);
+        toast.error("Failed to check subscription status");
+      }
+    };
+
+    if (user) {
+      checkSubscription();
+    }
+  }, [user]);
 
   useEffect(() => {
     const loadWords = async () => {
@@ -40,7 +59,6 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
         if (data) {
           setWords(data.words || []);
         } else {
-          // Initialize empty array for new users
           const { error: insertError } = await supabase
             .from('sight_words')
             .insert({ user_id: user.id, words: [] });
@@ -60,6 +78,23 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
 
     loadWords();
   }, [user, setWords]);
+
+  const handleCheckout = async () => {
+    try {
+      setIsCheckingOut(true);
+      const { data, error } = await supabase.functions.invoke('create-checkout');
+      if (error) throw error;
+      
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error('Error creating checkout session:', err);
+      toast.error("Failed to start checkout process");
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
 
   const saveWords = async (updatedWords: string[]) => {
     if (!user) return;
@@ -95,6 +130,11 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
       toast.error("This word is already in your list");
       return;
     }
+
+    if (!isSubscribed && words.length >= 3) {
+      toast.error("Free accounts are limited to 3 words. Please upgrade to add more words.");
+      return;
+    }
     
     const updatedWords = [...words, newWord.trim()];
     setWords(updatedWords);
@@ -126,11 +166,20 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
         <h2 className="text-2xl font-bold text-gray-800">Manage Sight Words</h2>
         <p className="text-gray-600">Add words you want to practice in your stories.</p>
         
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
-          <p className="text-yellow-700 text-sm">
-            For best results, keep the sight words on this page to 20 or less at a time to ensure that your child is getting the most exposure to their words. You can use as many words as you want. But the more you have, the less frequently each will show up.
-          </p>
-        </div>
+        {!isSubscribed && words.length >= 3 && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+            <p className="text-yellow-700">
+              You've reached the limit of 3 words for free accounts.
+              <Button
+                onClick={handleCheckout}
+                disabled={isCheckingOut}
+                className="ml-2 bg-story-coral hover:bg-story-yellow transition-colors duration-300"
+              >
+                {isCheckingOut ? "Processing..." : "Upgrade to Unlimited"}
+              </Button>
+            </p>
+          </div>
+        )}
         
         <div className="flex gap-2">
           <Input
