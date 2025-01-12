@@ -58,7 +58,7 @@ serve(async (req) => {
       const subscriptions = await stripe.subscriptions.list({
         customer: customerId,
         status: 'active',
-        price: 'price_1QgUGtRFHDig2LCdGMsgjexk',
+        price: 'price_1QgUGtRFHDig2LCdGMsgjexk', // Make sure this matches your Stripe price ID
         limit: 1,
       });
 
@@ -73,7 +73,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: 'price_1QgUGtRFHDig2LCdGMsgjexk',
+          price: 'price_1QgUGtRFHDig2LCdGMsgjexk', // Make sure this matches your Stripe price ID
           quantity: 1,
         },
       ],
