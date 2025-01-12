@@ -34,8 +34,6 @@ serve(async (req) => {
 
     // Get the Stripe secret key from environment variables
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-    console.log('Stripe key exists:', !!stripeKey); // Log if key exists without exposing it
-    
     if (!stripeKey) {
       console.error('Stripe secret key not found in environment');
       throw new Error('Stripe configuration error');
@@ -47,27 +45,26 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
 
+    // Get customer by email
     const customers = await stripe.customers.list({
       email: user.email,
       limit: 1,
     });
 
     if (customers.data.length === 0) {
-      console.log('No customer found for email:', user.email);
       return new Response(
         JSON.stringify({ subscribed: false }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Check for active subscription
     const subscriptions = await stripe.subscriptions.list({
       customer: customers.data[0].id,
       status: 'active',
       price: 'price_1QgUGtRFHDig2LCdGMsgjexk',
       limit: 1,
     });
-
-    console.log('Subscription status:', subscriptions.data.length > 0 ? 'Active' : 'None');
 
     return new Response(
       JSON.stringify({ subscribed: subscriptions.data.length > 0 }),
