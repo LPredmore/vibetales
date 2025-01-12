@@ -36,7 +36,7 @@ serve(async (req) => {
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeKey) {
       console.error('Stripe secret key not found in environment');
-      throw new Error('Stripe configuration error');
+      throw new Error('Stripe secret key not configured');
     }
 
     console.log('Checking subscription for user:', user.email);
