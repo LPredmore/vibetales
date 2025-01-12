@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { WordList } from "./sight-words/WordList";
+import { AddWordForm } from "./sight-words/AddWordForm";
+import { UpgradePrompt } from "./sight-words/UpgradePrompt";
 
 interface SightWordManagerProps {
   words: string[];
@@ -12,7 +12,6 @@ interface SightWordManagerProps {
 }
 
 export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => {
-  const [newWord, setNewWord] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -50,11 +49,7 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
           .eq('user_id', user.id)
           .maybeSingle();
         
-        if (error) {
-          console.error('Error loading sight words:', error);
-          toast.error("Failed to load sight words");
-          return;
-        }
+        if (error) throw error;
         
         if (data) {
           setWords(data.words || []);
@@ -63,14 +58,11 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
             .from('sight_words')
             .insert({ user_id: user.id, words: [] });
             
-          if (insertError) {
-            console.error('Error initializing sight words:', insertError);
-            toast.error("Failed to initialize sight words");
-          }
+          if (insertError) throw insertError;
         }
       } catch (err) {
-        console.error('Unexpected error:', err);
-        toast.error("An unexpected error occurred");
+        console.error('Error loading sight words:', err);
+        toast.error("Failed to load sight words");
       } finally {
         setIsLoading(false);
       }
@@ -111,24 +103,15 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
           onConflict: 'user_id'
         });
 
-      if (error) {
-        console.error('Error saving sight words:', error);
-        toast.error("Failed to save words");
-        return;
-      }
+      if (error) throw error;
     } catch (err) {
-      console.error('Unexpected error saving words:', err);
+      console.error('Error saving sight words:', err);
       toast.error("Failed to save words");
     }
   };
 
-  const handleAddWord = async () => {
-    if (!newWord.trim()) {
-      toast.error("Please enter a word");
-      return;
-    }
-    
-    if (words.includes(newWord.trim())) {
+  const handleAddWord = async (newWord: string) => {
+    if (words.includes(newWord)) {
       toast.error("This word is already in your list");
       return;
     }
@@ -138,10 +121,9 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
       return;
     }
     
-    const updatedWords = [...words, newWord.trim()];
+    const updatedWords = [...words, newWord];
     setWords(updatedWords);
     await saveWords(updatedWords);
-    setNewWord("");
     toast.success("Word added successfully!");
   };
 
@@ -150,12 +132,6 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
     setWords(updatedWords);
     await saveWords(updatedWords);
     toast.success("Word removed successfully!");
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleAddWord();
-    }
   };
 
   if (isLoading) {
@@ -169,55 +145,22 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
         <p className="text-gray-600">Add words you want to practice in your stories.</p>
         
         {!isSubscribed && words.length >= 3 && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
-            <p className="text-yellow-700 flex items-center gap-2 flex-wrap">
-              You've reached the limit of 3 words for free accounts.
-              <Button
-                onClick={handleCheckout}
-                disabled={isCheckingOut}
-                className="bg-story-coral hover:bg-story-yellow transition-colors duration-300"
-              >
-                {isCheckingOut ? "Processing..." : "Upgrade to Unlimited"}
-              </Button>
-            </p>
-          </div>
+          <UpgradePrompt 
+            onUpgrade={handleCheckout}
+            isProcessing={isCheckingOut}
+          />
         )}
         
-        <div className="flex gap-2">
-          <Input
-            value={newWord}
-            onChange={(e) => setNewWord(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Enter a new word..."
-            className="flex-1"
-          />
-          <Button 
-            onClick={handleAddWord}
-            className="bg-story-coral hover:bg-story-yellow transition-colors duration-300"
-          >
-            Add Word
-          </Button>
-        </div>
+        <AddWordForm 
+          onAddWord={handleAddWord}
+          disabled={!isSubscribed && words.length >= 3}
+        />
       </div>
 
-      <div className="space-y-2">
-        {words.map((word, index) => (
-          <div
-            key={index}
-            className="flex items-center justify-between p-2 bg-white rounded-lg shadow-sm border border-gray-200"
-          >
-            <span className="text-gray-700">{word}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleDeleteWord(index)}
-              className="text-gray-500 hover:text-red-500"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
-      </div>
+      <WordList 
+        words={words}
+        onDeleteWord={handleDeleteWord}
+      />
     </div>
   );
 };
