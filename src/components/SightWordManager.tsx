@@ -85,8 +85,10 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
       const { data, error } = await supabase.functions.invoke('create-checkout');
       if (error) throw error;
       
-      if (data.url) {
+      if (data?.url) {
         window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL received');
       }
     } catch (err) {
       console.error('Error creating checkout session:', err);
@@ -168,12 +170,12 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
         
         {!isSubscribed && words.length >= 3 && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
-            <p className="text-yellow-700">
+            <p className="text-yellow-700 flex items-center gap-2 flex-wrap">
               You've reached the limit of 3 words for free accounts.
               <Button
                 onClick={handleCheckout}
                 disabled={isCheckingOut}
-                className="ml-2 bg-story-coral hover:bg-story-yellow transition-colors duration-300"
+                className="bg-story-coral hover:bg-story-yellow transition-colors duration-300"
               >
                 {isCheckingOut ? "Processing..." : "Upgrade to Unlimited"}
               </Button>

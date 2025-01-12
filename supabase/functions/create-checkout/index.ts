@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -19,7 +18,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     );
 
-    // Get the user from the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
@@ -32,20 +30,13 @@ serve(async (req) => {
       throw new Error('Error getting user');
     }
 
-    // Get the Stripe secret key from environment variables
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-    if (!stripeKey) {
-      console.error('Stripe secret key not found in environment');
-      throw new Error('Stripe secret key not configured');
-    }
-
     console.log('Creating checkout session for user:', user.email);
 
-    const stripe = new Stripe(stripeKey, {
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
     });
 
-    // Check if customer already exists
+    // Get customer by email
     const customers = await stripe.customers.list({
       email: user.email,
       limit: 1,
@@ -54,11 +45,11 @@ serve(async (req) => {
     let customerId = undefined;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
-      // Check if customer already has an active subscription
+      // Check if already subscribed
       const subscriptions = await stripe.subscriptions.list({
-        customer: customerId,
+        customer: customers.data[0].id,
         status: 'active',
-        price: 'price_1QgUGtRFHDig2LCdGMsgjexk', // Make sure this matches your Stripe price ID
+        price: 'price_1QgUGtRFHDig2LCdGMsgjexk',
         limit: 1,
       });
 
@@ -67,26 +58,37 @@ serve(async (req) => {
       }
     }
 
-    // Create Checkout session
+    const origin = req.headers.get('origin') || 'http://localhost:5173';
+    console.log('Creating checkout session with origin:', origin);
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: 'price_1QgUGtRFHDig2LCdGMsgjexk', // Make sure this matches your Stripe price ID
+          price: 'price_1QgUGtRFHDig2LCdGMsgjexk',
           quantity: 1,
         },
       ],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin')}/`,
-      cancel_url: `${req.headers.get('origin')}/`,
+      success_url: `${origin}/?success=true`,
+      cancel_url: `${origin}/?canceled=true`,
+      billing_address_collection: 'auto',
+      payment_method_types: ['card'],
     });
 
     console.log('Checkout session created:', session.id);
+    console.log('Redirect URL:', session.url);
 
     return new Response(
       JSON.stringify({ url: session.url }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      }
     );
   } catch (error) {
     console.error('Error in create-checkout:', error);
