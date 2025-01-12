@@ -21,3 +21,9 @@ enabled = true
 
 [auth]
 enabled = true
+
+[functions.check-subscription]
+verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = true

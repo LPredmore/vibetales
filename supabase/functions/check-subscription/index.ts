@@ -52,6 +52,7 @@ serve(async (req) => {
     });
 
     if (customers.data.length === 0) {
+      console.log('No customer found for email:', user.email);
       return new Response(
         JSON.stringify({ subscribed: false }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -65,6 +66,8 @@ serve(async (req) => {
       price: 'price_1QgUGtRFHDig2LCdGMsgjexk',
       limit: 1,
     });
+
+    console.log('Found subscription status:', subscriptions.data.length > 0);
 
     return new Response(
       JSON.stringify({ subscribed: subscriptions.data.length > 0 }),
