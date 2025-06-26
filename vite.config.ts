@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => ({
         short_name: 'StoryBridge',
         description: 'Create magical stories for young readers with sight words practice',
         lang: 'en',
+        dir: 'ltr',
         theme_color: '#8B5CF6',
         background_color: '#F3E8FF',
         display: 'standalone',
@@ -30,6 +31,39 @@ export default defineConfig(({ mode }) => ({
         scope: '/',
         start_url: '/',
         categories: ['education', 'books', 'kids'],
+        prefer_related_applications: false,
+        iarc_rating_id: 'e84b072d-71de-4af2-8a98-7e7db97db7d7',
+        launch_handler: {
+          client_mode: 'navigate-existing'
+        },
+        screenshots: [
+          {
+            src: '/placeholder.svg',
+            sizes: '390x844',
+            type: 'image/svg+xml',
+            form_factor: 'narrow',
+            label: 'StoryBridge mobile view'
+          },
+          {
+            src: '/placeholder.svg',
+            sizes: '1920x1080',
+            type: 'image/svg+xml',
+            form_factor: 'wide',
+            label: 'StoryBridge desktop view'
+          }
+        ],
+        related_applications: [
+          {
+            platform: 'webapp',
+            url: 'https://storybridge.lovable.app',
+            id: 'storybridge-pwa'
+          }
+        ],
+        scope_extensions: [
+          {
+            origin: 'https://storybridge.lovable.app'
+          }
+        ],
         icons: [
           {
             src: '/favicon.ico',
