@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
@@ -9,28 +8,24 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
 const Index = () => {
-  const [story, setStory] = useState<{ title: string; content: string } | null>(
-    null
-  );
+  const [story, setStory] = useState<{
+    title: string;
+    content: string;
+  } | null>(null);
   const [words, setWords] = useState<string[]>([]);
-  const { user, logout } = useAuth();
-
+  const {
+    user,
+    logout
+  } = useAuth();
   const handleSubmit = async (data: StoryFormData) => {
     if (data.useSightWords && words.length === 0) {
       toast.error("Please add some sight words before generating a story");
       return;
     }
-
     try {
       const toastId = toast.loading("Generating your story...");
-      const generatedStory = await generateStory(
-        data.useSightWords ? words : [],
-        data.readingLevel,
-        data.theme,
-        data.isDrSeussStyle
-      );
+      const generatedStory = await generateStory(data.useSightWords ? words : [], data.readingLevel, data.theme, data.isDrSeussStyle);
       toast.dismiss(toastId);
       setStory(generatedStory);
       toast.success("Story generated successfully!");
@@ -39,9 +34,7 @@ const Index = () => {
       console.error(error);
     }
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
+  return <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
       <div className="container px-4 py-16">
         <div className="flex justify-end items-center mb-8">
           <div className="flex items-center gap-4">
@@ -54,13 +47,16 @@ const Index = () => {
           </div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <div className="inline-block p-8 clay-card mb-6">
+        <motion.div initial={{
+        opacity: 0,
+        y: -20
+      }} animate={{
+        opacity: 1,
+        y: 0
+      }} transition={{
+        duration: 0.6
+      }} className="text-center mb-12">
+          <div className="inline-block p-8 clay-card mb-6 bg-blue-200">
             <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-4">
               LexiLeap
             </h1>
@@ -94,8 +90,6 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
