@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
@@ -8,6 +9,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 const Index = () => {
   const [story, setStory] = useState<{
     title: string;
@@ -18,6 +20,7 @@ const Index = () => {
     user,
     logout
   } = useAuth();
+
   const handleSubmit = async (data: StoryFormData) => {
     if (data.useSightWords && words.length === 0) {
       toast.error("Please add some sight words before generating a story");
@@ -34,8 +37,30 @@ const Index = () => {
       console.error(error);
     }
   };
-  return <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
-      <div className="container px-4 py-16 bg-blue-200">
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
+      <div className="container px-4 py-8">
+        {/* Logo Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-8"
+        >
+          <div className="clay-card inline-block p-6 mb-4">
+            <img 
+              src="/lovable-uploads/386b1300-0e6f-4768-99e7-ec65550f9771.png" 
+              alt="StoryBridge Logo" 
+              className="w-64 h-auto mx-auto drop-shadow-lg"
+            />
+          </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+            Create Magical Stories for Young Readers
+          </h1>
+        </motion.div>
+
+        {/* User Info and Logout */}
         <div className="flex justify-end items-center mb-8">
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-700 font-medium">
@@ -47,18 +72,7 @@ const Index = () => {
           </div>
         </div>
 
-        <motion.div initial={{
-        opacity: 0,
-        y: -20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        duration: 0.6
-      }} className="text-center mb-12">
-          
-        </motion.div>
-
+        {/* Main Content */}
         <div className="max-w-4xl mx-auto">
           <div className="clay-card p-8">
             <Tabs defaultValue="words" className="w-full">
@@ -83,6 +97,8 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Index;
