@@ -141,8 +141,8 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
   return (
     <div className="space-y-6 w-full max-w-md mx-auto animate-fade-in">
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-gray-800">Manage Sight Words</h2>
-        <p className="text-gray-600">Add words you want to practice in your stories.</p>
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 text-center sm:text-left">Manage Sight Words</h2>
+        <p className="text-gray-600 text-center sm:text-left mobile-text">Add words you want to practice in your stories.</p>
         
         {!isSubscribed && words.length >= 3 && (
           <UpgradePrompt 

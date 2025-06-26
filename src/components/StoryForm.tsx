@@ -80,7 +80,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
       <div className="space-y-2">
         <label className="text-sm font-medium text-gray-700">Story Length</label>
         <Select value={length} onValueChange={setLength}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full clay-input">
             <SelectValue placeholder="Select story length" />
           </SelectTrigger>
           <SelectContent>
@@ -93,7 +93,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
 
       <Button
         type="submit"
-        className="w-full bg-story-coral hover:bg-story-yellow transition-colors duration-300"
+        className="w-full clay-button bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold hover:from-purple-600 hover:to-pink-600 min-h-[48px] text-base"
       >
         Generate Story
       </Button>

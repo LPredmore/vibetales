@@ -72,66 +72,134 @@
     @apply border-border;
   }
 
+  html {
+    /* Prevent zoom on iOS */
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 text-foreground min-h-screen;
+    /* Prevent bounce scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+  }
+
+  /* Improved touch targets for mobile */
+  button, input, select, textarea {
+    @apply min-h-[44px];
   }
 }
 
 @layer components {
   .clay-card {
     @apply bg-gradient-to-br from-white/80 to-white/60 backdrop-blur-sm;
-    @apply border border-white/20 rounded-3xl shadow-2xl;
+    @apply border border-white/20 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl;
     box-shadow: 
-      20px 20px 40px rgba(0, 0, 0, 0.1),
-      -20px -20px 40px rgba(255, 255, 255, 0.8),
-      inset 2px 2px 4px rgba(255, 255, 255, 0.5),
-      inset -2px -2px 4px rgba(0, 0, 0, 0.05);
+      10px 10px 20px rgba(0, 0, 0, 0.08),
+      -10px -10px 20px rgba(255, 255, 255, 0.6),
+      inset 1px 1px 2px rgba(255, 255, 255, 0.4),
+      inset -1px -1px 2px rgba(0, 0, 0, 0.03);
+  }
+
+  @media (min-width: 640px) {
+    .clay-card {
+      box-shadow: 
+        20px 20px 40px rgba(0, 0, 0, 0.1),
+        -20px -20px 40px rgba(255, 255, 255, 0.8),
+        inset 2px 2px 4px rgba(255, 255, 255, 0.5),
+        inset -2px -2px 4px rgba(0, 0, 0, 0.05);
+    }
   }
 
   .clay-button {
-    @apply relative overflow-hidden rounded-2xl transition-all duration-300;
+    @apply relative overflow-hidden rounded-xl sm:rounded-2xl transition-all duration-300;
     @apply bg-gradient-to-br from-white/90 to-white/70 backdrop-blur-sm;
-    @apply border border-white/30 shadow-lg hover:shadow-xl;
+    @apply border border-white/30 shadow-md hover:shadow-lg;
     @apply hover:scale-105 active:scale-95;
+    @apply min-h-[44px] px-4 py-2;
     box-shadow: 
-      8px 8px 16px rgba(0, 0, 0, 0.1),
-      -8px -8px 16px rgba(255, 255, 255, 0.8),
-      inset 1px 1px 2px rgba(255, 255, 255, 0.6),
-      inset -1px -1px 2px rgba(0, 0, 0, 0.05);
+      6px 6px 12px rgba(0, 0, 0, 0.08),
+      -6px -6px 12px rgba(255, 255, 255, 0.6),
+      inset 1px 1px 2px rgba(255, 255, 255, 0.5),
+      inset -1px -1px 2px rgba(0, 0, 0, 0.03);
   }
 
   .clay-button:hover {
     box-shadow: 
-      12px 12px 24px rgba(0, 0, 0, 0.15),
-      -12px -12px 24px rgba(255, 255, 255, 0.9),
-      inset 2px 2px 4px rgba(255, 255, 255, 0.7),
-      inset -2px -2px 4px rgba(0, 0, 0, 0.08);
+      8px 8px 16px rgba(0, 0, 0, 0.12),
+      -8px -8px 16px rgba(255, 255, 255, 0.8),
+      inset 2px 2px 4px rgba(255, 255, 255, 0.6),
+      inset -2px -2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  @media (min-width: 640px) {
+    .clay-button {
+      box-shadow: 
+        8px 8px 16px rgba(0, 0, 0, 0.1),
+        -8px -8px 16px rgba(255, 255, 255, 0.8),
+        inset 1px 1px 2px rgba(255, 255, 255, 0.6),
+        inset -1px -1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .clay-button:hover {
+      box-shadow: 
+        12px 12px 24px rgba(0, 0, 0, 0.15),
+        -12px -12px 24px rgba(255, 255, 255, 0.9),
+        inset 2px 2px 4px rgba(255, 255, 255, 0.7),
+        inset -2px -2px 4px rgba(0, 0, 0, 0.08);
+    }
   }
 
   .clay-input {
     @apply bg-gradient-to-br from-white/80 to-white/60 backdrop-blur-sm;
-    @apply border border-white/20 rounded-2xl;
+    @apply border border-white/20 rounded-xl sm:rounded-2xl;
+    @apply min-h-[44px] text-base; /* Prevent zoom on iOS */
     box-shadow: 
-      inset 4px 4px 8px rgba(0, 0, 0, 0.1),
-      inset -4px -4px 8px rgba(255, 255, 255, 0.8),
-      2px 2px 4px rgba(0, 0, 0, 0.05);
+      inset 3px 3px 6px rgba(0, 0, 0, 0.08),
+      inset -3px -3px 6px rgba(255, 255, 255, 0.6),
+      1px 1px 2px rgba(0, 0, 0, 0.03);
+  }
+
+  @media (min-width: 640px) {
+    .clay-input {
+      box-shadow: 
+        inset 4px 4px 8px rgba(0, 0, 0, 0.1),
+        inset -4px -4px 8px rgba(255, 255, 255, 0.8),
+        2px 2px 4px rgba(0, 0, 0, 0.05);
+    }
   }
 
   .clay-tab {
-    @apply relative rounded-2xl transition-all duration-300;
+    @apply relative rounded-xl sm:rounded-2xl transition-all duration-300;
     @apply bg-gradient-to-br from-white/70 to-white/50 backdrop-blur-sm;
     @apply border border-white/20;
+    @apply min-h-[44px] px-4 py-2;
     box-shadow: 
-      4px 4px 8px rgba(0, 0, 0, 0.08),
-      -4px -4px 8px rgba(255, 255, 255, 0.6);
+      3px 3px 6px rgba(0, 0, 0, 0.06),
+      -3px -3px 6px rgba(255, 255, 255, 0.5);
   }
 
   .clay-tab[data-state="active"] {
     @apply bg-gradient-to-br from-purple-200/80 to-pink-200/80;
     box-shadow: 
-      inset 2px 2px 4px rgba(0, 0, 0, 0.1),
-      inset -2px -2px 4px rgba(255, 255, 255, 0.8),
-      4px 4px 8px rgba(0, 0, 0, 0.1);
+      inset 2px 2px 4px rgba(0, 0, 0, 0.08),
+      inset -2px -2px 4px rgba(255, 255, 255, 0.6),
+      3px 3px 6px rgba(0, 0, 0, 0.08);
+  }
+
+  @media (min-width: 640px) {
+    .clay-tab {
+      box-shadow: 
+        4px 4px 8px rgba(0, 0, 0, 0.08),
+        -4px -4px 8px rgba(255, 255, 255, 0.6);
+    }
+
+    .clay-tab[data-state="active"] {
+      box-shadow: 
+        inset 2px 2px 4px rgba(0, 0, 0, 0.1),
+        inset -2px -2px 4px rgba(255, 255, 255, 0.8),
+        4px 4px 8px rgba(0, 0, 0, 0.1);
+    }
   }
 
   .colorful-gradient {
@@ -143,5 +211,31 @@
       #f5576c 75%,
       #4facfe 100%
     );
+  }
+
+  /* Mobile-specific utilities */
+  .mobile-container {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .mobile-text {
+    @apply text-sm sm:text-base;
+  }
+
+  .mobile-button {
+    @apply w-full sm:w-auto;
+  }
+
+  /* Prevent text selection on touch devices */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* Smooth scrolling */
+  .smooth-scroll {
+    scroll-behavior: smooth;
   }
 }

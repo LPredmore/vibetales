@@ -40,47 +40,51 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
-      <div className="container px-4 py-8">
+      <div className="container px-4 py-4 sm:py-8 max-w-6xl mx-auto">
         {/* Logo Section */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-8"
+          className="text-center mb-6 sm:mb-8"
         >
           <div className="mb-4">
             <img 
               src="/lovable-uploads/79708384-34ad-45b6-af27-6fb7e037e385.png" 
               alt="StoryBridge Logo" 
-              className="w-64 h-auto mx-auto"
+              className="w-48 sm:w-64 h-auto mx-auto"
             />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent px-4">
             Create Magical Stories for Young Readers
           </h1>
         </motion.div>
 
         {/* User Info and Logout */}
-        <div className="flex justify-end items-center mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-8 gap-4">
+          <div className="flex items-center gap-4 order-2 sm:order-1">
             <span className="text-sm text-gray-700 font-medium">
               Welcome, {user?.user_metadata?.name || "User"}
             </span>
-            <Button variant="outline" onClick={logout} className="clay-button">
-              Logout
-            </Button>
           </div>
+          <Button 
+            variant="outline" 
+            onClick={logout} 
+            className="clay-button order-1 sm:order-2 min-h-[44px]"
+          >
+            Logout
+          </Button>
         </div>
 
         {/* Main Content */}
         <div className="max-w-4xl mx-auto">
-          <div className="clay-card p-8">
+          <div className="clay-card p-4 sm:p-8">
             <Tabs defaultValue="words" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-8 bg-transparent p-2 gap-2">
-                <TabsTrigger value="words" className="clay-tab text-gray-700 font-semibold">
+              <TabsList className="grid w-full grid-cols-2 mb-6 sm:mb-8 bg-transparent p-2 gap-2 h-auto">
+                <TabsTrigger value="words" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
                   🎯 Sight Words
                 </TabsTrigger>
-                <TabsTrigger value="story" className="clay-tab text-gray-700 font-semibold">
+                <TabsTrigger value="story" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
                   📚 Generate Story
                 </TabsTrigger>
               </TabsList>
