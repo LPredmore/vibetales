@@ -16,33 +16,58 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.ico', 'og-image.svg', 'placeholder.svg'],
       manifest: {
+        id: '/',
         name: 'StoryBridge - Story Generator',
         short_name: 'StoryBridge',
         description: 'Create magical stories for young readers with sight words practice',
+        lang: 'en',
         theme_color: '#8B5CF6',
         background_color: '#F3E8FF',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        categories: ['education', 'books', 'kids'],
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: '/favicon.ico',
+            sizes: '48x48',
+            type: 'image/x-icon'
+          },
+          {
+            src: '/placeholder.svg',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/svg+xml',
+            purpose: 'any'
           },
           {
-            src: 'pwa-512x512.png',
+            src: '/placeholder.svg',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/svg+xml',
+            purpose: 'any'
           },
           {
-            src: 'pwa-512x512.png',
+            src: '/placeholder.svg',
             sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
+            type: 'image/svg+xml',
+            purpose: 'maskable'
+          }
+        ],
+        shortcuts: [
+          {
+            name: 'Create Story',
+            short_name: 'Create',
+            description: 'Create a new story',
+            url: '/',
+            icons: [
+              {
+                src: '/placeholder.svg',
+                sizes: '96x96',
+                type: 'image/svg+xml'
+              }
+            ]
           }
         ]
       },
@@ -57,6 +82,17 @@ export default defineConfig(({ mode }) => ({
               expiration: {
                 maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/api\.openai\.com\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 // 1 day
               }
             }
           }
