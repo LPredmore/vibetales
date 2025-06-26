@@ -41,36 +41,30 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
       <div className="container px-4 py-4 sm:py-8 max-w-6xl mx-auto">
-        {/* Logo Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-6 sm:mb-8"
-        >
-          <div className="mb-4">
-            <img 
-              src="/lovable-uploads/79708384-34ad-45b6-af27-6fb7e037e385.png" 
-              alt="StoryBridge Logo" 
-              className="w-48 sm:w-64 h-auto mx-auto"
-            />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent px-4">
-            Create Magical Stories for Young Readers
-          </h1>
-        </motion.div>
+        {/* Header with Logo and Logout Button */}
+        <div className="flex justify-between items-start mb-6 sm:mb-8">
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center flex-1"
+          >
+            <div className="mb-4">
+              <img 
+                src="/lovable-uploads/79708384-34ad-45b6-af27-6fb7e037e385.png" 
+                alt="StoryBridge Logo" 
+                className="w-48 sm:w-64 h-auto mx-auto"
+              />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent px-4">
+              Create Magical Stories for Young Readers
+            </h1>
+          </motion.div>
 
-        {/* User Info and Logout */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-8 gap-4">
-          <div className="flex items-center gap-4 order-2 sm:order-1">
-            <span className="text-sm text-gray-700 font-medium">
-              Welcome, {user?.user_metadata?.name || "User"}
-            </span>
-          </div>
           <Button 
             variant="outline" 
             onClick={logout} 
-            className="clay-button order-1 sm:order-2 min-h-[44px]"
+            className="clay-button min-h-[44px] ml-4"
           >
             Logout
           </Button>
