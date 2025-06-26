@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => ({
         theme_color: '#8B5CF6',
         background_color: '#F3E8FF',
         display: 'standalone',
+        display_override: ['window-controls-overlay', 'standalone'],
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
@@ -35,6 +36,35 @@ export default defineConfig(({ mode }) => ({
         iarc_rating_id: 'e84b072d-71de-4af2-8a98-7e7db97db7d7',
         launch_handler: {
           client_mode: 'navigate-existing'
+        },
+        edge_side_panel: {
+          preferred_width: 400
+        },
+        file_handlers: [
+          {
+            action: '/',
+            accept: {
+              'text/plain': ['.txt'],
+              'application/json': ['.json']
+            }
+          }
+        ],
+        handle_links: 'preferred',
+        protocol_handlers: [
+          {
+            protocol: 'web+storybridge',
+            url: '/?protocol=%s'
+          }
+        ],
+        share_target: {
+          action: '/',
+          method: 'POST',
+          enctype: 'multipart/form-data',
+          params: {
+            title: 'title',
+            text: 'text',
+            url: 'url'
+          }
         },
         screenshots: [
           {
@@ -130,7 +160,14 @@ export default defineConfig(({ mode }) => ({
               }
             }
           }
-        ]
+        ],
+        // Background sync for offline functionality
+        skipWaiting: true,
+        clientsClaim: true
+      },
+      // Enable periodic background sync and push notifications
+      devOptions: {
+        enabled: true
       }
     })
   ].filter(Boolean),
