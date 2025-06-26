@@ -50,9 +50,9 @@ const Index = () => {
         >
           <div className="mb-4">
             <img 
-              src="/lovable-uploads/386b1300-0e6f-4768-99e7-ec65550f9771.png" 
+              src="/lovable-uploads/79708384-34ad-45b6-af27-6fb7e037e385.png" 
               alt="StoryBridge Logo" 
-              className="w-64 h-auto mx-auto drop-shadow-lg"
+              className="w-64 h-auto mx-auto"
             />
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
