@@ -35,7 +35,7 @@ const Index = () => {
     }
   };
   return <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
-      <div className="container px-4 py-16">
+      <div className="container px-4 py-16 bg-blue-200">
         <div className="flex justify-end items-center mb-8">
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-700 font-medium">
@@ -56,14 +56,7 @@ const Index = () => {
       }} transition={{
         duration: 0.6
       }} className="text-center mb-12">
-          <div className="inline-block p-8 clay-card mb-6 bg-blue-200">
-            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-4">
-              LexiLeap
-            </h1>
-            <p className="text-xl text-gray-700 font-medium">
-              Create magical stories with your sight words ✨
-            </p>
-          </div>
+          
         </motion.div>
 
         <div className="max-w-4xl mx-auto">
