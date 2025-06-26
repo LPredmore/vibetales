@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 
 interface UpgradePromptProps {
@@ -7,17 +8,20 @@ interface UpgradePromptProps {
 
 export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) => {
   return (
-    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
-      <p className="text-yellow-700 flex items-center gap-2 flex-wrap">
-        You've reached the limit of 3 words for free accounts.
+    <div className="clay-card bg-gradient-to-r from-yellow-200/80 to-orange-200/80 backdrop-blur-sm p-6 rounded-3xl border-l-4 border-yellow-400">
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-2xl">🔒</span>
+        <p className="text-gray-700 font-medium">
+          You've reached the limit of 3 words for free accounts.
+        </p>
         <Button
           onClick={onUpgrade}
           disabled={isProcessing}
-          className="bg-story-coral hover:bg-story-yellow transition-colors duration-300"
+          className="clay-button bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold hover:from-yellow-600 hover:to-orange-600"
         >
-          {isProcessing ? "Processing..." : "Upgrade to Unlimited"}
+          {isProcessing ? "✨ Processing..." : "🚀 Upgrade to Unlimited"}
         </Button>
-      </p>
+      </div>
     </div>
   );
 };

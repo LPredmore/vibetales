@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
@@ -40,14 +41,14 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-story-sage to-story-warm">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
       <div className="container px-4 py-16">
         <div className="flex justify-end items-center mb-8">
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-700 font-medium">
               Welcome, {user?.user_metadata?.name || "User"}
             </span>
-            <Button variant="outline" onClick={logout}>
+            <Button variant="outline" onClick={logout} className="clay-button">
               Logout
             </Button>
           </div>
@@ -59,30 +60,38 @@ const Index = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
-            LexiLeap
-          </h1>
-          <p className="text-lg text-gray-600">
-            Create magical stories with your sight words
-          </p>
+          <div className="inline-block p-8 clay-card mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-4">
+              LexiLeap
+            </h1>
+            <p className="text-xl text-gray-700 font-medium">
+              Create magical stories with your sight words ✨
+            </p>
+          </div>
         </motion.div>
 
         <div className="max-w-4xl mx-auto">
-          <Tabs defaultValue="words" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger value="words">Sight Words</TabsTrigger>
-              <TabsTrigger value="story">Generate Story</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="words">
-              <SightWordManager words={words} setWords={setWords} />
-            </TabsContent>
-            
-            <TabsContent value="story">
-              <StoryForm onSubmit={handleSubmit} />
-              {story && <StoryDisplay title={story.title} content={story.content} />}
-            </TabsContent>
-          </Tabs>
+          <div className="clay-card p-8">
+            <Tabs defaultValue="words" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-8 bg-transparent p-2 gap-2">
+                <TabsTrigger value="words" className="clay-tab text-gray-700 font-semibold">
+                  🎯 Sight Words
+                </TabsTrigger>
+                <TabsTrigger value="story" className="clay-tab text-gray-700 font-semibold">
+                  📚 Generate Story
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="words">
+                <SightWordManager words={words} setWords={setWords} />
+              </TabsContent>
+              
+              <TabsContent value="story">
+                <StoryForm onSubmit={handleSubmit} />
+                {story && <StoryDisplay title={story.title} content={story.content} />}
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
     </div>

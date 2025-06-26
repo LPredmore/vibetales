@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,20 +20,20 @@ export const AddWordForm = ({ onAddWord, disabled }: AddWordFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
+    <form onSubmit={handleSubmit} className="flex gap-3">
       <Input
         value={newWord}
         onChange={(e) => setNewWord(e.target.value)}
         placeholder="Enter a new word..."
-        className="flex-1"
+        className="flex-1 clay-input text-gray-700 placeholder:text-gray-500 font-medium"
         disabled={disabled}
       />
       <Button 
         type="submit"
-        className="bg-story-coral hover:bg-story-yellow transition-colors duration-300"
+        className="clay-button bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold hover:from-purple-600 hover:to-pink-600"
         disabled={disabled}
       >
-        Add Word
+        ✨ Add Word
       </Button>
     </form>
   );
