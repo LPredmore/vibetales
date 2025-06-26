@@ -79,23 +79,23 @@ const Index = () => {
         {/* Main Content */}
         <div className="max-w-4xl mx-auto">
           <div className="clay-card p-4 sm:p-8">
-            <Tabs defaultValue="words" className="w-full">
+            <Tabs defaultValue="story" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6 sm:mb-8 bg-transparent p-2 gap-2 h-auto">
-                <TabsTrigger value="words" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
-                  🎯 Sight Words
-                </TabsTrigger>
                 <TabsTrigger value="story" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
                   📚 Generate Story
                 </TabsTrigger>
+                <TabsTrigger value="words" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
+                  🎯 Sight Words
+                </TabsTrigger>
               </TabsList>
-              
-              <TabsContent value="words">
-                <SightWordManager words={words} setWords={setWords} />
-              </TabsContent>
               
               <TabsContent value="story">
                 <StoryForm onSubmit={handleSubmit} />
                 {story && <StoryDisplay title={story.title} content={story.content} />}
+              </TabsContent>
+              
+              <TabsContent value="words">
+                <SightWordManager words={words} setWords={setWords} />
               </TabsContent>
             </Tabs>
           </div>
