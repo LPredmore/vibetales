@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'og-image.svg', 'placeholder.svg'],
+      includeAssets: ['favicon.ico', 'og-image.svg', 'placeholder.svg', '.well-known/assetlinks.json'],
       manifest: {
         id: '/',
         name: 'StoryBridge - Story Generator',
@@ -136,7 +136,13 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        additionalManifestEntries: [
+          {
+            url: '/.well-known/assetlinks.json',
+            revision: null
+          }
+        ],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -176,4 +182,9 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Ensure .well-known files are served with correct MIME type
+  define: {
+    __ASSET_LINKS_ENABLED__: true
+  },
+  publicDir: 'public'
 }));
