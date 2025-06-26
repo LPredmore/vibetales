@@ -18,8 +18,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'LexiLeap - Story Generator',
-        short_name: 'LexiLeap',
+        name: 'StoryBridge - Story Generator',
+        short_name: 'StoryBridge',
         description: 'Create magical stories for young readers with sight words practice',
         theme_color: '#8B5CF6',
         background_color: '#F3E8FF',
