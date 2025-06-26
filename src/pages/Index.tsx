@@ -48,7 +48,7 @@ const Index = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-8"
         >
-          <div className="clay-card inline-block p-6 mb-4">
+          <div className="mb-4">
             <img 
               src="/lovable-uploads/386b1300-0e6f-4768-99e7-ec65550f9771.png" 
               alt="StoryBridge Logo" 
