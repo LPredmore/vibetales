@@ -15,18 +15,21 @@ export type Database = {
           updated_at: string
           user_id: string
           words: string[] | null
+          words_objects: Json[] | null
         }
         Insert: {
           created_at?: string
           updated_at?: string
           user_id: string
           words?: string[] | null
+          words_objects?: Json[] | null
         }
         Update: {
           created_at?: string
           updated_at?: string
           user_id?: string
           words?: string[] | null
+          words_objects?: Json[] | null
         }
         Relationships: []
       }

@@ -1,5 +1,7 @@
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Crown, Sparkles } from "lucide-react";
 
 interface UpgradePromptProps {
   onUpgrade: () => void;
@@ -8,20 +10,35 @@ interface UpgradePromptProps {
 
 export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) => {
   return (
-    <div className="clay-card bg-gradient-to-r from-yellow-200/80 to-orange-200/80 backdrop-blur-sm p-6 rounded-3xl border-l-4 border-yellow-400">
-      <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-2xl">🔒</span>
-        <p className="text-gray-700 font-medium">
-          You've reached the limit of 3 words for free accounts.
-        </p>
+    <Card className="border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-amber-800">
+          <Crown className="h-5 w-5" />
+          Upgrade to Premium
+        </CardTitle>
+        <CardDescription className="text-amber-700">
+          You've reached the free limit of 3 sight words. Upgrade to add unlimited words!
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
         <Button
           onClick={onUpgrade}
           disabled={isProcessing}
-          className="clay-button bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-semibold hover:from-yellow-600 hover:to-orange-600"
+          className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
         >
-          {isProcessing ? "✨ Processing..." : "🚀 Upgrade to Unlimited"}
+          {isProcessing ? (
+            <>
+              <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <Crown className="mr-2 h-4 w-4" />
+              Upgrade Now
+            </>
+          )}
         </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
