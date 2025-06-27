@@ -3,6 +3,7 @@ import { useState } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
 import { SightWordManager } from "@/components/SightWordManager";
+import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
 import { generateStory } from "@/services/openai";
 import { toast } from "sonner";
@@ -15,20 +16,29 @@ const Index = () => {
     title: string;
     content: string;
   } | null>(null);
-  const [words, setWords] = useState<string[]>([]);
+  const [words, setWords] = useState<SightWord[]>([]);
   const {
     user,
     logout
   } = useAuth();
 
   const handleSubmit = async (data: StoryFormData) => {
-    if (data.useSightWords && words.length === 0) {
-      toast.error("Please add some sight words before generating a story");
+    const activeWords = words.filter(word => word.active);
+    
+    if (data.useSightWords && activeWords.length === 0) {
+      toast.error("Please add and activate some sight words before generating a story");
       return;
     }
+    
     try {
       const toastId = toast.loading("Generating your story...");
-      const generatedStory = await generateStory(data.useSightWords ? words : [], data.readingLevel, data.theme, data.isDrSeussStyle);
+      const activeWordStrings = activeWords.map(word => word.word);
+      const generatedStory = await generateStory(
+        data.useSightWords ? activeWordStrings : [], 
+        data.readingLevel, 
+        data.theme, 
+        data.isDrSeussStyle
+      );
       toast.dismiss(toastId);
       setStory(generatedStory);
       toast.success("Story generated successfully!");
