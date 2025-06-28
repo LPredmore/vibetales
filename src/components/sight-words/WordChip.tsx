@@ -13,7 +13,7 @@ interface WordChipProps {
 
 export const WordChip = ({ word, active, onToggle, onDelete }: WordChipProps) => {
   return (
-    <div className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${
+    <div className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-all ${
       active 
         ? 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200' 
         : 'bg-gray-50 border-gray-200'
@@ -29,20 +29,22 @@ export const WordChip = ({ word, active, onToggle, onDelete }: WordChipProps) =>
         {word}
       </Badge>
       
-      <Switch
-        checked={active}
-        onCheckedChange={onToggle}
-        className="h-4 w-7"
-      />
-      
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onDelete}
-        className="h-6 w-6 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50"
-      >
-        <X className="h-3 w-3" />
-      </Button>
+      <div className="flex items-center gap-2">
+        <Switch
+          checked={active}
+          onCheckedChange={onToggle}
+          aria-label={`Toggle ${word}`}
+        />
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onDelete}
+          className="h-6 w-6 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50"
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
     </div>
   );
 };
