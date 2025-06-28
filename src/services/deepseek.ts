@@ -1,3 +1,4 @@
+
 import { getReadingLevelGuidelines } from "@/utils/readingLevelGuidelines";
 
 interface StoryResponse {
@@ -5,9 +6,35 @@ interface StoryResponse {
   content: string;
 }
 
+const getInterestLevelGuidelines = (interestLevel: string) => {
+  const guidelines = {
+    elementary: {
+      maturity: "Simple themes like friendship, family, basic emotions, school experiences",
+      content: "Age-appropriate situations, positive outcomes, minimal conflict",
+      characters: "Relatable child characters, friendly animals, family members",
+      topics: "Everyday adventures, learning new things, helping others"
+    },
+    "middle-grade": {
+      maturity: "More complex emotions, friendship challenges, mild adventure",
+      content: "Problem-solving scenarios, overcoming obstacles, character growth",
+      characters: "Pre-teen protagonists, diverse friend groups, mentors",
+      topics: "School challenges, family dynamics, discovering talents, mild mysteries"
+    },
+    "young-adult": {
+      maturity: "Complex themes, identity exploration, deeper relationships",
+      content: "Coming-of-age elements, meaningful choices, consequences",
+      characters: "Teen protagonists, complex relationships, diverse perspectives",
+      topics: "Self-discovery, responsibility, future planning, social issues"
+    }
+  };
+
+  return guidelines[interestLevel as keyof typeof guidelines];
+};
+
 export const generateStory = async (
   keywords: string[], 
-  readingLevel: string, 
+  readingLevel: string,
+  interestLevel: string,
   theme: string,
   isDrSeussStyle: boolean = false
 ): Promise<StoryResponse> => {
@@ -16,6 +43,7 @@ export const generateStory = async (
                      `${readingLevel}st grade`;
   
   const guidelines = getReadingLevelGuidelines(readingLevel);
+  const interestGuidelines = getInterestLevelGuidelines(interestLevel);
   
   const themeDescriptions: { [key: string]: string } = {
     fantasy: "a fantasy adventure theme",
@@ -31,12 +59,20 @@ export const generateStory = async (
        Include fun, nonsensical elements while maintaining readability for the grade level.`
     : `Write in a clear, engaging narrative style appropriate for children.`;
 
-  const prompt = `Write a children's story strictly following these ${gradeLevel} reading level guidelines:
+  const prompt = `Write a children's story that balances reading level and interest level appropriately:
+
+  READING LEVEL (${gradeLevel}):
   - Word count: ${guidelines.wordCount} words
   - Sentence length: ${guidelines.sentenceLength}
   - Vocabulary level: ${guidelines.vocabulary}
   - Concept complexity: ${guidelines.concepts}
   - Story structure: ${guidelines.structure}
+
+  INTEREST/MATURITY LEVEL (${interestLevel}):
+  - Theme maturity: ${interestGuidelines.maturity}
+  - Content appropriateness: ${interestGuidelines.content}
+  - Character types: ${interestGuidelines.characters}
+  - Topic focus: ${interestGuidelines.topics}
 
   ${styleInstructions}
 
@@ -44,8 +80,7 @@ export const generateStory = async (
   ${keywords.length > 0 ? `MUST frequently use these sight words: ${keywords.join(', ')}. 
   Each sight word should appear at least 3 times in different contexts.` : ''}
   
-  Keep sentences simple and age-appropriate. Avoid any words that would be too advanced for this grade level.
-  Use repetition to reinforce learning.
+  IMPORTANT: Keep the vocabulary and sentence complexity at the ${gradeLevel} reading level, but make the story themes and character situations appropriate for the ${interestLevel} interest level. This allows for age-appropriate content complexity while maintaining reading accessibility.
   
   Format the response as a JSON object with exactly these fields:
   {
@@ -54,7 +89,7 @@ export const generateStory = async (
   }`;
 
   try {
-    console.log("Generating story with parameters:", { keywords, readingLevel, theme, isDrSeussStyle });
+    console.log("Generating story with parameters:", { keywords, readingLevel, interestLevel, theme, isDrSeussStyle });
     
     const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
@@ -67,7 +102,7 @@ export const generateStory = async (
         messages: [
           {
             role: "system",
-            content: "You are a skilled children's educational writer who specializes in creating grade-appropriate content. Always respond with valid JSON containing a title and content field."
+            content: "You are a skilled children's educational writer who specializes in creating grade-appropriate content that balances reading level with age-appropriate interest levels. Always respond with valid JSON containing a title and content field."
           },
           {
             role: "user",

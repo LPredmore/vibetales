@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ReadingLevelSelector } from "./ReadingLevelSelector";
+import { InterestLevelSelector } from "./InterestLevelSelector";
 import { ThemeSelector } from "./ThemeSelector";
 import { StorySettings } from "./StorySettings";
 
@@ -18,6 +20,7 @@ interface StoryFormProps {
 
 export interface StoryFormData {
   readingLevel: string;
+  interestLevel: string;
   theme: string;
   length: string;
   customTheme?: string;
@@ -27,6 +30,7 @@ export interface StoryFormData {
 
 export const StoryForm = ({ onSubmit }: StoryFormProps) => {
   const [readingLevel, setReadingLevel] = useState("");
+  const [interestLevel, setInterestLevel] = useState("");
   const [theme, setTheme] = useState("");
   const [customTheme, setCustomTheme] = useState("");
   const [length, setLength] = useState("");
@@ -35,7 +39,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!readingLevel || !length) {
+    if (!readingLevel || !interestLevel || !length) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -45,6 +49,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
     }
     onSubmit({
       readingLevel,
+      interestLevel,
       theme: theme === "custom" ? customTheme : theme,
       length,
       customTheme: theme === "custom" ? customTheme : undefined,
@@ -58,10 +63,17 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
       onSubmit={handleSubmit}
       className="space-y-6 w-full max-w-md mx-auto animate-fade-in"
     >
-      <ReadingLevelSelector
-        readingLevel={readingLevel}
-        onReadingLevelChange={setReadingLevel}
-      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <ReadingLevelSelector
+          readingLevel={readingLevel}
+          onReadingLevelChange={setReadingLevel}
+        />
+
+        <InterestLevelSelector
+          interestLevel={interestLevel}
+          onInterestLevelChange={setInterestLevel}
+        />
+      </div>
 
       <ThemeSelector
         theme={theme}

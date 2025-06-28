@@ -39,6 +39,7 @@ const Index = () => {
       const generatedStory = await generateStory(
         data.useSightWords ? activeWordStrings : [], 
         data.readingLevel, 
+        data.interestLevel,
         data.theme, 
         data.isDrSeussStyle
       );
