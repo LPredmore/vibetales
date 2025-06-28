@@ -3,6 +3,7 @@ import { useState } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
 import { SightWordManager } from "@/components/SightWordManager";
+import { FavoriteStories } from "@/components/FavoriteStories";
 import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
 import { generateStory } from "@/services/openai";
@@ -15,6 +16,8 @@ const Index = () => {
   const [story, setStory] = useState<{
     title: string;
     content: string;
+    readingLevel?: string;
+    theme?: string;
   } | null>(null);
   const [words, setWords] = useState<SightWord[]>([]);
   const {
@@ -40,7 +43,11 @@ const Index = () => {
         data.isDrSeussStyle
       );
       toast.dismiss(toastId);
-      setStory(generatedStory);
+      setStory({
+        ...generatedStory,
+        readingLevel: data.readingLevel,
+        theme: data.theme
+      });
       toast.success("Story generated successfully!");
     } catch (error) {
       toast.error("Failed to generate story. Please try again.");
@@ -84,22 +91,36 @@ const Index = () => {
         <div className="max-w-4xl mx-auto">
           <div className="clay-card p-4 sm:p-8">
             <Tabs defaultValue="story" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6 sm:mb-8 bg-transparent p-2 gap-2 h-auto">
+              <TabsList className="grid w-full grid-cols-3 mb-6 sm:mb-8 bg-transparent p-2 gap-2 h-auto">
                 <TabsTrigger value="story" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
                   📚 Generate Story
                 </TabsTrigger>
                 <TabsTrigger value="words" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
                   🎯 Sight Words
                 </TabsTrigger>
+                <TabsTrigger value="favorites" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
+                  ❤️ Favorites
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="story">
                 <StoryForm onSubmit={handleSubmit} />
-                {story && <StoryDisplay title={story.title} content={story.content} />}
+                {story && (
+                  <StoryDisplay 
+                    title={story.title} 
+                    content={story.content}
+                    readingLevel={story.readingLevel}
+                    theme={story.theme}
+                  />
+                )}
               </TabsContent>
               
               <TabsContent value="words">
                 <SightWordManager words={words} setWords={setWords} />
+              </TabsContent>
+
+              <TabsContent value="favorites">
+                <FavoriteStories />
               </TabsContent>
             </Tabs>
           </div>
