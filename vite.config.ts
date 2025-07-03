@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -26,7 +27,6 @@ export default defineConfig(({ mode }) => ({
         'placeholder.png',
         'pwa-192x192-maskable.png',
         'pwa-512x512-maskable.png',
-        'og-image.svg',
         '.well-known/assetlinks.json'
       ],
       manifest: {
