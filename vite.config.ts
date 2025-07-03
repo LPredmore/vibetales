@@ -15,7 +15,20 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['pwa-192x192.png', 'apple-touch-icon.png', 'pwa-512x512.png', 'og-image.svg', '.well-known/assetlinks.json'],
+      includeAssets: [
+        'favicon-16x16.png',
+        'favicon-32x32.png',
+        'favicon-48x48.png',
+        'favicon-96x96.png',
+        'favicon-192x192.png',
+        'favicon-512x512.png',
+        'apple-touch-icon.png',
+        'placeholder.png',
+        'pwa-192x192-maskable.png',
+        'pwa-512x512-maskable.png',
+        'og-image.svg',
+        '.well-known/assetlinks.json'
+      ],
       manifest: {
         id: '/',
         name: 'StoryBridge - Story Generator',
@@ -94,35 +107,15 @@ export default defineConfig(({ mode }) => ({
           }
         ],
         icons: [
-          {
-            src: 'favicon.ico',
-            sizes: '48x48',
-            type: 'image/x-icon'
-          },
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'maskable'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable'
-          }
+          { src: 'favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+          { src: 'favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+          { src: 'favicon-48x48.png', sizes: '48x48', type: 'image/png' },
+          { src: 'favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+          { src: 'favicon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'favicon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'pwa-192x192-maskable.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: 'pwa-512x512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'apple-touch-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' }
         ],
         shortcuts: [
           {
