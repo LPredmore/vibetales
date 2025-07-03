@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'og-image.svg', 'placeholder.svg', '.well-known/assetlinks.json'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'og-image.svg', 'placeholder.svg', '.well-known/assetlinks.json'],
       manifest: {
         id: '/',
         name: 'StoryBridge - Story Generator',
@@ -96,26 +96,32 @@ export default defineConfig(({ mode }) => ({
         ],
         icons: [
           {
-            src: '/favicon.ico',
+            src: 'favicon.ico',
             sizes: '48x48',
             type: 'image/x-icon'
           },
           {
-            src: '/placeholder.svg',
+            src: 'pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'any'
           },
           {
-            src: '/placeholder.svg',
+            src: 'pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'any'
           },
           {
-            src: '/placeholder.svg',
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
+          },
+          {
+            src: 'pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
+            type: 'image/png',
             purpose: 'maskable'
           }
         ],
@@ -127,9 +133,9 @@ export default defineConfig(({ mode }) => ({
             url: '/',
             icons: [
               {
-                src: '/placeholder.svg',
-                sizes: '96x96',
-                type: 'image/svg+xml'
+                src: 'pwa-192x192.png',
+                sizes: '192x192',
+                type: 'image/png'
               }
             ]
           }
