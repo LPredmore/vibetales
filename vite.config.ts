@@ -1,4 +1,3 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -16,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'og-image.svg', 'placeholder.svg', '.well-known/assetlinks.json'],
+      includeAssets: ['pwa-192x192.png', 'apple-touch-icon.png', 'pwa-512x512.png', 'og-image.svg', '.well-known/assetlinks.json'],
       manifest: {
         id: '/',
         name: 'StoryBridge - Story Generator',
@@ -68,16 +67,16 @@ export default defineConfig(({ mode }) => ({
         },
         screenshots: [
           {
-            src: '/placeholder.svg',
+            src: '/pwa-512x512.png',
             sizes: '390x844',
-            type: 'image/svg+xml',
+            type: 'image/png',
             form_factor: 'narrow',
             label: 'StoryBridge mobile view'
           },
           {
-            src: '/placeholder.svg',
+            src: '/pwa-512x512.png',
             sizes: '1920x1080',
-            type: 'image/svg+xml',
+            type: 'image/png',
             form_factor: 'wide',
             label: 'StoryBridge desktop view'
           }
