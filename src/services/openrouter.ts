@@ -1,15 +1,6 @@
 
 import { getReadingLevelGuidelines } from "@/utils/readingLevelGuidelines";
 
-// Validate API key is present and has correct format
-if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
-  throw new Error('VITE_OPENROUTER_API_KEY environment variable is not set');
-}
-
-if (!import.meta.env.VITE_OPENROUTER_API_KEY.startsWith("sk-or-v1-")) {
-  throw new Error("VITE_OPENROUTER_API_KEY has invalid format - must start with 'sk-or-v1-'");
-}
-
 const getInterestLevelGuidelines = (interestLevel: string) => {
   const guidelines = {
     elementary: {
@@ -42,9 +33,22 @@ export const generateStory = async (
   theme: string,
   isDrSeussStyle: boolean = false
 ) => {
+  // Validate API key is present and has correct format
   const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-  if (!apiKey || !apiKey.startsWith('sk-or-v1-')) {
-    throw new Error('Invalid or missing VITE_OPENROUTER_API_KEY');
+  
+  console.log("=== OpenRouter API Debug Info ===");
+  console.log("API Key exists:", !!apiKey);
+  console.log("API Key starts correctly:", apiKey?.startsWith("sk-or-v1-"));
+  console.log("API Key length:", apiKey?.length);
+  
+  if (!apiKey) {
+    console.error("VITE_OPENROUTER_API_KEY environment variable is not set");
+    throw new Error('VITE_OPENROUTER_API_KEY environment variable is not set');
+  }
+
+  if (!apiKey.startsWith("sk-or-v1-")) {
+    console.error("VITE_OPENROUTER_API_KEY has invalid format - must start with 'sk-or-v1-'");
+    throw new Error("VITE_OPENROUTER_API_KEY has invalid format - must start with 'sk-or-v1-'");
   }
 
   const gradeLevel = readingLevel === 'k' ? 'kindergarten' : 
@@ -115,9 +119,10 @@ export const generateStory = async (
   };
 
   try {
-    console.log("Generating story with parameters:", { keywords, readingLevel, interestLevel, theme, isDrSeussStyle });
-    console.log('Using OpenRouter API with key format check:', !!apiKey);
-    console.log('API Key starts with sk-or-v1-:', apiKey.startsWith('sk-or-v1-') ? 'YES' : 'NO');
+    console.log("=== Making OpenRouter Request ===");
+    console.log("URL:", url);
+    console.log("Payload model:", payload.model);
+    console.log("Headers will include Authorization with Bearer token");
     
     const response = await fetch(url, {
       method: 'POST',
@@ -130,17 +135,28 @@ export const generateStory = async (
       body: JSON.stringify(payload)
     });
 
+    console.log("=== Response Status ===");
+    console.log("Status:", response.status);
+    console.log("Status Text:", response.statusText);
+    console.log("OK:", response.ok);
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error(`OpenRouter API Error: ${response.status}`, errorData);
+      console.error("=== OpenRouter API Error ===");
+      console.error("Status:", response.status);
+      console.error("Error Data:", errorData);
       throw new Error(`OpenRouter Error: ${response.status} ${errorData.error?.message || 'Unknown error'}`);
     }
 
     const data = await response.json();
-    const storyText = data.choices[0].message.content;
+    console.log("=== Successful Response ===");
+    console.log("Response data structure:", Object.keys(data));
+    
+    const storyText = data.choices?.[0]?.message?.content;
     
     if (!storyText) {
       console.error("No story content received from OpenRouter");
+      console.error("Full response:", data);
       throw new Error("No story content received");
     }
 
@@ -150,13 +166,17 @@ export const generateStory = async (
         console.error("Invalid story format received:", storyText);
         throw new Error("Invalid story format");
       }
+      console.log("=== Story Successfully Generated ===");
+      console.log("Title:", parsedStory.title);
       return parsedStory;
     } catch (parseError) {
       console.error("Failed to parse story JSON:", storyText);
+      console.error("Parse error:", parseError);
       throw new Error("Failed to generate a valid story format");
     }
   } catch (error) {
-    console.error("Error generating story:", error);
+    console.error("=== Error generating story ===");
+    console.error("Error details:", error);
     throw new Error("Failed to generate story. Please try again.");
   }
 };

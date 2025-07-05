@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
@@ -34,8 +33,13 @@ const Index = () => {
     }
     
     try {
+      console.log("=== Starting Story Generation ===");
+      console.log("Form data:", data);
+      console.log("Active sight words:", activeWords.map(w => w.word));
+      
       const toastId = toast.loading("Generating your story...");
       const activeWordStrings = activeWords.map(word => word.word);
+      
       const generatedStory = await generateStory(
         data.useSightWords ? activeWordStrings : [], 
         data.readingLevel, 
@@ -43,6 +47,7 @@ const Index = () => {
         data.theme, 
         data.isDrSeussStyle
       );
+      
       toast.dismiss(toastId);
       setStory({
         ...generatedStory,
@@ -50,9 +55,11 @@ const Index = () => {
         theme: data.theme
       });
       toast.success("Story generated successfully!");
+      console.log("=== Story Generation Complete ===");
     } catch (error) {
+      console.error("=== Story Generation Failed ===");
+      console.error("Error:", error);
       toast.error("Failed to generate story. Please try again.");
-      console.error(error);
     }
   };
 
