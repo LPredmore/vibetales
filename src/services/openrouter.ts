@@ -2,12 +2,16 @@
 import OpenAI from "openai";
 import { getReadingLevelGuidelines } from "@/utils/readingLevelGuidelines";
 
-// Validate API key is present
+// Validate API key is present and has correct format
 if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
   throw new Error('VITE_OPENROUTER_API_KEY environment variable is not set');
 }
 
-const openai = new OpenAI({
+if (!import.meta.env.VITE_OPENROUTER_API_KEY.startsWith("sk-or-v1-")) {
+  throw new Error("VITE_OPENROUTER_API_KEY has invalid format - must start with 'sk-or-v1-'");
+}
+
+const openrouter = new OpenAI({
   apiKey: import.meta.env.VITE_OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
   dangerouslyAllowBrowser: true,
@@ -100,10 +104,10 @@ export const generateStory = async (
 
   try {
     console.log("Generating story with parameters:", { keywords, readingLevel, interestLevel, theme, isDrSeussStyle });
-    console.log('Using OpenRouter API with key:', import.meta.env.VITE_OPENROUTER_API_KEY ? 'KEY_PRESENT' : 'KEY_MISSING');
-    console.log('Base URL:', "https://openrouter.ai/api/v1");
+    console.log('Using OpenRouter API with key format check:', import.meta.env.VITE_OPENROUTER_API_KEY ? 'PRESENT' : 'MISSING');
+    console.log('API Key starts with sk-or-v1-:', import.meta.env.VITE_OPENROUTER_API_KEY?.startsWith('sk-or-v1-') ? 'YES' : 'NO');
     
-    const response = await openai.chat.completions.create({
+    const response = await openrouter.chat.completions.create({
       model: "openai/gpt-4o-mini",
       messages: [
         {
@@ -121,7 +125,7 @@ export const generateStory = async (
 
     const storyText = response.choices[0].message.content;
     if (!storyText) {
-      console.error("No story content received from OpenAI");
+      console.error("No story content received from OpenRouter");
       throw new Error("No story content received");
     }
 

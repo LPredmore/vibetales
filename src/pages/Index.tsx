@@ -6,7 +6,7 @@ import { SightWordManager } from "@/components/SightWordManager";
 import { FavoriteStories } from "@/components/FavoriteStories";
 import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
-import { generateStory } from "@/services/openai";
+import { generateStory } from "@/services/openrouter";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
