@@ -10,7 +10,11 @@ if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
-  dangerouslyAllowBrowser: true
+  dangerouslyAllowBrowser: true,
+  defaultHeaders: {
+    "HTTP-Referer": window.location.origin,
+    "X-Title": "StoryBridge"
+  }
 });
 
 const getInterestLevelGuidelines = (interestLevel: string) => {
@@ -96,7 +100,8 @@ export const generateStory = async (
 
   try {
     console.log("Generating story with parameters:", { keywords, readingLevel, interestLevel, theme, isDrSeussStyle });
-    console.log('API Key loaded:', import.meta.env.VITE_OPENROUTER_API_KEY ? 'YES' : 'NO');
+    console.log('Using OpenRouter API with key:', import.meta.env.VITE_OPENROUTER_API_KEY ? 'KEY_PRESENT' : 'KEY_MISSING');
+    console.log('Base URL:', "https://openrouter.ai/api/v1");
     
     const response = await openai.chat.completions.create({
       model: "openai/gpt-4o-mini",
