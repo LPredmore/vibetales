@@ -1,5 +1,4 @@
 
-import OpenAI from "openai";
 import { getReadingLevelGuidelines } from "@/utils/readingLevelGuidelines";
 
 // Validate API key is present and has correct format
@@ -10,16 +9,6 @@ if (!import.meta.env.VITE_OPENROUTER_API_KEY) {
 if (!import.meta.env.VITE_OPENROUTER_API_KEY.startsWith("sk-or-v1-")) {
   throw new Error("VITE_OPENROUTER_API_KEY has invalid format - must start with 'sk-or-v1-'");
 }
-
-const openrouter = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-  dangerouslyAllowBrowser: true,
-  defaultHeaders: {
-    "HTTP-Referer": window.location.origin,
-    "X-Title": "StoryBridge"
-  }
-});
 
 const getInterestLevelGuidelines = (interestLevel: string) => {
   const guidelines = {
@@ -53,6 +42,11 @@ export const generateStory = async (
   theme: string,
   isDrSeussStyle: boolean = false
 ) => {
+  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+  if (!apiKey || !apiKey.startsWith('sk-or-v1-')) {
+    throw new Error('Invalid or missing VITE_OPENROUTER_API_KEY');
+  }
+
   const gradeLevel = readingLevel === 'k' ? 'kindergarten' : 
                      readingLevel === 'teen' ? 'teen' :
                      `${readingLevel}st grade`;
@@ -102,28 +96,49 @@ export const generateStory = async (
     "content": "Story content with paragraphs separated by \\n"
   }`;
 
+  const url = 'https://openrouter.ai/api/v1/chat/completions';
+  const payload = {
+    model: 'openai/gpt-4o-mini',
+    messages: [
+      {
+        role: "system",
+        content: "You are a skilled children's educational writer who specializes in creating grade-appropriate content that balances reading level with age-appropriate interest levels. Always respond with valid JSON containing a title and content field."
+      },
+      {
+        role: "user",
+        content: prompt
+      }
+    ],
+    max_tokens: 1000,
+    temperature: 0.7,
+    stream: false
+  };
+
   try {
     console.log("Generating story with parameters:", { keywords, readingLevel, interestLevel, theme, isDrSeussStyle });
-    console.log('Using OpenRouter API with key format check:', import.meta.env.VITE_OPENROUTER_API_KEY ? 'PRESENT' : 'MISSING');
-    console.log('API Key starts with sk-or-v1-:', import.meta.env.VITE_OPENROUTER_API_KEY?.startsWith('sk-or-v1-') ? 'YES' : 'NO');
+    console.log('Using OpenRouter API with key format check:', !!apiKey);
+    console.log('API Key starts with sk-or-v1-:', apiKey.startsWith('sk-or-v1-') ? 'YES' : 'NO');
     
-    const response = await openrouter.chat.completions.create({
-      model: "openai/gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "You are a skilled children's educational writer who specializes in creating grade-appropriate content that balances reading level with age-appropriate interest levels. Always respond with valid JSON containing a title and content field."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      max_tokens: 1000,
-      temperature: 0.7
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'StoryBridge'
+      },
+      body: JSON.stringify(payload)
     });
 
-    const storyText = response.choices[0].message.content;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error(`OpenRouter API Error: ${response.status}`, errorData);
+      throw new Error(`OpenRouter Error: ${response.status} ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    const storyText = data.choices[0].message.content;
+    
     if (!storyText) {
       console.error("No story content received from OpenRouter");
       throw new Error("No story content received");
