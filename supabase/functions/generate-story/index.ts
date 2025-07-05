@@ -14,7 +14,23 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== Edge Function Debug ===');
+    console.log('OpenRouter API Key exists:', !!openRouterApiKey);
+    console.log('OpenRouter API Key length:', openRouterApiKey?.length);
+    console.log('OpenRouter API Key starts correctly:', openRouterApiKey?.startsWith('sk-or-v1-'));
+    
+    if (!openRouterApiKey) {
+      console.error('OPENROUTER_API_KEY environment variable not found');
+      throw new Error('OpenRouter API key not configured');
+    }
+
+    if (!openRouterApiKey.startsWith('sk-or-v1-')) {
+      console.error('Invalid OpenRouter API key format');
+      throw new Error('Invalid OpenRouter API key format');
+    }
+
     const { keywords, readingLevel, interestLevel, theme, isDrSeussStyle } = await req.json();
+    console.log('Request data:', { keywords, readingLevel, interestLevel, theme, isDrSeussStyle });
 
     const getReadingLevelGuidelines = (level: string) => {
       const guidelines = {
