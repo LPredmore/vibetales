@@ -137,7 +137,7 @@ export const generateStory = async (
 
   const url = 'https://openrouter.ai/api/v1/chat/completions';
   const payload = {
-    model: 'openai/gpt-4o-mini',
+    model: 'qwen/qwen3-30b-a3b:free',
     messages: [
       {
         role: "system",

@@ -75,7 +75,7 @@ Format the response as a JSON object with exactly these fields:
         'X-Title': 'StoryBridge'
       },
       body: JSON.stringify({
-        model: 'openai/gpt-4o-mini',
+        model: 'qwen/qwen3-30b-a3b:free',
         messages: [
           {
             role: "system",
