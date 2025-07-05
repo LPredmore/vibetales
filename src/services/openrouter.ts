@@ -33,14 +33,41 @@ export const generateStory = async (
   theme: string,
   isDrSeussStyle: boolean = false
 ) => {
-  // Clear any cached data and force fresh environment variable loading
   console.log("=== Story Generation Started ===");
   console.log("Environment check:", {
     hasViteEnv: !!import.meta.env,
     envKeys: Object.keys(import.meta.env).filter(k => k.includes('OPENROUTER')),
   });
   
-  // Get API key with extensive debugging
+  // First, try using the Supabase edge function
+  try {
+    console.log("=== Trying Supabase Edge Function ===");
+    const { supabase } = await import("@/integrations/supabase/client");
+    
+    const { data, error } = await supabase.functions.invoke('generate-story', {
+      body: {
+        keywords,
+        readingLevel,
+        interestLevel,
+        theme,
+        isDrSeussStyle
+      }
+    });
+
+    if (error) {
+      console.log("Edge function error:", error);
+      throw new Error(error.message);
+    }
+
+    if (data && data.title && data.content) {
+      console.log("=== Story Successfully Generated via Edge Function ===");
+      return data;
+    }
+  } catch (edgeError) {
+    console.log("Edge function failed, falling back to direct API call:", edgeError);
+  }
+
+  // Fallback to direct API call
   const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
   
   console.log("=== OpenRouter API Debug Info ===");
@@ -51,25 +78,12 @@ export const generateStory = async (
   console.log("API Key first 10 chars:", apiKey?.substring(0, 10));
   console.log("Raw env var:", import.meta.env.VITE_OPENROUTER_API_KEY?.substring(0, 15));
   
-  // Fallback: try to get from window object or force reload if needed
   if (!apiKey || apiKey === 'undefined' || apiKey === '') {
-    console.error("CRITICAL: VITE_OPENROUTER_API_KEY is not properly loaded");
-    console.error("Attempting to reload environment variables...");
-    
-    // Try to force environment variable reload
-    if (typeof window !== 'undefined' && window.location.reload) {
-      console.log("Reloading page to refresh environment variables...");
-      window.location.reload();
-      return;
-    }
-    
-    throw new Error('VITE_OPENROUTER_API_KEY environment variable is not set or empty. Please check your .env file and restart the development server.');
+    throw new Error('OpenRouter API key not found. Please update your API key.');
   }
 
   if (!apiKey.startsWith("sk-or-v1-")) {
-    console.error("VITE_OPENROUTER_API_KEY has invalid format - must start with 'sk-or-v1-'");
-    console.error("Current format:", apiKey.substring(0, 10));
-    throw new Error("VITE_OPENROUTER_API_KEY has invalid format - must start with 'sk-or-v1-'");
+    throw new Error("OpenRouter API key has invalid format - must start with 'sk-or-v1-'");
   }
 
   const gradeLevel = readingLevel === 'k' ? 'kindergarten' : 
