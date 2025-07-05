@@ -53,14 +53,16 @@ export const generateStory = async (
     }
   });
 
+  console.log("Edge function response:", { data, error });
+
   if (error) {
-    console.error("Edge function error:", error);
-    throw new Error(`Edge function failed: ${error.message}`);
+    console.error("Edge function error details:", error);
+    throw new Error(`Edge function failed: ${error.message || JSON.stringify(error)}`);
   }
 
   if (!data || !data.title || !data.content) {
     console.error("Invalid response from edge function:", data);
-    throw new Error("Invalid response from story generation service");
+    throw new Error(`Invalid response from story generation service: ${JSON.stringify(data)}`);
   }
 
   console.log("=== Story Successfully Generated via Edge Function ===");
