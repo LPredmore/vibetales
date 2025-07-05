@@ -82,6 +82,8 @@ Format the response as a JSON object with exactly these fields:
   "content": "Story content with paragraphs separated by \\n"
 }`;
 
+    console.log('Making OpenRouter API call with model:', 'qwen/qwen3-30b-a3b:free');
+    
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -91,7 +93,7 @@ Format the response as a JSON object with exactly these fields:
         'X-Title': 'StoryBridge'
       },
       body: JSON.stringify({
-        model: 'qwen/qwen3-30b-a3b-04-28:free',
+        model: 'qwen/qwen3-30b-a3b:free',
         messages: [
           {
             role: "system",
@@ -108,21 +110,50 @@ Format the response as a JSON object with exactly these fields:
       })
     });
 
+    console.log('OpenRouter response status:', response.status);
+    console.log('OpenRouter response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`OpenRouter Error: ${response.status} ${errorData.error?.message || 'Unknown error'}`);
+      const errorBody = await response.text();
+      console.error('OpenRouter API error response:', errorBody);
+      throw new Error(`OpenRouter Error: ${response.status} - ${errorBody}`);
     }
 
     const data = await response.json();
+    console.log('OpenRouter response data structure:', {
+      hasChoices: !!data.choices,
+      choicesLength: data.choices?.length,
+      hasMessage: !!data.choices?.[0]?.message,
+      hasContent: !!data.choices?.[0]?.message?.content
+    });
+    
     const storyText = data.choices?.[0]?.message?.content;
     
     if (!storyText) {
-      throw new Error("No story content received");
+      console.error('No story content in response:', data);
+      throw new Error("No story content received from OpenRouter");
     }
 
-    const parsedStory = JSON.parse(storyText.trim());
+    console.log('Raw story text from AI:', storyText.substring(0, 200) + '...');
+
+    let parsedStory;
+    try {
+      parsedStory = JSON.parse(storyText.trim());
+      console.log('Successfully parsed JSON story');
+    } catch (parseError) {
+      console.warn('Failed to parse JSON, using fallback. Parse error:', parseError);
+      console.warn('Raw story text that failed to parse:', storyText);
+      
+      // Fallback: return the raw text as content
+      parsedStory = {
+        title: 'Your Story',
+        content: storyText.replace(/\n/g, '\\n')
+      };
+    }
+
     if (!parsedStory.title || !parsedStory.content) {
-      throw new Error("Invalid story format");
+      console.error('Invalid story format:', parsedStory);
+      throw new Error("Invalid story format - missing title or content");
     }
 
     return new Response(JSON.stringify(parsedStory), {
