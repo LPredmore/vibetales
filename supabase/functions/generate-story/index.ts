@@ -91,7 +91,7 @@ Format the response as a JSON object with exactly these fields:
         'X-Title': 'StoryBridge'
       },
       body: JSON.stringify({
-        model: 'qwen/qwen3-30b-a3b:free',
+        model: 'qwen/qwen3-30b-a3b-04-28:free',
         messages: [
           {
             role: "system",
