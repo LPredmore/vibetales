@@ -33,21 +33,42 @@ export const generateStory = async (
   theme: string,
   isDrSeussStyle: boolean = false
 ) => {
-  // Validate API key is present and has correct format
+  // Clear any cached data and force fresh environment variable loading
+  console.log("=== Story Generation Started ===");
+  console.log("Environment check:", {
+    hasViteEnv: !!import.meta.env,
+    envKeys: Object.keys(import.meta.env).filter(k => k.includes('OPENROUTER')),
+  });
+  
+  // Get API key with extensive debugging
   const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
   
   console.log("=== OpenRouter API Debug Info ===");
   console.log("API Key exists:", !!apiKey);
+  console.log("API Key type:", typeof apiKey);
   console.log("API Key starts correctly:", apiKey?.startsWith("sk-or-v1-"));
   console.log("API Key length:", apiKey?.length);
+  console.log("API Key first 10 chars:", apiKey?.substring(0, 10));
+  console.log("Raw env var:", import.meta.env.VITE_OPENROUTER_API_KEY?.substring(0, 15));
   
-  if (!apiKey) {
-    console.error("VITE_OPENROUTER_API_KEY environment variable is not set");
-    throw new Error('VITE_OPENROUTER_API_KEY environment variable is not set');
+  // Fallback: try to get from window object or force reload if needed
+  if (!apiKey || apiKey === 'undefined' || apiKey === '') {
+    console.error("CRITICAL: VITE_OPENROUTER_API_KEY is not properly loaded");
+    console.error("Attempting to reload environment variables...");
+    
+    // Try to force environment variable reload
+    if (typeof window !== 'undefined' && window.location.reload) {
+      console.log("Reloading page to refresh environment variables...");
+      window.location.reload();
+      return;
+    }
+    
+    throw new Error('VITE_OPENROUTER_API_KEY environment variable is not set or empty. Please check your .env file and restart the development server.');
   }
 
   if (!apiKey.startsWith("sk-or-v1-")) {
     console.error("VITE_OPENROUTER_API_KEY has invalid format - must start with 'sk-or-v1-'");
+    console.error("Current format:", apiKey.substring(0, 10));
     throw new Error("VITE_OPENROUTER_API_KEY has invalid format - must start with 'sk-or-v1-'");
   }
 
