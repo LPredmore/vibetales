@@ -1,10 +1,65 @@
+import OpenAI from "openai";
 
-import { getReadingLevelGuidelines } from "@/utils/readingLevelGuidelines";
+const openai = new OpenAI({
+  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
 
-interface StoryResponse {
-  title: string;
-  content: string;
-}
+const getReadingLevelGuidelines = (readingLevel: string) => {
+  const guidelines = {
+    k: {
+      wordCount: "50-100",
+      sentenceLength: "3-5 words",
+      vocabulary: "simple, familiar words only",
+      concepts: "concrete, immediate environment",
+      structure: "repetitive patterns, sight words frequently repeated"
+    },
+    "1": {
+      wordCount: "100-200",
+      sentenceLength: "5-7 words",
+      vocabulary: "common sight words, basic phonetic words",
+      concepts: "familiar situations, simple sequences",
+      structure: "simple sentences, clear cause-effect"
+    },
+    "2": {
+      wordCount: "200-300",
+      sentenceLength: "7-10 words",
+      vocabulary: "grade-appropriate sight words, basic compound words",
+      concepts: "expanded environments, basic problem-solving",
+      structure: "mix of simple and compound sentences"
+    },
+    "3": {
+      wordCount: "300-400",
+      sentenceLength: "8-12 words",
+      vocabulary: "more complex vocabulary with context clues",
+      concepts: "multiple events, basic character development",
+      structure: "varied sentence structures"
+    },
+    "4": {
+      wordCount: "400-500",
+      sentenceLength: "10-14 words",
+      vocabulary: "rich vocabulary with context support",
+      concepts: "more complex plots, character emotions",
+      structure: "complex sentences, paragraphs"
+    },
+    "5": {
+      wordCount: "500-600",
+      sentenceLength: "12-15 words",
+      vocabulary: "challenging vocabulary with context",
+      concepts: "abstract ideas, multiple plot lines",
+      structure: "varied paragraph lengths, dialogue"
+    },
+    "teen": {
+      wordCount: "800-1000",
+      sentenceLength: "15-20 words",
+      vocabulary: "advanced vocabulary, literary devices",
+      concepts: "complex themes, character development, multiple subplots",
+      structure: "sophisticated narrative structure, varied writing techniques"
+    }
+  };
+
+  return guidelines[readingLevel as keyof typeof guidelines];
+};
 
 const getInterestLevelGuidelines = (interestLevel: string) => {
   const guidelines = {
@@ -37,11 +92,10 @@ export const generateStory = async (
   interestLevel: string,
   theme: string,
   isDrSeussStyle: boolean = false
-): Promise<StoryResponse> => {
+) => {
   const gradeLevel = readingLevel === 'k' ? 'kindergarten' : 
                      readingLevel === 'teen' ? 'teen' :
                      `${readingLevel}st grade`;
-  
   const guidelines = getReadingLevelGuidelines(readingLevel);
   const interestGuidelines = getInterestLevelGuidelines(interestLevel);
   
@@ -91,45 +145,32 @@ export const generateStory = async (
   try {
     console.log("Generating story with parameters:", { keywords, readingLevel, interestLevel, theme, isDrSeussStyle });
     
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
-        "HTTP-Referer": window.location.origin,
-        "X-Title": "StoryBridge"
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: "You are a skilled children's educational writer who specializes in creating grade-appropriate content that balances reading level with age-appropriate interest levels. Always respond with valid JSON containing a title and content field."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        max_tokens: 1000,
-        temperature: 0.7
-      })
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are a skilled children's educational writer who specializes in creating grade-appropriate content that balances reading level with age-appropriate interest levels. Always respond with valid JSON containing a title and content field."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_tokens: 1000,
+      temperature: 0.7
     });
 
-    if (!response.ok) {
-      throw new Error(`OpenRouter API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const storyText = data.choices[0].message.content;
-
+    const storyText = response.choices[0].message.content;
     if (!storyText) {
+      console.error("No story content received from OpenAI");
       throw new Error("No story content received");
     }
 
     try {
       const parsedStory = JSON.parse(storyText.trim());
       if (!parsedStory.title || !parsedStory.content) {
+        console.error("Invalid story format received:", storyText);
         throw new Error("Invalid story format");
       }
       return parsedStory;
