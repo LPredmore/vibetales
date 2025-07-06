@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Clock, Crown, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface UsageLimitsProps {
   trialInfo?: {
@@ -24,6 +26,7 @@ export const UsageLimits = ({ trialInfo }: UsageLimitsProps) => {
   const [limits, setLimits] = useState<UserLimits | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -64,6 +67,37 @@ export const UsageLimits = ({ trialInfo }: UsageLimitsProps) => {
       }
     } catch (error) {
       console.error('Error checking premium status:', error);
+    }
+  };
+
+  const handleUpgrade = async () => {
+    if (!user) {
+      toast.error("Please log in to upgrade");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { userId: user.id }
+      });
+
+      if (error) {
+        console.error('Checkout error:', error);
+        toast.error("Failed to create checkout session");
+        return;
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error("No checkout URL received");
+      }
+    } catch (error) {
+      console.error('Upgrade error:', error);
+      toast.error("Failed to start upgrade process");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -131,7 +165,7 @@ export const UsageLimits = ({ trialInfo }: UsageLimitsProps) => {
       
       {!isInTrial && (
         <CardContent>
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span>Stories used today</span>
               <span>{dailyUsed} / {dailyLimit}</span>
@@ -140,6 +174,23 @@ export const UsageLimits = ({ trialInfo }: UsageLimitsProps) => {
               value={(dailyUsed / dailyLimit) * 100} 
               className="h-2"
             />
+            <Button
+              onClick={handleUpgrade}
+              disabled={isProcessing}
+              className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
+            >
+              {isProcessing ? (
+                <>
+                  <Crown className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Crown className="mr-2 h-4 w-4" />
+                  Upgrade to Premium
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       )}
