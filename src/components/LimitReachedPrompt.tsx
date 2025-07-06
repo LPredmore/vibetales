@@ -33,7 +33,8 @@ export const LimitReachedPrompt = ({ onClose }: LimitReachedPromptProps) => {
       }
 
       if (data?.url) {
-        window.location.href = data.url;
+        // Open Stripe checkout in a new tab to prevent session disruption
+        window.open(data.url, '_blank');
       } else {
         toast.error("No checkout URL received");
       }
