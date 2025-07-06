@@ -66,8 +66,9 @@ CONTENT GUIDELINES:
 - Include a clear beginning, middle, and end
 - Add dialogue to make the story interactive
 - Stop writing when you reach the target word count
+- Do NOT include word count, metadata, or any additional text at the end
 
-IMPORTANT: Write ONLY the story content. Do not include any JSON formatting, markdown, or extra text. Just write the story directly.`;
+IMPORTANT: Write ONLY the story content. Do not include any JSON formatting, markdown, word counts, or extra text. Just write the story directly.`;
 }
 
 function getWordCountTarget(length: string, baseWords: string): string {
@@ -87,12 +88,12 @@ function getWordCountTarget(length: string, baseWords: string): string {
 
 function getTokenLimit(length: string): number {
   const tokenLimits = {
-    "short": 500,
-    "medium": 800,
-    "long": 1200
+    "short": 300,
+    "medium": 500,
+    "long": 800
   };
   
-  return tokenLimits[length as keyof typeof tokenLimits] || 800;
+  return tokenLimits[length as keyof typeof tokenLimits] || 500;
 }
 
 async function generateStory(params: StoryRequest): Promise<StoryResponse> {
