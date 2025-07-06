@@ -42,10 +42,13 @@ function buildSystemPrompt(params: StoryRequest): string {
     ? "Write in Dr. Seuss style with rhyming, repetitive patterns, and playful language. " 
     : '';
 
+  // Get target word count for the story length
+  const wordCountTarget = getWordCountTarget(params.length, level.words);
+
   return `You are a children's story writer. Create an engaging, age-appropriate story with the following requirements:
 
 READING LEVEL: ${params.readingLevel.toUpperCase()} Grade
-- Target word count: ${level.words} words
+- Target word count: ${wordCountTarget} words (this is important - aim for this exact range)
 - Sentence length: ${level.sentenceLength} words per sentence
 - Use vocabulary appropriate for ${params.readingLevel} grade level
 
@@ -62,12 +65,34 @@ CONTENT GUIDELINES:
 - Use descriptive but simple language
 - Include a clear beginning, middle, and end
 - Add dialogue to make the story interactive
+- Stop writing when you reach the target word count
 
-Return ONLY a JSON object with exactly this format:
-{
-  "title": "Story Title Here",
-  "content": "The complete story text here..."
-}`;
+IMPORTANT: Write ONLY the story content. Do not include any JSON formatting, markdown, or extra text. Just write the story directly.`;
+}
+
+function getWordCountTarget(length: string, baseWords: string): string {
+  const lengthMultipliers = {
+    "short": 0.7,
+    "medium": 1.0,
+    "long": 1.3
+  };
+  
+  const multiplier = lengthMultipliers[length as keyof typeof lengthMultipliers] || 1.0;
+  const [min, max] = baseWords.split('-').map(n => parseInt(n));
+  const targetMin = Math.round(min * multiplier);
+  const targetMax = Math.round(max * multiplier);
+  
+  return `${targetMin}-${targetMax}`;
+}
+
+function getTokenLimit(length: string): number {
+  const tokenLimits = {
+    "short": 500,
+    "medium": 800,
+    "long": 1200
+  };
+  
+  return tokenLimits[length as keyof typeof tokenLimits] || 800;
 }
 
 async function generateStory(params: StoryRequest): Promise<StoryResponse> {
@@ -88,6 +113,7 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
   });
 
   const systemPrompt = buildSystemPrompt(params);
+  const dynamicTokenLimit = getTokenLimit(params.length);
   
   // Optimized parameters for creative story generation
   const requestBody = {
@@ -103,11 +129,11 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
       }
     ],
     temperature: 0.8,         // Higher creativity for stories
-    max_tokens: 1500,         // Sufficient for longer stories
+    max_tokens: dynamicTokenLimit,  // Dynamic based on story length
     stream: false             // Get complete response
   };
 
-  console.log('=== CALLING DEEPSEEK API ===');
+  console.log(`=== CALLING DEEPSEEK API (max_tokens: ${dynamicTokenLimit}) ===`);
   const response = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
     headers: {
@@ -138,19 +164,32 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
   }
 
   console.log('=== PARSING STORY RESPONSE ===');
+  
+  // Clean up the content - remove any potential JSON markdown formatting
+  let cleanContent = content.trim();
+  
+  // Remove common markdown formatting that might appear
+  cleanContent = cleanContent.replace(/```json\s*/, '').replace(/```\s*$/, '');
+  
   try {
-    // Try to parse as JSON first
-    const parsed = JSON.parse(content);
+    // Try to parse as JSON first (in case model still returns JSON despite instructions)
+    const parsed = JSON.parse(cleanContent);
     if (parsed.title && parsed.content) {
       console.log('Successfully parsed JSON response');
       return parsed;
     }
   } catch {
-    // If not JSON, treat as plain text and create structure
-    console.log('Treating response as plain text');
+    // Expected path: plain text story content
+    console.log('Processing plain text story response');
+    
+    // Generate a meaningful title based on the story parameters
+    const titlePrefix = params.isDrSeussStyle ? "A Whimsical" : "A";
+    const themeCapitalized = params.theme.charAt(0).toUpperCase() + params.theme.slice(1);
+    const generatedTitle = `${titlePrefix} ${themeCapitalized} Tale`;
+    
     return {
-      title: `A ${params.theme} Story`,
-      content: content
+      title: generatedTitle,
+      content: cleanContent
     };
   }
 
