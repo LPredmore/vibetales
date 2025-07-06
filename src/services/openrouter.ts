@@ -40,11 +40,11 @@ export const generateStory = async (
   console.log("=== Story Generation Started ===");
   console.log("Environment check:", {
     hasViteEnv: !!import.meta.env,
-    envKeys: Object.keys(import.meta.env).filter(k => k.includes('OPENROUTER')),
+    envKeys: Object.keys(import.meta.env).filter(k => k.includes('DEEPSEEK')),
   });
   
   // Use the Supabase edge function
-  console.log("=== Using Supabase Edge Function ===");
+  console.log("=== Using Supabase Edge Function with DeepSeek ===");
   const { supabase } = await import("@/integrations/supabase/client");
   
   const { data, error } = await supabase.functions.invoke('generate-story', {

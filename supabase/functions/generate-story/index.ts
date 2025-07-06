@@ -71,12 +71,12 @@ Return ONLY a JSON object with exactly this format:
 }
 
 async function generateStory(params: StoryRequest): Promise<StoryResponse> {
-  const apiKey = Deno.env.get('OPENROUTER_API_KEY');
+  const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
   if (!apiKey) {
-    throw new Error('OPENROUTER_API_KEY environment variable not set');
+    throw new Error('DEEPSEEK_API_KEY environment variable not set');
   }
 
-  console.log('=== GENERATING STORY WITH OPENROUTER ===');
+  console.log('=== GENERATING STORY WITH DEEPSEEK ===');
   console.log('Parameters:', {
     readingLevel: params.readingLevel,
     interestLevel: params.interestLevel,
@@ -91,7 +91,7 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
   
   // Optimized parameters for creative story generation
   const requestBody = {
-    model: "qwen/qwen3-30b-a3b:free",
+    model: "deepseek-chat",
     messages: [
       {
         role: "system",
@@ -104,41 +104,37 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
     ],
     temperature: 0.8,         // Higher creativity for stories
     max_tokens: 1500,         // Sufficient for longer stories
-    top_p: 0.9,              // Good variety while maintaining quality
-    frequency_penalty: 0.3,   // Reduce repetition
-    presence_penalty: 0.1     // Encourage topic diversity
+    stream: false             // Get complete response
   };
 
-  console.log('=== CALLING OPENROUTER API ===');
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  console.log('=== CALLING DEEPSEEK API ===');
+  const response = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://storybridgeapp.lovable.app',
-      'X-Title': 'StoryBridge App'
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(requestBody)
   });
 
-  console.log('OpenRouter response status:', response.status);
+  console.log('DeepSeek response status:', response.status);
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    console.error('OpenRouter API error:', errorData);
-    throw new Error(`OpenRouter API error (${response.status}): ${errorData.error?.message || 'Unknown error'}`);
+    const errorText = await response.text().catch(() => 'Unknown error');
+    console.error('DeepSeek API error:', errorText);
+    throw new Error(`DeepSeek API error (${response.status}): ${errorText}`);
   }
 
   const data = await response.json();
-  console.log('OpenRouter response received:', !!data.choices);
+  console.log('DeepSeek response received:', !!data.choices);
   
   if (!data.choices || data.choices.length === 0) {
-    throw new Error('No response generated from OpenRouter');
+    throw new Error('No response generated from DeepSeek');
   }
 
   const content = data.choices[0].message?.content;
   if (!content) {
-    throw new Error('Empty response from OpenRouter');
+    throw new Error('Empty response from DeepSeek');
   }
 
   console.log('=== PARSING STORY RESPONSE ===');
@@ -158,7 +154,7 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
     };
   }
 
-  throw new Error('Invalid response format from OpenRouter');
+  throw new Error('Invalid response format from DeepSeek');
 }
 
 serve(async (req: Request) => {
