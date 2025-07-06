@@ -3,6 +3,8 @@ import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
 import { SightWordManager } from "@/components/SightWordManager";
 import { FavoriteStories } from "@/components/FavoriteStories";
+import { UsageLimits } from "@/components/UsageLimits";
+import { LimitReachedPrompt } from "@/components/LimitReachedPrompt";
 import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
 import { generateStory } from "@/services/openrouter";
@@ -17,8 +19,17 @@ const Index = () => {
     content: string;
     readingLevel?: string;
     theme?: string;
+    trialInfo?: {
+      isInTrial: boolean;
+      daysLeft: number;
+    };
   } | null>(null);
   const [words, setWords] = useState<SightWord[]>([]);
+  const [showLimitPrompt, setShowLimitPrompt] = useState(false);
+  const [trialInfo, setTrialInfo] = useState<{
+    isInTrial: boolean;
+    daysLeft: number;
+  } | undefined>(undefined);
   const {
     user,
     logout
@@ -46,17 +57,30 @@ const Index = () => {
       });
       
       toast.dismiss(toastId);
+      
+      // Update trial info if present in response
+      if (generatedStory.trialInfo) {
+        setTrialInfo(generatedStory.trialInfo);
+      }
+      
       setStory({
         ...generatedStory,
         readingLevel: data.readingLevel,
         theme: data.theme
       });
+      setShowLimitPrompt(false); // Hide limit prompt if it was showing
       toast.success("Story generated successfully!");
       console.log("=== Story Generation Complete ===");
     } catch (error) {
       console.error("=== Story Generation Failed ===");
       console.error("Error:", error);
-      toast.error("Failed to generate story. Please try again.");
+      
+      if (error instanceof Error && error.message === 'LIMIT_REACHED') {
+        setShowLimitPrompt(true);
+        toast.error("Daily story limit reached");
+      } else {
+        toast.error("Failed to generate story. Please try again.");
+      }
     }
   };
 
@@ -109,15 +133,24 @@ const Index = () => {
               </TabsList>
               
               <TabsContent value="story">
-                <StoryForm onSubmit={handleSubmit} />
-                {story && (
-                  <StoryDisplay 
-                    title={story.title} 
-                    content={story.content}
-                    readingLevel={story.readingLevel}
-                    theme={story.theme}
-                  />
-                )}
+                <div className="space-y-6">
+                  <UsageLimits trialInfo={trialInfo} />
+                  
+                  {showLimitPrompt && (
+                    <LimitReachedPrompt onClose={() => setShowLimitPrompt(false)} />
+                  )}
+                  
+                  <StoryForm onSubmit={handleSubmit} />
+                  
+                  {story && (
+                    <StoryDisplay 
+                      title={story.title} 
+                      content={story.content}
+                      readingLevel={story.readingLevel}
+                      theme={story.theme}
+                    />
+                  )}
+                </div>
               </TabsContent>
               
               <TabsContent value="words">

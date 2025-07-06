@@ -99,12 +99,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_limits: {
+        Row: {
+          created_at: string
+          daily_stories_used: number
+          id: string
+          last_reset_date: string
+          trial_started_at: string | null
+          trial_used: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_stories_used?: number
+          id?: string
+          last_reset_date?: string
+          trial_started_at?: string | null
+          trial_used?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_stories_used?: number
+          id?: string
+          last_reset_date?: string
+          trial_started_at?: string | null
+          trial_used?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_or_create_user_limits: {
+        Args: { p_user_id: string }
+        Returns: {
+          created_at: string
+          daily_stories_used: number
+          id: string
+          last_reset_date: string
+          trial_started_at: string | null
+          trial_used: boolean
+          updated_at: string
+          user_id: string
+        }
+      }
     }
     Enums: {
       [_ in never]: never

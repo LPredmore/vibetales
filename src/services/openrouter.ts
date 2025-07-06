@@ -44,7 +44,7 @@ export const generateStory = async (
   });
   
   // Use the Supabase edge function
-  console.log("=== Using Supabase Edge Function with DeepSeek ===");
+  console.log("=== Using Supabase Edge Function with OpenAI ===");
   const { supabase } = await import("@/integrations/supabase/client");
   
   const { data, error } = await supabase.functions.invoke('generate-story', {
@@ -63,6 +63,13 @@ export const generateStory = async (
 
   if (error) {
     console.error("Edge function error details:", error);
+    
+    // Handle specific limit errors
+    if (error.message?.includes('Daily story limit reached') || 
+        error.context?.error?.includes('limitReached')) {
+      throw new Error('LIMIT_REACHED');
+    }
+    
     throw new Error(`Edge function failed: ${error.message || JSON.stringify(error)}`);
   }
 

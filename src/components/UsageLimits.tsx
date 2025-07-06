@@ -1,0 +1,148 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Clock, Crown, Zap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface UsageLimitsProps {
+  trialInfo?: {
+    isInTrial: boolean;
+    daysLeft: number;
+  };
+}
+
+interface UserLimits {
+  daily_stories_used: number;
+  trial_started_at: string;
+  trial_used: boolean;
+}
+
+export const UsageLimits = ({ trialInfo }: UsageLimitsProps) => {
+  const { user } = useAuth();
+  const [limits, setLimits] = useState<UserLimits | null>(null);
+  const [hasPremium, setHasPremium] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserLimits();
+      checkPremiumStatus();
+    }
+  }, [user]);
+
+  const fetchUserLimits = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_limits')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user limits:', error);
+        return;
+      }
+
+      setLimits(data);
+    } catch (error) {
+      console.error('Error fetching user limits:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkPremiumStatus = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        body: { userId: user?.id }
+      });
+
+      if (data && !error) {
+        setHasPremium(data.hasActiveSubscription || false);
+      }
+    } catch (error) {
+      console.error('Error checking premium status:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card className="clay-card">
+        <CardHeader>
+          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  if (hasPremium) {
+    return (
+      <Card className="clay-card border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-amber-800">
+            <Crown className="h-5 w-5" />
+            Premium Active
+          </CardTitle>
+          <CardDescription className="text-amber-700">
+            You have unlimited stories! Generate as many as you'd like.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  const isInTrial = trialInfo?.isInTrial || (limits && !limits.trial_used && 
+    new Date() <= new Date(new Date(limits.trial_started_at).getTime() + (7 * 24 * 60 * 60 * 1000)));
+  
+  const daysLeft = trialInfo?.daysLeft || (limits ? 
+    Math.ceil((new Date(new Date(limits.trial_started_at).getTime() + (7 * 24 * 60 * 60 * 1000)).getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)) : 0);
+
+  const dailyUsed = limits?.daily_stories_used || 0;
+  const dailyLimit = isInTrial ? Infinity : 1;
+
+  return (
+    <Card className="clay-card">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2">
+          {isInTrial ? (
+            <>
+              <Zap className="h-5 w-5 text-blue-600" />
+              <span>Free Trial</span>
+              <Badge variant="secondary" className="ml-auto">
+                {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
+              </Badge>
+            </>
+          ) : (
+            <>
+              <Clock className="h-5 w-5 text-gray-600" />
+              <span>Daily Limit</span>
+            </>
+          )}
+        </CardTitle>
+        <CardDescription>
+          {isInTrial 
+            ? `Unlimited stories during your trial period. ${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining.`
+            : `You can generate ${dailyLimit} story per day. Limit resets at midnight CST.`
+          }
+        </CardDescription>
+      </CardHeader>
+      
+      {!isInTrial && (
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Stories used today</span>
+              <span>{dailyUsed} / {dailyLimit}</span>
+            </div>
+            <Progress 
+              value={(dailyUsed / dailyLimit) * 100} 
+              className="h-2"
+            />
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+};

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -94,6 +95,109 @@ function getTokenLimit(length: string): number {
   };
   
   return tokenLimits[length as keyof typeof tokenLimits] || 500;
+}
+
+// Get current date in CST timezone
+function getCSTDate(): string {
+  const now = new Date();
+  const cstOffset = -6; // CST is UTC-6
+  const cstTime = new Date(now.getTime() + (cstOffset * 60 * 60 * 1000));
+  return cstTime.toISOString().split('T')[0];
+}
+
+// Check if user has premium subscription
+async function checkSubscription(userId: string): Promise<boolean> {
+  const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+  if (!stripeKey) {
+    console.log('No Stripe key found, assuming non-premium');
+    return false;
+  }
+
+  try {
+    const response = await fetch('https://hyiyuhjabjnksjbqfwmn.supabase.co/functions/v1/check-subscription', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+      },
+      body: JSON.stringify({ userId })
+    });
+
+    if (!response.ok) {
+      console.log('Subscription check failed, assuming non-premium');
+      return false;
+    }
+
+    const data = await response.json();
+    return data.hasActiveSubscription || false;
+  } catch (error) {
+    console.error('Error checking subscription:', error);
+    return false;
+  }
+}
+
+// Check and update user limits
+async function checkUserLimits(supabase: any, userId: string): Promise<{ canGenerate: boolean; error?: string; isInTrial?: boolean; daysLeft?: number }> {
+  const currentDate = getCSTDate();
+  
+  // Get or create user limits
+  const { data: userLimits, error: limitsError } = await supabase
+    .rpc('get_or_create_user_limits', { p_user_id: userId });
+
+  if (limitsError) {
+    console.error('Error getting user limits:', limitsError);
+    throw new Error('Failed to check user limits');
+  }
+
+  const limits = userLimits;
+  const trialStartDate = new Date(limits.trial_started_at);
+  const trialEndDate = new Date(trialStartDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+  const now = new Date();
+  const isInTrial = !limits.trial_used && now <= trialEndDate;
+  const daysLeft = isInTrial ? Math.ceil((trialEndDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)) : 0;
+
+  // Check if user has premium subscription
+  const hasPremium = await checkSubscription(userId);
+  
+  if (hasPremium) {
+    console.log('User has premium subscription - unlimited stories');
+    return { canGenerate: true };
+  }
+
+  // Reset daily counter if it's a new day
+  if (limits.last_reset_date !== currentDate) {
+    await supabase
+      .from('user_limits')
+      .update({ 
+        daily_stories_used: 0, 
+        last_reset_date: currentDate 
+      })
+      .eq('user_id', userId);
+    
+    limits.daily_stories_used = 0;
+  }
+
+  // Check if user is in trial period
+  if (isInTrial) {
+    // Unlimited during trial
+    return { canGenerate: true, isInTrial: true, daysLeft };
+  }
+
+  // Check daily limit for free users (1 story per day)
+  if (limits.daily_stories_used >= 1) {
+    return { 
+      canGenerate: false, 
+      error: 'Daily story limit reached. Upgrade to premium for unlimited stories or wait until tomorrow.'
+    };
+  }
+
+  // User can generate, increment counter
+  await supabase
+    .from('user_limits')
+    .update({ daily_stories_used: limits.daily_stories_used + 1 })
+    .eq('user_id', userId);
+
+  return { canGenerate: true };
 }
 
 async function generateStory(params: StoryRequest): Promise<StoryResponse> {
@@ -218,6 +322,46 @@ serve(async (req: Request) => {
 
   try {
     console.log('=== STORY GENERATION REQUEST ===');
+    
+    // Get authorization header
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authorization required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Create Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false }
+    });
+
+    // Extract user ID from JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Invalid authorization' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Check user limits before generating story
+    const limitCheck = await checkUserLimits(supabase, user.id);
+    if (!limitCheck.canGenerate) {
+      return new Response(JSON.stringify({ 
+        error: limitCheck.error,
+        limitReached: true
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const storyParams: StoryRequest = await req.json();
     
     // Validate required parameters
@@ -234,7 +378,19 @@ serve(async (req: Request) => {
     const story = await generateStory(storyParams);
     
     console.log('=== STORY GENERATED SUCCESSFULLY ===');
-    return new Response(JSON.stringify(story), {
+    
+    // Include trial information in response if applicable
+    const response = {
+      ...story,
+      ...(limitCheck.isInTrial && { 
+        trialInfo: { 
+          isInTrial: true, 
+          daysLeft: limitCheck.daysLeft 
+        }
+      })
+    };
+    
+    return new Response(JSON.stringify(response), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
