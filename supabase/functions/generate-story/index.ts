@@ -3,86 +3,212 @@ import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-console.log('=== EDGE FUNCTION MODULE LOADING ===');
+interface StoryRequest {
+  readingLevel: "k" | "1" | "2" | "3" | "4" | "5" | "teen";
+  interestLevel: "elementary" | "middle-grade" | "young-adult";
+  theme: "fantasy" | "mystery" | "fairytale" | "science" | "nature" | string;
+  length: "short" | "medium" | "long";
+  isDrSeussStyle: boolean;
+  useSightWords: boolean;
+  keywords: string[];
+}
 
-serve(async (req) => {
-  try {
-    console.log('=== EDGE FUNCTION REQUEST RECEIVED ===');
-    console.log('Request method:', req.method);
-    console.log('Request URL:', req.url);
-    
-    // Handle CORS preflight requests
-    if (req.method === 'OPTIONS') {
-      console.log('Handling CORS preflight request');
-      return new Response(null, { headers: corsHeaders });
-    }
+interface StoryResponse {
+  title: string;
+  content: string;
+}
 
-    // Test environment variable access
-    console.log('=== TESTING ENVIRONMENT VARIABLES ===');
-    const openRouterApiKey = Deno.env.get('OPENROUTER_API_KEY');
-    console.log('OPENROUTER_API_KEY exists:', !!openRouterApiKey);
-    console.log('OPENROUTER_API_KEY length:', openRouterApiKey?.length || 0);
-    
-    if (!openRouterApiKey) {
-      console.error('OPENROUTER_API_KEY not found');
-      return new Response(JSON.stringify({ 
-        error: 'OPENROUTER_API_KEY not configured',
-        debug: 'Environment variable not found'
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+// Reading level guidelines
+const READING_LEVELS = {
+  "k": { words: "50-100", sentenceLength: "3-5" },
+  "1": { words: "100-200", sentenceLength: "5-7" },
+  "2": { words: "200-300", sentenceLength: "7-10" },
+  "3": { words: "300-400", sentenceLength: "8-12" },
+  "4": { words: "400-500", sentenceLength: "10-14" },
+  "5": { words: "500-600", sentenceLength: "12-15" },
+  "teen": { words: "800-1000", sentenceLength: "15-20" }
+};
 
-    // Test JSON parsing
-    console.log('=== TESTING REQUEST BODY PARSING ===');
-    let requestData;
-    try {
-      requestData = await req.json();
-      console.log('Request data parsed successfully:', Object.keys(requestData));
-    } catch (parseError) {
-      console.error('Failed to parse request JSON:', parseError);
-      return new Response(JSON.stringify({ 
-        error: 'Invalid JSON in request body',
-        debug: parseError.message
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+function buildSystemPrompt(params: StoryRequest): string {
+  const level = READING_LEVELS[params.readingLevel];
+  const sightWordsText = params.useSightWords && params.keywords.length > 0 
+    ? `You must naturally incorporate these sight words: ${params.keywords.join(', ')}. ` 
+    : '';
+  
+  const drSeussStyle = params.isDrSeussStyle 
+    ? "Write in Dr. Seuss style with rhyming, repetitive patterns, and playful language. " 
+    : '';
 
-    // For now, return a simple success response
-    console.log('=== RETURNING SUCCESS RESPONSE ===');
-    return new Response(JSON.stringify({ 
-      title: "Test Story",
-      content: "This is a test story to verify the edge function is working properly. The cat sat on the mat. The end.",
-      debug: {
-        hasApiKey: !!openRouterApiKey,
-        requestDataKeys: Object.keys(requestData),
-        timestamp: new Date().toISOString()
+  return `You are a children's story writer. Create an engaging, age-appropriate story with the following requirements:
+
+READING LEVEL: ${params.readingLevel.toUpperCase()} Grade
+- Target word count: ${level.words} words
+- Sentence length: ${level.sentenceLength} words per sentence
+- Use vocabulary appropriate for ${params.readingLevel} grade level
+
+STORY REQUIREMENTS:
+- Theme: ${params.theme}
+- Interest level: ${params.interestLevel}
+- Length: ${params.length}
+- ${drSeussStyle}${sightWordsText}
+
+CONTENT GUIDELINES:
+- Ensure content is completely safe and appropriate for children
+- Include positive messages and educational value
+- Create engaging characters and scenarios
+- Use descriptive but simple language
+- Include a clear beginning, middle, and end
+- Add dialogue to make the story interactive
+
+Return ONLY a JSON object with exactly this format:
+{
+  "title": "Story Title Here",
+  "content": "The complete story text here..."
+}`;
+}
+
+async function generateStory(params: StoryRequest): Promise<StoryResponse> {
+  const apiKey = Deno.env.get('OPENROUTER_API_KEY');
+  if (!apiKey) {
+    throw new Error('OPENROUTER_API_KEY environment variable not set');
+  }
+
+  console.log('=== GENERATING STORY WITH OPENROUTER ===');
+  console.log('Parameters:', {
+    readingLevel: params.readingLevel,
+    interestLevel: params.interestLevel,
+    theme: params.theme,
+    length: params.length,
+    isDrSeussStyle: params.isDrSeussStyle,
+    useSightWords: params.useSightWords,
+    keywordCount: params.keywords.length
+  });
+
+  const systemPrompt = buildSystemPrompt(params);
+  
+  // Optimized parameters for creative story generation
+  const requestBody = {
+    model: "qwen/qwen3-30b-a3b:free",
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt
+      },
+      {
+        role: "user", 
+        content: `Create a ${params.length} ${params.theme} story for ${params.readingLevel} grade level.`
       }
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    ],
+    temperature: 0.8,         // Higher creativity for stories
+    max_tokens: 1500,         // Sufficient for longer stories
+    top_p: 0.9,              // Good variety while maintaining quality
+    frequency_penalty: 0.3,   // Reduce repetition
+    presence_penalty: 0.1     // Encourage topic diversity
+  };
+
+  console.log('=== CALLING OPENROUTER API ===');
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://storybridgeapp.lovable.app',
+      'X-Title': 'StoryBridge App'
+    },
+    body: JSON.stringify(requestBody)
+  });
+
+  console.log('OpenRouter response status:', response.status);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    console.error('OpenRouter API error:', errorData);
+    throw new Error(`OpenRouter API error (${response.status}): ${errorData.error?.message || 'Unknown error'}`);
+  }
+
+  const data = await response.json();
+  console.log('OpenRouter response received:', !!data.choices);
+  
+  if (!data.choices || data.choices.length === 0) {
+    throw new Error('No response generated from OpenRouter');
+  }
+
+  const content = data.choices[0].message?.content;
+  if (!content) {
+    throw new Error('Empty response from OpenRouter');
+  }
+
+  console.log('=== PARSING STORY RESPONSE ===');
+  try {
+    // Try to parse as JSON first
+    const parsed = JSON.parse(content);
+    if (parsed.title && parsed.content) {
+      console.log('Successfully parsed JSON response');
+      return parsed;
+    }
+  } catch {
+    // If not JSON, treat as plain text and create structure
+    console.log('Treating response as plain text');
+    return {
+      title: `A ${params.theme} Story`,
+      content: content
+    };
+  }
+
+  throw new Error('Invalid response format from OpenRouter');
+}
+
+serve(async (req: Request) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { 
+      status: 204, 
+      headers: corsHeaders 
+    });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
+  try {
+    console.log('=== STORY GENERATION REQUEST ===');
+    const storyParams: StoryRequest = await req.json();
+    
+    // Validate required parameters
+    const requiredFields = ['readingLevel', 'interestLevel', 'theme', 'length'];
+    for (const field of requiredFields) {
+      if (!storyParams[field]) {
+        return new Response(JSON.stringify({ error: `Missing required field: ${field}` }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    const story = await generateStory(storyParams);
+    
+    console.log('=== STORY GENERATED SUCCESSFULLY ===');
+    return new Response(JSON.stringify(story), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error('=== EDGE FUNCTION ERROR ===');
-    console.error('Error type:', error.constructor.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
+    console.error('=== STORY GENERATION ERROR ===');
+    console.error('Error:', error);
     
     return new Response(JSON.stringify({ 
-      error: 'Edge function failed',
-      debug: {
-        errorType: error.constructor.name,
-        errorMessage: error.message,
-        timestamp: new Date().toISOString()
-      }
+      error: error.message || 'Failed to generate story'
     }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
