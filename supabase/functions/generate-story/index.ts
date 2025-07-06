@@ -97,12 +97,12 @@ function getTokenLimit(length: string): number {
 }
 
 async function generateStory(params: StoryRequest): Promise<StoryResponse> {
-  const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
+  const apiKey = Deno.env.get('OPEN_API_KEY');
   if (!apiKey) {
-    throw new Error('DEEPSEEK_API_KEY environment variable not set');
+    throw new Error('OPEN_API_KEY environment variable not set');
   }
 
-  console.log('=== GENERATING STORY WITH DEEPSEEK ===');
+  console.log('=== GENERATING STORY WITH OPENAI GPT-3.5-TURBO ===');
   console.log('Parameters:', {
     readingLevel: params.readingLevel,
     interestLevel: params.interestLevel,
@@ -118,7 +118,7 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
   
   // Optimized parameters for creative story generation
   const requestBody = {
-    model: "deepseek-chat",
+    model: "gpt-3.5-turbo",
     messages: [
       {
         role: "system",
@@ -129,13 +129,16 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
         content: `Create a ${params.length} ${params.theme} story for ${params.readingLevel} grade level.`
       }
     ],
-    temperature: 0.8,         // Higher creativity for stories
-    max_tokens: dynamicTokenLimit,  // Dynamic based on story length
-    stream: false             // Get complete response
+    temperature: 0.8,
+    max_tokens: dynamicTokenLimit,
+    top_p: 0.9,
+    frequency_penalty: 0.3,
+    presence_penalty: 0.1,
+    stream: false
   };
 
-  console.log(`=== CALLING DEEPSEEK API (max_tokens: ${dynamicTokenLimit}) ===`);
-  const response = await fetch('https://api.deepseek.com/chat/completions', {
+  console.log(`=== CALLING OPENAI API (max_tokens: ${dynamicTokenLimit}) ===`);
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -144,24 +147,24 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
     body: JSON.stringify(requestBody)
   });
 
-  console.log('DeepSeek response status:', response.status);
+  console.log('OpenAI response status:', response.status);
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
-    console.error('DeepSeek API error:', errorText);
-    throw new Error(`DeepSeek API error (${response.status}): ${errorText}`);
+    console.error('OpenAI API error:', errorText);
+    throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
   }
 
   const data = await response.json();
-  console.log('DeepSeek response received:', !!data.choices);
+  console.log('OpenAI response received:', !!data.choices);
   
   if (!data.choices || data.choices.length === 0) {
-    throw new Error('No response generated from DeepSeek');
+    throw new Error('No response generated from OpenAI');
   }
 
   const content = data.choices[0].message?.content;
   if (!content) {
-    throw new Error('Empty response from DeepSeek');
+    throw new Error('Empty response from OpenAI');
   }
 
   console.log('=== PARSING STORY RESPONSE ===');
@@ -194,7 +197,7 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
     };
   }
 
-  throw new Error('Invalid response format from DeepSeek');
+  throw new Error('Invalid response format from OpenAI');
 }
 
 serve(async (req: Request) => {
