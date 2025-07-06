@@ -1,5 +1,6 @@
 
 import { getReadingLevelGuidelines } from "@/utils/readingLevelGuidelines";
+import { StoryFormData } from "@/components/StoryForm";
 
 const getInterestLevelGuidelines = (interestLevel: string) => {
   const guidelines = {
@@ -27,12 +28,15 @@ const getInterestLevelGuidelines = (interestLevel: string) => {
 };
 
 export const generateStory = async (
-  keywords: string[], 
-  readingLevel: string,
-  interestLevel: string,
-  theme: string,
-  isDrSeussStyle: boolean = false
+  storyData: StoryFormData & { keywords: string[] }
 ) => {
+  // Validate required fields
+  const requiredFields = ['readingLevel', 'interestLevel', 'theme', 'length'];
+  for (const field of requiredFields) {
+    if (!storyData[field as keyof StoryFormData]) {
+      throw new Error(`Missing required field: ${field}`);
+    }
+  }
   console.log("=== Story Generation Started ===");
   console.log("Environment check:", {
     hasViteEnv: !!import.meta.env,
@@ -45,11 +49,13 @@ export const generateStory = async (
   
   const { data, error } = await supabase.functions.invoke('generate-story', {
     body: {
-      keywords,
-      readingLevel,
-      interestLevel,
-      theme,
-      isDrSeussStyle
+      readingLevel: storyData.readingLevel,
+      interestLevel: storyData.interestLevel,
+      theme: storyData.theme,
+      length: storyData.length,
+      isDrSeussStyle: storyData.isDrSeussStyle,
+      useSightWords: storyData.useSightWords,
+      keywords: storyData.keywords
     }
   });
 

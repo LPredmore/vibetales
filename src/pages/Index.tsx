@@ -40,13 +40,10 @@ const Index = () => {
       const toastId = toast.loading("Generating your story...");
       const activeWordStrings = activeWords.map(word => word.word);
       
-      const generatedStory = await generateStory(
-        data.useSightWords ? activeWordStrings : [], 
-        data.readingLevel, 
-        data.interestLevel,
-        data.theme, 
-        data.isDrSeussStyle
-      );
+      const generatedStory = await generateStory({
+        ...data,
+        keywords: data.useSightWords ? activeWordStrings : []
+      });
       
       toast.dismiss(toastId);
       setStory({
