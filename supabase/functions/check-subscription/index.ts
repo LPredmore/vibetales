@@ -29,7 +29,11 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !user?.email) {
-      throw new Error('Error getting user');
+      console.log('Auth error or no user:', userError?.message || 'No user');
+      return new Response(
+        JSON.stringify({ subscribed: false }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Get the Stripe secret key from environment variables

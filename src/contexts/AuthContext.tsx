@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
@@ -75,12 +75,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // Clear local state immediately
+      setUser(null);
+      setSession(null);
+      
+      // Attempt server logout if session exists
+      if (session) {
+        const { error } = await supabase.auth.signOut();
+        if (error && !error.message.includes('session_not_found')) {
+          console.warn('Logout error:', error.message);
+        }
+      }
+      
       toast.success('Successfully logged out');
     } catch (error: any) {
-      toast.error(error.message || 'Error logging out');
-      throw error;
+      // Even if server logout fails, clear local state
+      console.warn('Logout error:', error.message);
+      setUser(null);
+      setSession(null);
+      toast.success('Successfully logged out');
     }
   };
 
