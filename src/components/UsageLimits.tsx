@@ -36,15 +36,22 @@ export const UsageLimits = ({ trialInfo }: UsageLimitsProps) => {
   }, [user]);
 
   const fetchUserLimits = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('user_limits')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
 
-      if (error && error.code !== 'PGRST116') {
+    try {
+      // Use the database function instead of direct query to avoid auth issues
+      const { data, error } = await supabase
+        .rpc('get_or_create_user_limits', { p_user_id: user.id });
+
+      if (error) {
         console.error('Error fetching user limits:', error);
+        // If it's an auth error, don't set the limits but don't fail completely
+        if (error.message?.includes('JWT') || error.message?.includes('auth')) {
+          console.warn('Authentication issue detected, user may need to re-login');
+        }
         return;
       }
 

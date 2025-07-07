@@ -38,14 +38,17 @@ export const generateStory = async (
     }
   }
   console.log("=== Story Generation Started ===");
-  console.log("Environment check:", {
-    hasViteEnv: !!import.meta.env,
-    envKeys: Object.keys(import.meta.env).filter(k => k.includes('DEEPSEEK')),
-  });
   
   // Use the Supabase edge function
   console.log("=== Using Supabase Edge Function with OpenAI ===");
   const { supabase } = await import("@/integrations/supabase/client");
+  
+  // Check auth status before making the request
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session) {
+    console.error("No valid session found:", sessionError);
+    throw new Error('Authentication required. Please log in again.');
+  }
   
   const { data, error } = await supabase.functions.invoke('generate-story', {
     body: {
@@ -63,6 +66,11 @@ export const generateStory = async (
 
   if (error) {
     console.error("Edge function error details:", error);
+    
+    // Handle authentication errors specifically
+    if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+      throw new Error('Session expired. Please log in again.');
+    }
     
     // Handle specific limit errors
     if (error.message?.includes('Daily story limit reached') || 
