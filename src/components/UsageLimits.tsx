@@ -8,12 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-interface UsageLimitsProps {
-  trialInfo?: {
-    isInTrial: boolean;
-    daysLeft: number;
-  };
-}
+interface UsageLimitsProps {}
 
 interface UserLimits {
   daily_stories_used: number;
@@ -21,7 +16,7 @@ interface UserLimits {
   trial_used: boolean;
 }
 
-export const UsageLimits = ({ trialInfo }: UsageLimitsProps) => {
+export const UsageLimits = ({}: UsageLimitsProps) => {
   const { user } = useAuth();
   const [limits, setLimits] = useState<UserLimits | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
@@ -135,73 +130,50 @@ export const UsageLimits = ({ trialInfo }: UsageLimitsProps) => {
     );
   }
 
-  const isInTrial = trialInfo?.isInTrial || (limits && !limits.trial_used && 
-    new Date() <= new Date(new Date(limits.trial_started_at).getTime() + (7 * 24 * 60 * 60 * 1000)));
-  
-  const daysLeft = trialInfo?.daysLeft || (limits ? 
-    Math.ceil((new Date(new Date(limits.trial_started_at).getTime() + (7 * 24 * 60 * 60 * 1000)).getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000)) : 0);
-
   const dailyUsed = limits?.daily_stories_used || 0;
-  const dailyLimit = isInTrial ? Infinity : 1;
+  const dailyLimit = 1;
 
   return (
     <Card className="clay-card">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
-          {isInTrial ? (
-            <>
-              <Zap className="h-5 w-5 text-blue-600" />
-              <span>Free Trial</span>
-              <Badge variant="secondary" className="ml-auto">
-                {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
-              </Badge>
-            </>
-          ) : (
-            <>
-              <Clock className="h-5 w-5 text-gray-600" />
-              <span>Daily Limit</span>
-            </>
-          )}
+          <Clock className="h-5 w-5 text-gray-600" />
+          <span>Daily Limit</span>
         </CardTitle>
         <CardDescription>
-          {isInTrial 
-            ? `Unlimited stories during your trial period. ${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining.`
-            : `You can generate ${dailyLimit} story per day. Limit resets at midnight CST.`
-          }
+          You can generate {dailyLimit} story per day. Limit resets at midnight CST.
         </CardDescription>
       </CardHeader>
       
-      {!isInTrial && (
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span>Stories used today</span>
-              <span>{dailyUsed} / {dailyLimit}</span>
-            </div>
-            <Progress 
-              value={(dailyUsed / dailyLimit) * 100} 
-              className="h-2"
-            />
-            <Button
-              onClick={handleUpgrade}
-              disabled={isProcessing}
-              className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
-            >
-              {isProcessing ? (
-                <>
-                  <Crown className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Crown className="mr-2 h-4 w-4" />
-                  Upgrade to Premium
-                </>
-              )}
-            </Button>
+      <CardContent>
+        <div className="space-y-3">
+          <div className="flex justify-between text-sm">
+            <span>Stories used today</span>
+            <span>{dailyUsed} / {dailyLimit}</span>
           </div>
-        </CardContent>
-      )}
+          <Progress 
+            value={(dailyUsed / dailyLimit) * 100} 
+            className="h-2"
+          />
+          <Button
+            onClick={handleUpgrade}
+            disabled={isProcessing}
+            className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
+          >
+            {isProcessing ? (
+              <>
+                <Crown className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Crown className="mr-2 h-4 w-4" />
+                Upgrade to Premium
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
     </Card>
   );
 };

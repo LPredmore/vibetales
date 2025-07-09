@@ -137,7 +137,7 @@ async function checkSubscription(userId: string): Promise<boolean> {
 }
 
 // Check and update user limits
-async function checkUserLimits(supabase: any, userId: string): Promise<{ canGenerate: boolean; error?: string; isInTrial?: boolean; daysLeft?: number }> {
+async function checkUserLimits(supabase: any, userId: string): Promise<{ canGenerate: boolean; error?: string }> {
   const currentDate = getCSTDate();
   
   // Get or create user limits
@@ -150,11 +150,6 @@ async function checkUserLimits(supabase: any, userId: string): Promise<{ canGene
   }
 
   const limits = userLimits;
-  const trialStartDate = new Date(limits.trial_started_at);
-  const trialEndDate = new Date(trialStartDate.getTime() + (7 * 24 * 60 * 60 * 1000));
-  const now = new Date();
-  const isInTrial = !limits.trial_used && now <= trialEndDate;
-  const daysLeft = isInTrial ? Math.ceil((trialEndDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)) : 0;
 
   // Check if user has premium subscription
   const hasPremium = await checkSubscription(userId);
@@ -175,12 +170,6 @@ async function checkUserLimits(supabase: any, userId: string): Promise<{ canGene
       .eq('user_id', userId);
     
     limits.daily_stories_used = 0;
-  }
-
-  // Check if user is in trial period
-  if (isInTrial) {
-    // Unlimited during trial
-    return { canGenerate: true, isInTrial: true, daysLeft };
   }
 
   // Check daily limit for free users (1 story per day)
@@ -379,18 +368,7 @@ serve(async (req: Request) => {
     
     console.log('=== STORY GENERATED SUCCESSFULLY ===');
     
-    // Include trial information in response if applicable
-    const response = {
-      ...story,
-      ...(limitCheck.isInTrial && { 
-        trialInfo: { 
-          isInTrial: true, 
-          daysLeft: limitCheck.daysLeft 
-        }
-      })
-    };
-    
-    return new Response(JSON.stringify(response), {
+    return new Response(JSON.stringify(story), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

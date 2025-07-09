@@ -20,17 +20,9 @@ const Index = () => {
     content: string;
     readingLevel?: string;
     theme?: string;
-    trialInfo?: {
-      isInTrial: boolean;
-      daysLeft: number;
-    };
   } | null>(null);
   const [words, setWords] = useState<SightWord[]>([]);
   const [showLimitPrompt, setShowLimitPrompt] = useState(false);
-  const [trialInfo, setTrialInfo] = useState<{
-    isInTrial: boolean;
-    daysLeft: number;
-  } | undefined>(undefined);
   const {
     user,
     logout
@@ -90,11 +82,6 @@ const Index = () => {
       });
       
       toast.dismiss(toastId);
-      
-      // Update trial info if present in response
-      if (generatedStory.trialInfo) {
-        setTrialInfo(generatedStory.trialInfo);
-      }
       
       setStory({
         ...generatedStory,
@@ -167,7 +154,7 @@ const Index = () => {
               
               <TabsContent value="story">
                 <div className="space-y-6">
-                  <UsageLimits trialInfo={trialInfo} />
+                  <UsageLimits />
                   
                   {showLimitPrompt && (
                     <LimitReachedPrompt onClose={() => setShowLimitPrompt(false)} />
