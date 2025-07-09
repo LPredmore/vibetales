@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
 import { SightWordManager } from "@/components/SightWordManager";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [story, setStory] = useState<{
@@ -34,6 +35,38 @@ const Index = () => {
     user,
     logout
   } = useAuth();
+
+  // Handle Stripe payment completion
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+    const canceled = urlParams.get('canceled');
+
+    if (success === 'true') {
+      toast.success("Payment successful! Your premium subscription is now active.");
+      
+      // Refresh subscription status
+      if (user) {
+        supabase.functions.invoke('check-subscription', {
+          body: { userId: user.id }
+        }).then(({ data, error }) => {
+          if (!error && data) {
+            toast.success("Premium features are now available!");
+          }
+        }).catch(() => {
+          toast.info("Your payment was successful. Premium features may take a moment to activate.");
+        });
+      }
+      
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (canceled === 'true') {
+      toast.error("Payment was canceled. You can try again anytime.");
+      
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [user]);
 
   const handleSubmit = async (data: StoryFormData) => {
     const activeWords = words.filter(word => word.active);
