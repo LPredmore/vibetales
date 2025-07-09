@@ -70,7 +70,7 @@ export const UsageLimits = ({ trialInfo }: UsageLimitsProps) => {
       });
 
       if (data && !error) {
-        setHasPremium(data.hasActiveSubscription || false);
+        setHasPremium(data.subscribed || false);
       }
     } catch (error) {
       console.error('Error checking premium status:', error);
