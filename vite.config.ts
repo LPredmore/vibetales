@@ -16,19 +16,18 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: [
-        'favicon-16x16.png',
-        'favicon-32x32.png',
-        'favicon-48x48.png',
-        'favicon-96x96.png',
-        'favicon-192x192.png',
-        'favicon-512x512.png',
-        'apple-touch-icon.png',
-        'placeholder.png',
-        'pwa-192x192-maskable.png',
-        'pwa-512x512-maskable.png',
-        '.well-known/assetlinks.json'
-      ],
+        includeAssets: [
+          'favicon-16x16.png',
+          'favicon-32x32.png',
+          'favicon-48x48.png',
+          'favicon-96x96.png',
+          'favicon-192x192.png',
+          'favicon-512x512.png',
+          'apple-touch-icon.png',
+          'placeholder.png',
+          'pwa-192x192-maskable.png',
+          'pwa-512x512-maskable.png'
+        ],
       manifest: {
         id: '/',
         name: 'StoryBridge - Story Generator',
@@ -49,35 +48,7 @@ export default defineConfig(({ mode }) => ({
         launch_handler: {
           client_mode: 'navigate-existing'
         },
-        edge_side_panel: {
-          preferred_width: 400
-        },
-        file_handlers: [
-          {
-            action: '/',
-            accept: {
-              'text/plain': ['.txt'],
-              'application/json': ['.json']
-            }
-          }
-        ],
-        handle_links: 'preferred',
-        protocol_handlers: [
-          {
-            protocol: 'web+storybridge',
-            url: '/?protocol=%s'
-          }
-        ],
-        share_target: {
-          action: '/',
-          method: 'POST',
-          enctype: 'multipart/form-data',
-          params: {
-            title: 'title',
-            text: 'text',
-            url: 'url'
-          }
-        },
+        // Simplified manifest - removed experimental features
         screenshots: [
           {
             src: '/pwa-512x512.png',
@@ -94,18 +65,7 @@ export default defineConfig(({ mode }) => ({
             label: 'StoryBridge desktop view'
           }
         ],
-        related_applications: [
-          {
-            platform: 'webapp',
-            url: 'https://storybridge.lovable.app',
-            id: 'storybridge-pwa'
-          }
-        ],
-        scope_extensions: [
-          {
-            origin: 'https://storybridge.lovable.app'
-          }
-        ],
+        // Simplified - removed advanced features
         icons: [
           { src: 'favicon-16x16.png', sizes: '16x16', type: 'image/png' },
           { src: 'favicon-32x32.png', sizes: '32x32', type: 'image/png' },
@@ -135,12 +95,7 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
-        additionalManifestEntries: [
-          {
-            url: '/.well-known/assetlinks.json',
-            revision: null
-          }
-        ],
+        // Removed additionalManifestEntries to fix service worker conflict
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
