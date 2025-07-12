@@ -137,7 +137,7 @@ async function checkSubscription(userId: string): Promise<boolean> {
 }
 
 // Check and update user limits
-async function checkUserLimits(supabase: any, userId: string): Promise<{ canGenerate: boolean; error?: string }> {
+async function checkUserLimits(supabase: any, userId: string, storyParams: StoryRequest): Promise<{ canGenerate: boolean; error?: string }> {
   const currentDate = getCSTDate();
   
   // Get or create user limits
@@ -151,11 +151,17 @@ async function checkUserLimits(supabase: any, userId: string): Promise<{ canGene
 
   const limits = userLimits;
 
+  // Dr. Seuss style stories are unlimited for all users
+  if (storyParams.isDrSeussStyle) {
+    console.log('Dr. Seuss style story - unlimited for all users');
+    return { canGenerate: true };
+  }
+
   // Check if user has premium subscription
   const hasPremium = await checkSubscription(userId);
   
   if (hasPremium) {
-    console.log('User has premium subscription - unlimited stories');
+    console.log('User has premium subscription - unlimited regular stories');
     return { canGenerate: true };
   }
 
@@ -339,18 +345,6 @@ serve(async (req: Request) => {
       });
     }
 
-    // Check user limits before generating story
-    const limitCheck = await checkUserLimits(supabase, user.id);
-    if (!limitCheck.canGenerate) {
-      return new Response(JSON.stringify({ 
-        error: limitCheck.error,
-        limitReached: true
-      }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
     const storyParams: StoryRequest = await req.json();
     
     // Validate required parameters
@@ -362,6 +356,18 @@ serve(async (req: Request) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
+    }
+
+    // Check user limits before generating story
+    const limitCheck = await checkUserLimits(supabase, user.id, storyParams);
+    if (!limitCheck.canGenerate) {
+      return new Response(JSON.stringify({ 
+        error: limitCheck.error,
+        limitReached: true
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     const story = await generateStory(storyParams);
