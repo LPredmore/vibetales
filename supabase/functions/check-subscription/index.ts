@@ -14,26 +14,57 @@ serve(async (req) => {
   }
 
   try {
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-  );
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
 
-    // Get the user from the authorization header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
+    let userEmail = '';
+    let userId = '';
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    
-    if (userError || !user?.email) {
-      console.log('Auth error or no user:', userError?.message || 'No user');
-      return new Response(
-        JSON.stringify({ subscribed: false }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (req.method === 'POST') {
+      // Handle POST requests with userId in body (from generate-story function)
+      const body = await req.json();
+      userId = body.userId;
+      
+      if (!userId) {
+        throw new Error('No userId provided in POST request');
+      }
+
+      // Get user email from Supabase auth using service role
+      const { data: userData, error: userError } = await supabaseClient.auth.admin.getUserById(userId);
+      
+      if (userError || !userData?.user?.email) {
+        console.log('Error getting user by ID:', userError?.message || 'No user found');
+        return new Response(
+          JSON.stringify({ subscribed: false }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      userEmail = userData.user.email;
+      console.log('POST request - checking subscription for user ID:', userId, 'email:', userEmail);
+    } else {
+      // Handle GET requests with authorization header (existing behavior)
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        throw new Error('No authorization header');
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+      
+      if (userError || !user?.email) {
+        console.log('Auth error or no user:', userError?.message || 'No user');
+        return new Response(
+          JSON.stringify({ subscribed: false }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      userEmail = user.email;
+      userId = user.id;
+      console.log('GET request - checking subscription for user:', userEmail);
     }
 
     // Get the Stripe secret key from environment variables
@@ -43,7 +74,7 @@ serve(async (req) => {
       throw new Error('Stripe secret key not configured');
     }
 
-    console.log('Checking subscription for user:', user.email);
+    console.log('Checking subscription for user:', userEmail);
 
     const stripe = new Stripe(stripeKey, {
       apiVersion: '2023-10-16',
@@ -51,12 +82,12 @@ serve(async (req) => {
 
     // Get customer by email
     const customers = await stripe.customers.list({
-      email: user.email,
+      email: userEmail,
       limit: 1,
     });
 
     if (customers.data.length === 0) {
-      console.log('No customer found for email:', user.email);
+      console.log('No customer found for email:', userEmail);
       return new Response(
         JSON.stringify({ subscribed: false }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
