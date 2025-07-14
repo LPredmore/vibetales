@@ -63,6 +63,16 @@ export const generateStory = async (
   });
 
   console.log("Edge function response:", { data, error });
+  
+  // Log rate-limit headers if present in error context
+  if (error?.context?.headers) {
+    console.log("Rate-limit headers from Supabase:", {
+      limit: error.context.headers['x-ratelimit-limit-requests'],
+      remaining: error.context.headers['x-ratelimit-remaining-requests'],
+      reset: error.context.headers['x-ratelimit-reset-requests'],
+      retryAfter: error.context.headers['retry-after']
+    });
+  }
 
   if (error) {
     console.error("Edge function error details:", error);

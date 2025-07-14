@@ -248,10 +248,26 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
   });
 
   console.log('OpenAI response status:', response.status);
+  
+  // Log OpenAI rate-limit headers
+  const rateLimitHeaders = {
+    limit: response.headers.get('x-ratelimit-limit-requests'),
+    remaining: response.headers.get('x-ratelimit-remaining-requests'),
+    reset: response.headers.get('x-ratelimit-reset-requests'),
+    retryAfter: response.headers.get('retry-after')
+  };
+  console.log('OpenAI rate-limit headers:', rateLimitHeaders);
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
     console.error('OpenAI API error:', errorText);
+    
+    // Enhanced error message with rate-limit info for 429 errors
+    if (response.status === 429) {
+      const rateLimitInfo = `Rate limit info: ${JSON.stringify(rateLimitHeaders)}`;
+      throw new Error(`OpenAI API rate limit exceeded (${response.status}): ${errorText}. ${rateLimitInfo}`);
+    }
+    
     throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
   }
 
