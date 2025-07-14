@@ -129,7 +129,8 @@ async function checkSubscription(userId: string): Promise<boolean> {
     }
 
     const data = await response.json();
-    return data.hasActiveSubscription || false;
+    console.log('Subscription check response:', data);
+    return data.subscribed || false;
   } catch (error) {
     console.error('Error checking subscription:', error);
     return false;
