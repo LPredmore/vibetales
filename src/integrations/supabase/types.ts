@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      content_reports: {
+        Row: {
+          created_at: string
+          id: string
+          report_details: string | null
+          report_reason: Database["public"]["Enums"]["report_reason"]
+          status: string
+          story_content: string
+          story_title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          report_details?: string | null
+          report_reason: Database["public"]["Enums"]["report_reason"]
+          status?: string
+          story_content: string
+          story_title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          report_details?: string | null
+          report_reason?: Database["public"]["Enums"]["report_reason"]
+          status?: string
+          story_content?: string
+          story_title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       favorite_stories: {
         Row: {
           content: string
@@ -44,6 +80,30 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      report_reasons: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          reason_code: Database["public"]["Enums"]["report_reason"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          reason_code: Database["public"]["Enums"]["report_reason"]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          reason_code?: Database["public"]["Enums"]["report_reason"]
         }
         Relationships: []
       }
@@ -157,7 +217,13 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      report_reason:
+        | "inappropriate_content"
+        | "factual_errors"
+        | "harmful_content"
+        | "spam_content"
+        | "copyright_violation"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -284,6 +350,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      report_reason: [
+        "inappropriate_content",
+        "factual_errors",
+        "harmful_content",
+        "spam_content",
+        "copyright_violation",
+        "other",
+      ],
+    },
   },
 } as const

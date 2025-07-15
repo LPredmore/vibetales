@@ -2,9 +2,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Bookmark, BookmarkCheck } from "lucide-react";
+import { Bookmark, BookmarkCheck, Flag } from "lucide-react";
 import { toast } from "sonner";
 import { saveFavoriteStory } from "@/services/favoriteStories";
+import { ReportDialog } from "@/components/ReportDialog";
 
 interface StoryDisplayProps {
   title: string;
@@ -16,6 +17,7 @@ interface StoryDisplayProps {
 export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDisplayProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   const handleSaveToFavorites = async () => {
     if (!readingLevel || !theme) {
@@ -58,25 +60,36 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mx-auto"></div>
           </div>
-          <Button
-            onClick={handleSaveToFavorites}
-            disabled={isSaving || isSaved}
-            variant="outline"
-            size="sm"
-            className="ml-4 clay-button"
-          >
-            {isSaved ? (
-              <>
-                <BookmarkCheck className="w-4 h-4 mr-2 text-green-600" />
-                Saved!
-              </>
-            ) : (
-              <>
-                <Bookmark className="w-4 h-4 mr-2" />
-                {isSaving ? "Saving..." : "Save to Favorites"}
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2 ml-4">
+            <Button
+              onClick={handleSaveToFavorites}
+              disabled={isSaving || isSaved}
+              variant="outline"
+              size="sm"
+              className="clay-button"
+            >
+              {isSaved ? (
+                <>
+                  <BookmarkCheck className="w-4 h-4 mr-2 text-green-600" />
+                  Saved!
+                </>
+              ) : (
+                <>
+                  <Bookmark className="w-4 h-4 mr-2" />
+                  {isSaving ? "Saving..." : "Save to Favorites"}
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={() => setShowReportDialog(true)}
+              variant="outline"
+              size="sm"
+              className="clay-button"
+            >
+              <Flag className="w-4 h-4 mr-2" />
+              Report Content
+            </Button>
+          </div>
         </div>
       </div>
       <div className="prose prose-lg max-w-none">
@@ -86,6 +99,13 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
           </p>
         ))}
       </div>
+
+      <ReportDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        storyTitle={title}
+        storyContent={content}
+      />
     </motion.div>
   );
 };

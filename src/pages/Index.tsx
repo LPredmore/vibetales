@@ -5,6 +5,8 @@ import { SightWordManager } from "@/components/SightWordManager";
 import { FavoriteStories } from "@/components/FavoriteStories";
 import { UsageLimits } from "@/components/UsageLimits";
 import { LimitReachedPrompt } from "@/components/LimitReachedPrompt";
+import { UserReports } from "@/components/UserReports";
+import { AIContentDisclaimer } from "@/components/AIContentDisclaimer";
 import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
 import { generateStory } from "@/services/openrouter";
@@ -140,7 +142,7 @@ const Index = () => {
         <div className="max-w-4xl mx-auto">
           <div className="clay-card p-4 sm:p-8">
             <Tabs defaultValue="story" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6 sm:mb-8 bg-transparent p-2 gap-2 h-auto">
+              <TabsList className="grid w-full grid-cols-4 mb-6 sm:mb-8 bg-transparent p-2 gap-2 h-auto">
                 <TabsTrigger value="story" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
                   📚 Generate Story
                 </TabsTrigger>
@@ -150,10 +152,14 @@ const Index = () => {
                 <TabsTrigger value="favorites" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
                   ❤️ Favorites
                 </TabsTrigger>
+                <TabsTrigger value="reports" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
+                  🚩 Reports
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="story">
                 <div className="space-y-6">
+                  <AIContentDisclaimer />
                   <UsageLimits />
                   
                   {showLimitPrompt && (
@@ -179,6 +185,10 @@ const Index = () => {
 
               <TabsContent value="favorites">
                 <FavoriteStories />
+              </TabsContent>
+
+              <TabsContent value="reports">
+                <UserReports />
               </TabsContent>
             </Tabs>
           </div>
