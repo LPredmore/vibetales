@@ -53,20 +53,19 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
       className="max-w-2xl mx-auto mt-8 p-8 clay-card"
     >
       <div className="text-center mb-8">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex-1">
+        <div className="mb-4">
+          <div className="text-center mb-4">
             <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent mb-2">
               {title}
             </h2>
             <div className="w-24 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mx-auto"></div>
           </div>
-          <div className="flex gap-2 ml-4">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             <Button
               onClick={handleSaveToFavorites}
               disabled={isSaving || isSaved}
               variant="outline"
-              size="sm"
-              className="clay-button"
+              className="clay-button w-full sm:w-auto"
             >
               {isSaved ? (
                 <>
@@ -83,8 +82,7 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
             <Button
               onClick={() => setShowReportDialog(true)}
               variant="outline"
-              size="sm"
-              className="clay-button"
+              className="clay-button w-full sm:w-auto border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600"
             >
               <Flag className="w-4 h-4 mr-2" />
               Report Content
