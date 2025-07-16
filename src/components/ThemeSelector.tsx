@@ -24,11 +24,20 @@ export const ThemeSelector = ({
           <SelectValue placeholder="Select a genre" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="fantasy">Fantasy Adventure</SelectItem>
-          <SelectItem value="mystery">Mystery</SelectItem>
+          <SelectItem value="adventure">Adventure</SelectItem>
+          <SelectItem value="bedtime">Bedtime</SelectItem>
+          <SelectItem value="comedy">Comedy</SelectItem>
+          <SelectItem value="educational">Educational</SelectItem>
           <SelectItem value="fairytale">Fairy Tale</SelectItem>
-          <SelectItem value="science">Science Fiction</SelectItem>
+          <SelectItem value="family">Family</SelectItem>
+          <SelectItem value="fantasy">Fantasy Adventure</SelectItem>
+          <SelectItem value="friendship">Friendship</SelectItem>
+          <SelectItem value="holiday">Holiday</SelectItem>
+          <SelectItem value="mystery">Mystery</SelectItem>
           <SelectItem value="nature">Nature & Animals</SelectItem>
+          <SelectItem value="school">School</SelectItem>
+          <SelectItem value="science">Science Fiction</SelectItem>
+          <SelectItem value="superhero">Superhero</SelectItem>
         </SelectContent>
       </Select>
     </div>
