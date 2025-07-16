@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 
 interface ThemeLessonSelectorProps {
@@ -17,22 +16,21 @@ export const ThemeLessonSelector = ({
 }: ThemeLessonSelectorProps) => {
   return (
     <div className="space-y-3">
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="theme-lesson-enabled"
-          checked={enabled}
-          onCheckedChange={onEnabledChange}
-        />
-        <label 
-          htmlFor="theme-lesson-enabled" 
-          className="text-sm font-medium text-gray-700 cursor-pointer"
-        >
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-gray-700">
           Add Theme/Lesson
         </label>
+        <div className="flex items-center">
+          <Switch
+            checked={enabled}
+            onCheckedChange={onEnabledChange}
+            aria-label="Toggle theme/lesson"
+          />
+        </div>
       </div>
       
       {enabled && (
-        <div className="space-y-2 pl-6">
+        <div className="space-y-2">
           <label className="text-sm font-medium text-gray-600">
             Theme or Lesson Focus
           </label>
