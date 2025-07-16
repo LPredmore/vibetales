@@ -27,11 +27,17 @@ export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => 
     const checkSubscription = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('check-subscription');
-        if (error) throw error;
-        setIsSubscribed(data.subscribed);
+        if (error) {
+          console.error('Subscription check error:', error);
+          // Don't show error toast for subscription checks - just default to unsubscribed
+          setIsSubscribed(false);
+          return;
+        }
+        setIsSubscribed(data?.subscribed || false);
       } catch (err) {
         console.error('Error checking subscription:', err);
-        toast.error("Failed to check subscription status");
+        // Silently handle subscription check errors and default to unsubscribed
+        setIsSubscribed(false);
       }
     };
 
