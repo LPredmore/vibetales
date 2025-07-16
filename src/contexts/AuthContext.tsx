@@ -109,27 +109,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // THEN check for existing session with enhanced error handling
-    const initializeSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.warn('Session initialization error:', error);
-        }
-        
+    // Enhanced session recovery on startup
+    const recoverSession = async () => {
+      // 1. Try standard recovery
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
         setSession(session);
-        setUser(session?.user ?? null);
+        setUser(session.user);
         setIsLoading(false);
-        
-        console.log('🏁 Session initialization complete:', session ? 'authenticated' : 'not authenticated');
-      } catch (error) {
-        console.error('Critical session initialization error:', error);
-        setIsLoading(false);
+        return;
       }
+
+      // 2. Fallback: sessionStorage backup
+      const backup = sessionStorage.getItem('session-backup');
+      if (backup) {
+        try {
+          const { access_token, refresh_token, expires_at } = JSON.parse(backup);
+          if (Date.now() / 1000 < expires_at) {
+            const { data } = await supabase.auth.setSession({ access_token, refresh_token });
+            if (data.session) {
+              setSession(data.session);
+              setUser(data.session.user);
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch {
+          sessionStorage.removeItem('session-backup');
+        }
+      }
+      
+      setIsLoading(false);
     };
 
-    initializeSession();
+    recoverSession();
 
     return () => {
       console.log('🧹 Cleaning up auth subscription');
@@ -138,39 +151,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string, remember: boolean) => {
+    setIsLoading(true);
     try {
-      console.log('🔐 Attempting login...', { email, remember, twaEnvironment });
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
 
-      if (error) {
-        console.error('Login error:', error);
-        throw error;
+      // 1. Supabase already uses localStorage by default, so this step is automatic
+
+      // 2. Request persistent storage for PWA
+      if ('storage' in navigator && 'persist' in navigator.storage) {
+        try {
+          const granted = await navigator.storage.persist();
+          console.log('Persistent storage granted:', granted);
+        } catch (persistErr) {
+          console.warn('Persistent storage request failed:', persistErr);
+        }
       }
 
-      // Store remember preference for enhanced session persistence
-      if (remember || twaEnvironment) {
-        localStorage.setItem('auth-remember-preference', 'true');
-        console.log('💾 Remember preference stored');
-      } else {
-        localStorage.removeItem('auth-remember-preference');
-      }
-
-      // Verify session was established
+      // 3. Save session backup in sessionStorage
       if (data.session) {
-        console.log('✅ Login successful, session established');
-        setSession(data.session);
-        setUser(data.session.user);
+        sessionStorage.setItem('session-backup', JSON.stringify(data.session));
       }
 
+      // Store "remember me" preference
+      if (remember) {
+        localStorage.setItem('auth-remember', 'true');
+      }
+
+      setSession(data.session);
+      setUser(data.session.user);
       toast.success('Successfully logged in!');
     } catch (error: any) {
       console.error('Login failed:', error);
       toast.error(error.message || 'Error logging in');
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
