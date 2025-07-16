@@ -8,7 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-interface UsageLimitsProps {}
+interface UsageLimitsProps {
+  onRefreshLimits?: (refreshFunction: () => Promise<void>) => void;
+}
 
 interface UserLimits {
   daily_stories_used: number;
@@ -16,7 +18,7 @@ interface UserLimits {
   trial_used: boolean;
 }
 
-export const UsageLimits = ({}: UsageLimitsProps) => {
+export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   const { user } = useAuth();
   const [limits, setLimits] = useState<UserLimits | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
@@ -29,6 +31,13 @@ export const UsageLimits = ({}: UsageLimitsProps) => {
       checkPremiumStatus();
     }
   }, [user]);
+
+  // Expose refresh function to parent component
+  useEffect(() => {
+    if (onRefreshLimits) {
+      onRefreshLimits(fetchUserLimits);
+    }
+  }, [onRefreshLimits]);
 
   const fetchUserLimits = async () => {
     if (!user?.id) {

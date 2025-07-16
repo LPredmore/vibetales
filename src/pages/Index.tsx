@@ -26,6 +26,7 @@ const Index = () => {
   } | null>(null);
   const [words, setWords] = useState<SightWord[]>([]);
   const [showLimitPrompt, setShowLimitPrompt] = useState(false);
+  const [refreshLimits, setRefreshLimits] = useState<(() => Promise<void>) | null>(null);
   const { user } = useAuth();
 
   // Handle Stripe payment completion
@@ -91,6 +92,12 @@ const Index = () => {
         theme: data.theme
       });
       setShowLimitPrompt(false); // Hide limit prompt if it was showing
+      
+      // Refresh usage limits after successful story generation
+      if (refreshLimits) {
+        await refreshLimits();
+      }
+      
       toast.success("Story generated successfully!");
       console.log("=== Story Generation Complete ===");
     } catch (error) {
@@ -158,7 +165,7 @@ const Index = () => {
               
               <TabsContent value="story">
                 <div className="space-y-6">
-                  <UsageLimits />
+                  <UsageLimits onRefreshLimits={setRefreshLimits} />
                   
                   {showLimitPrompt && (
                     <LimitReachedPrompt onClose={() => setShowLimitPrompt(false)} />

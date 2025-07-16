@@ -161,11 +161,6 @@ async function checkUserLimits(supabase: any, userId: string, storyParams: Story
 
   const limits = userLimits;
 
-  // Dr. Seuss style stories are unlimited for all users
-  if (storyParams.isDrSeussStyle) {
-    console.log('Dr. Seuss style story - unlimited for all users');
-    return { canGenerate: true };
-  }
 
   // Check if user has premium subscription
   const hasPremium = await checkSubscription(userId);
