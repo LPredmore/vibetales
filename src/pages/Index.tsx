@@ -70,12 +70,14 @@ const Index = () => {
       return;
     }
     
+    let toastId: string | number | undefined;
+    
     try {
       console.log("=== Starting Story Generation ===");
       console.log("Form data:", data);
       console.log("Active sight words:", activeWords.map(w => w.word));
       
-      const toastId = toast.loading("Generating your story...");
+      toastId = toast.loading("Generating your story...");
       const activeWordStrings = activeWords.map(word => word.word);
       
       const generatedStory = await generateStory({
@@ -97,9 +99,14 @@ const Index = () => {
       console.error("=== Story Generation Failed ===");
       console.error("Error:", error);
       
+      // Always dismiss the loading toast first
+      if (toastId) {
+        toast.dismiss(toastId);
+      }
+      
       if (error instanceof Error && error.message === 'LIMIT_REACHED') {
         setShowLimitPrompt(true);
-        toast.error("Daily story limit reached");
+        toast.info("You have reached your limit today. Wait until tomorrow or upgrade to premium for unlimited stories.");
       } else {
         toast.error("Failed to generate story. Please try again.");
       }
