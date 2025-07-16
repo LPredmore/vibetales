@@ -4,9 +4,30 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
+import fs from 'fs';
 
-// Generate build version for cache busting
+// Generate build version for cache busting and TWA updates
 const buildVersion = Date.now().toString();
+const semanticVersion = `1.0.${Math.floor(Date.now() / 1000)}`;
+
+// Update app-version.json with current build info
+const updateAppVersion = () => {
+  const versionInfo = {
+    version: semanticVersion,
+    buildTime: new Date().toISOString(),
+    twaCompatible: true
+  };
+  
+  try {
+    fs.writeFileSync('public/app-version.json', JSON.stringify(versionInfo, null, 2));
+    console.log('📱 Updated app-version.json:', semanticVersion);
+  } catch (error) {
+    console.warn('⚠️ Could not update app-version.json:', error);
+  }
+};
+
+// Update version file on build
+updateAppVersion();
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -45,7 +66,7 @@ export default defineConfig(({ mode }) => ({
         display_override: ['window-controls-overlay', 'standalone'],
         orientation: 'portrait',
         scope: '/',
-        start_url: '/',
+        start_url: `/?v=${semanticVersion}`, // Add version to start_url for TWA detection
         categories: ['education', 'books', 'kids'],
         prefer_related_applications: false,
         iarc_rating_id: 'e84b072d-71de-4af2-8a98-7e7db97db7d7',
@@ -139,10 +160,12 @@ export default defineConfig(({ mode }) => ({
         ],
         cleanupOutdatedCaches: true,
         sourcemap: true,
-        // Add build version for cache busting
+        // Add build version for cache busting and TWA updates
         swDest: 'sw.js',
         additionalManifestEntries: [
-          { url: '/build-version.txt', revision: buildVersion }
+          { url: '/build-version.txt', revision: buildVersion },
+          { url: '/app-version.json', revision: semanticVersion },
+          { url: '/manifest.json', revision: semanticVersion }
         ]
       },
       // Enable periodic background sync and push notifications
