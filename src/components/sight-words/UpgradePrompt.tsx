@@ -34,7 +34,7 @@ export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) =
           ) : (
             <>
               <Crown className="mr-2 h-4 w-4" />
-              Upgrade Now
+              Upgrade to Premium for UNLIMITED STORIES
             </>
           )}
         </Button>
