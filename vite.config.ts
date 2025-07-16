@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'prompt',
-      injectRegister: false,
+      injectRegister: 'auto',
       includeAssets: [
         'favicon-16x16.png',
         'favicon-32x32.png',
@@ -96,7 +96,8 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
-        // Removed additionalManifestEntries to fix service worker conflict
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -119,12 +120,19 @@ export default defineConfig(({ mode }) => ({
                 maxAgeSeconds: 60 * 60 * 24 // 1 day
               }
             }
+          },
+          // CRITICAL: Never cache Supabase auth endpoints
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
+            handler: 'NetworkOnly'
+          },
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/auth\/.*/i,
+            handler: 'NetworkOnly'
           }
         ],
-        // Background sync for offline functionality
         skipWaiting: false,
         clientsClaim: false,
-        // Add cache versioning for proper updates
         cleanupOutdatedCaches: true,
         sourcemap: true
       },
