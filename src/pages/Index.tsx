@@ -6,7 +6,7 @@ import { FavoriteStories } from "@/components/FavoriteStories";
 import { UsageLimits } from "@/components/UsageLimits";
 import { LimitReachedPrompt } from "@/components/LimitReachedPrompt";
 
-import { AIContentDisclaimer } from "@/components/AIContentDisclaimer";
+
 import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
 import { generateStory } from "@/services/openrouter";
@@ -159,7 +159,6 @@ const Index = () => {
               
               <TabsContent value="story">
                 <div className="space-y-6">
-                  <AIContentDisclaimer />
                   <UsageLimits />
                   
                   {showLimitPrompt && (

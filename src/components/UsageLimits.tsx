@@ -168,7 +168,10 @@ export const UsageLimits = ({}: UsageLimitsProps) => {
             ) : (
               <>
                 <Crown className="mr-2 h-4 w-4" />
-                Upgrade to Premium for UNLIMITED STORIES
+                <span className="text-center">
+                  Upgrade to Premium for<br />
+                  Unlimited Stories
+                </span>
               </>
             )}
           </Button>
