@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { UserMenu } from "@/components/UserMenu";
 
 const Index = () => {
   const [story, setStory] = useState<{
@@ -25,10 +26,7 @@ const Index = () => {
   } | null>(null);
   const [words, setWords] = useState<SightWord[]>([]);
   const [showLimitPrompt, setShowLimitPrompt] = useState(false);
-  const {
-    user,
-    logout
-  } = useAuth();
+  const { user } = useAuth();
 
   // Handle Stripe payment completion
   useEffect(() => {
@@ -136,13 +134,7 @@ const Index = () => {
             </h1>
           </motion.div>
 
-          <Button 
-            variant="outline" 
-            onClick={logout} 
-            className="clay-button min-h-[44px] ml-4"
-          >
-            Logout
-          </Button>
+          <UserMenu />
         </div>
 
         {/* Main Content */}
