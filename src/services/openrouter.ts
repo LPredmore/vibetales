@@ -31,7 +31,7 @@ export const generateStory = async (
   storyData: StoryFormData & { keywords: string[] }
 ) => {
   // Validate required fields
-  const requiredFields = ['readingLevel', 'interestLevel', 'theme', 'length'];
+  const requiredFields = ['readingLevel', 'interestLevel', 'theme', 'length', 'language'];
   for (const field of requiredFields) {
     if (!storyData[field as keyof StoryFormData]) {
       throw new Error(`Missing required field: ${field}`);
@@ -58,6 +58,7 @@ export const generateStory = async (
       themeLesson: storyData.themeLesson,
       hasThemeLesson: storyData.hasThemeLesson,
       length: storyData.length,
+      language: storyData.language,
       isDrSeussStyle: storyData.isDrSeussStyle,
       useSightWords: storyData.useSightWords,
       keywords: storyData.keywords
