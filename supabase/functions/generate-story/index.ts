@@ -11,6 +11,8 @@ interface StoryRequest {
   readingLevel: "k" | "1" | "2" | "3" | "4" | "5" | "teen";
   interestLevel: "elementary" | "middle-grade" | "young-adult";
   theme: "fantasy" | "mystery" | "fairytale" | "science" | "nature" | string;
+  themeLesson?: string;
+  hasThemeLesson: boolean;
   length: "short" | "medium" | "long";
   isDrSeussStyle: boolean;
   useSightWords: boolean;
@@ -54,7 +56,8 @@ READING LEVEL: ${params.readingLevel.toUpperCase()} Grade
 - Use vocabulary appropriate for ${params.readingLevel} grade level
 
 STORY REQUIREMENTS:
-- Theme: ${params.theme}
+- Genre: ${params.theme}
+${params.hasThemeLesson && params.themeLesson ? `- Theme/Lesson focus: ${params.themeLesson}` : ''}
 - Interest level: ${params.interestLevel}
 - Length: ${params.length}
 - ${drSeussStyle}${sightWordsText}
@@ -226,7 +229,7 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
       },
       {
         role: "user", 
-        content: `Create a ${params.length} ${params.theme} story for ${params.readingLevel} grade level.`
+        content: `Create a ${params.length} ${params.theme} story for ${params.readingLevel} grade level${params.hasThemeLesson && params.themeLesson ? ` that focuses on the theme/lesson: ${params.themeLesson}` : ''}.`
       }
     ],
     temperature: 0.8,

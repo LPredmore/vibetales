@@ -55,6 +55,8 @@ export const generateStory = async (
       readingLevel: storyData.readingLevel,
       interestLevel: storyData.interestLevel,
       theme: storyData.theme,
+      themeLesson: storyData.themeLesson,
+      hasThemeLesson: storyData.hasThemeLesson,
       length: storyData.length,
       isDrSeussStyle: storyData.isDrSeussStyle,
       useSightWords: storyData.useSightWords,

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { ReadingLevelSelector } from "./ReadingLevelSelector";
 import { InterestLevelSelector } from "./InterestLevelSelector";
 import { ThemeSelector } from "./ThemeSelector";
+import { ThemeLessonSelector } from "./ThemeLessonSelector";
 import { StorySettings } from "./StorySettings";
 
 interface StoryFormProps {
@@ -23,7 +24,8 @@ export interface StoryFormData {
   interestLevel: string;
   theme: string;
   length: string;
-  customTheme?: string;
+  themeLesson?: string;
+  hasThemeLesson: boolean;
   isDrSeussStyle: boolean;
   useSightWords: boolean;
 }
@@ -32,7 +34,8 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
   const [readingLevel, setReadingLevel] = useState("");
   const [interestLevel, setInterestLevel] = useState("");
   const [theme, setTheme] = useState("");
-  const [customTheme, setCustomTheme] = useState("");
+  const [themeLesson, setThemeLesson] = useState("");
+  const [hasThemeLesson, setHasThemeLesson] = useState(false);
   const [length, setLength] = useState("");
   const [isDrSeussStyle, setIsDrSeussStyle] = useState(false);
   const [useSightWords, setUseSightWords] = useState(true);
@@ -42,7 +45,8 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
     const savedReadingLevel = localStorage.getItem('storyForm_readingLevel');
     const savedInterestLevel = localStorage.getItem('storyForm_interestLevel');
     const savedTheme = localStorage.getItem('storyForm_theme');
-    const savedCustomTheme = localStorage.getItem('storyForm_customTheme');
+    const savedThemeLesson = localStorage.getItem('storyForm_themeLesson');
+    const savedHasThemeLesson = localStorage.getItem('storyForm_hasThemeLesson');
     const savedLength = localStorage.getItem('storyForm_length');
     const savedIsDrSeussStyle = localStorage.getItem('storyForm_isDrSeussStyle');
     const savedUseSightWords = localStorage.getItem('storyForm_useSightWords');
@@ -50,7 +54,8 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
     if (savedReadingLevel) setReadingLevel(savedReadingLevel);
     if (savedInterestLevel) setInterestLevel(savedInterestLevel);
     if (savedTheme) setTheme(savedTheme);
-    if (savedCustomTheme) setCustomTheme(savedCustomTheme);
+    if (savedThemeLesson) setThemeLesson(savedThemeLesson);
+    if (savedHasThemeLesson) setHasThemeLesson(savedHasThemeLesson === 'true');
     if (savedLength) setLength(savedLength);
     if (savedIsDrSeussStyle) setIsDrSeussStyle(savedIsDrSeussStyle === 'true');
     if (savedUseSightWords) setUseSightWords(savedUseSightWords === 'true');
@@ -72,9 +77,14 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
     localStorage.setItem('storyForm_theme', value);
   };
 
-  const handleCustomThemeChange = (value: string) => {
-    setCustomTheme(value);
-    localStorage.setItem('storyForm_customTheme', value);
+  const handleThemeLessonChange = (value: string) => {
+    setThemeLesson(value);
+    localStorage.setItem('storyForm_themeLesson', value);
+  };
+
+  const handleHasThemeLessonChange = (enabled: boolean) => {
+    setHasThemeLesson(enabled);
+    localStorage.setItem('storyForm_hasThemeLesson', enabled.toString());
   };
 
   const handleLengthChange = (value: string) => {
@@ -94,20 +104,21 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!readingLevel || !interestLevel || !length) {
+    if (!readingLevel || !interestLevel || !theme || !length) {
       toast.error("Please fill in all required fields");
       return;
     }
-    if (theme === "custom" && !customTheme.trim()) {
-      toast.error("Please enter a custom theme or select a predefined one");
+    if (hasThemeLesson && !themeLesson.trim()) {
+      toast.error("Please enter a theme/lesson or disable the option");
       return;
     }
     onSubmit({
       readingLevel,
       interestLevel,
-      theme: theme === "custom" ? customTheme : theme,
+      theme,
       length,
-      customTheme: theme === "custom" ? customTheme : undefined,
+      themeLesson: hasThemeLesson ? themeLesson : undefined,
+      hasThemeLesson,
       isDrSeussStyle,
       useSightWords,
     });
@@ -132,9 +143,14 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
 
       <ThemeSelector
         theme={theme}
-        customTheme={customTheme}
         onThemeChange={handleThemeChange}
-        onCustomThemeChange={handleCustomThemeChange}
+      />
+
+      <ThemeLessonSelector
+        enabled={hasThemeLesson}
+        themeLesson={themeLesson}
+        onEnabledChange={handleHasThemeLessonChange}
+        onThemeLessonChange={handleThemeLessonChange}
       />
 
       <StorySettings
