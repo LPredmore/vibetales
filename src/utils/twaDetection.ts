@@ -21,31 +21,58 @@ export const isTWA = (): boolean => {
   return isTWAUserAgent || hasTWAProperties || (isStandalone && isFromPlayStore);
 };
 
-// Force manifest refresh for TWA
+// Force manifest refresh for TWA with aggressive cache busting
 export const forceTWAManifestRefresh = async (): Promise<void> => {
   if (!isTWA()) return;
   
   try {
-    console.log('🔄 TWA detected - forcing manifest refresh');
+    console.log('🔄 TWA detected - forcing aggressive manifest refresh');
     
-    // Force manifest re-fetch with cache busting
-    const manifestUrl = `/manifest.json?v=${Date.now()}`;
-    const response = await fetch(manifestUrl, {
-      cache: 'no-cache',
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    });
+    const timestamp = Date.now();
     
-    if (response.ok) {
-      const manifest = await response.json();
-      console.log('📱 TWA manifest refreshed, version:', manifest.version);
-      
-      // Notify TWA of version change if possible
-      if ('android' in window && typeof (window as any).android.onVersionUpdate === 'function') {
-        (window as any).android.onVersionUpdate(manifest.version);
+    // Multiple manifest refresh attempts with different cache-busting strategies
+    const manifestUrls = [
+      `/manifest.json?v=${timestamp}`,
+      `/manifest.json?bust=${timestamp}&twa=1`,
+      `/manifest.json?${timestamp}`
+    ];
+    
+    for (const manifestUrl of manifestUrls) {
+      try {
+        const response = await fetch(manifestUrl, {
+          method: 'GET',
+          cache: 'no-cache',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+            'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT',
+            'If-None-Match': '"invalidate-cache"'
+          }
+        });
+        
+        if (response.ok) {
+          const manifest = await response.json();
+          console.log('📱 TWA manifest refreshed successfully:', {
+            version: manifest.version,
+            url: manifestUrl,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Store the new version for comparison
+          if (manifest.version) {
+            localStorage.setItem('twa-manifest-version', manifest.version);
+          }
+          
+          // Notify TWA container if possible
+          if ('android' in window && typeof (window as any).android.onVersionUpdate === 'function') {
+            (window as any).android.onVersionUpdate(manifest.version);
+          }
+          
+          break; // Success, no need to try other URLs
+        }
+      } catch (fetchError) {
+        console.warn(`❌ Failed to fetch ${manifestUrl}:`, fetchError);
       }
     }
   } catch (error) {

@@ -10,7 +10,7 @@ import fs from 'fs';
 const buildVersion = Date.now().toString();
 const semanticVersion = `1.0.${Math.floor(Date.now() / 1000)}`;
 
-// Update app-version.json with current build info
+// Update app-version.json and build-version.txt with current build info
 const updateAppVersion = () => {
   const versionInfo = {
     version: semanticVersion,
@@ -19,10 +19,15 @@ const updateAppVersion = () => {
   };
   
   try {
+    // Update app-version.json
     fs.writeFileSync('public/app-version.json', JSON.stringify(versionInfo, null, 2));
-    console.log('📱 Updated app-version.json:', semanticVersion);
+    
+    // Update build-version.txt
+    fs.writeFileSync('public/build-version.txt', semanticVersion);
+    
+    console.log('📱 Updated version files:', semanticVersion);
   } catch (error) {
-    console.warn('⚠️ Could not update app-version.json:', error);
+    console.warn('⚠️ Could not update version files:', error);
   }
 };
 
