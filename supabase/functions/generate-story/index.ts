@@ -11,6 +11,7 @@ interface StoryRequest {
   readingLevel: "k" | "1" | "2" | "3" | "4" | "5" | "teen";
   interestLevel: "elementary" | "middle-grade" | "young-adult";
   theme: "fantasy" | "mystery" | "fairytale" | "science" | "nature" | string;
+  language: string;
   themeLesson?: string;
   hasThemeLesson: boolean;
   length: "short" | "medium" | "long";
@@ -48,6 +49,11 @@ function buildSystemPrompt(params: StoryRequest): string {
   // Get target word count for the story length
   const wordCountTarget = getWordCountTarget(params.length, level.words);
 
+  // Language instruction
+  const languageInstruction = params.language !== 'english' 
+    ? `Write the story in ${params.language}. ` 
+    : '';
+
   return `You are a children's story writer. Create an engaging, age-appropriate story with the following requirements:
 
 READING LEVEL: ${params.readingLevel.toUpperCase()} Grade
@@ -56,7 +62,7 @@ READING LEVEL: ${params.readingLevel.toUpperCase()} Grade
 - Use vocabulary appropriate for ${params.readingLevel} grade level
 
 STORY REQUIREMENTS:
-- Genre: ${params.theme}
+- ${languageInstruction}Genre: ${params.theme}
 ${params.hasThemeLesson && params.themeLesson ? `- Theme/Lesson focus: ${params.themeLesson}` : ''}
 - Interest level: ${params.interestLevel}
 - Length: ${params.length}
@@ -368,7 +374,7 @@ serve(async (req: Request) => {
     const storyParams: StoryRequest = await req.json();
     
     // Validate required parameters
-    const requiredFields = ['readingLevel', 'interestLevel', 'theme', 'length'];
+    const requiredFields = ['readingLevel', 'interestLevel', 'theme', 'language', 'length'];
     for (const field of requiredFields) {
       if (!storyParams[field]) {
         return new Response(JSON.stringify({ error: `Missing required field: ${field}` }), {
