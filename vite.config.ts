@@ -78,8 +78,7 @@ export default defineConfig(({ mode }) => ({
         launch_handler: {
           client_mode: 'navigate-existing'
         },
-        // TWA credential handling optimization for password managers
-        // Simplified manifest - removed experimental features
+        // Enhanced credentials handling for password managers
         screenshots: [
           {
             src: '/pwa-512x512.png',
