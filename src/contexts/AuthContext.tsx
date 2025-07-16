@@ -113,29 +113,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const recoverSession = async () => {
       // 1. Try standard recovery
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-        setIsLoading(false);
-        return;
-      }
-
-      // 2. Fallback: sessionStorage backup
-      const backup = sessionStorage.getItem('session-backup');
-      if (backup) {
-        try {
-          const { access_token, refresh_token, expires_at } = JSON.parse(backup);
-          if (Date.now() / 1000 < expires_at) {
-            const { data } = await supabase.auth.setSession({ access_token, refresh_token });
-            if (data.session) {
-              setSession(data.session);
-              setUser(data.session.user);
-              setIsLoading(false);
-              return;
+      if (!session) {
+        // 2. Fallback: sessionStorage backup
+        const backup = sessionStorage.getItem('session-backup');
+        if (backup) {
+          try {
+            const { access_token, refresh_token, expires_at } = JSON.parse(backup);
+            if (Date.now() / 1000 < expires_at) {
+              await supabase.auth.setSession({ access_token, refresh_token });
             }
+          } catch {
+            sessionStorage.removeItem('session-backup');
           }
-        } catch {
-          sessionStorage.removeItem('session-backup');
         }
       }
       
