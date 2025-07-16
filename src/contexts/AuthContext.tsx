@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      // 1. Supabase already uses localStorage by default, so this step is automatic
+      // 1. Supabase persistence is set to localStorage by default in client config
 
       // 2. Request persistent storage for PWA
       if ('storage' in navigator && 'persist' in navigator.storage) {
