@@ -5,6 +5,9 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Generate build version for cache busting
+const buildVersion = Date.now().toString();
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
@@ -15,8 +18,8 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' && componentTagger(),
     VitePWA({
-      registerType: 'prompt',
-      injectRegister: 'auto',
+      registerType: 'autoUpdate',
+      injectRegister: 'script',
       includeAssets: [
         'favicon-16x16.png',
         'favicon-32x32.png',
@@ -97,7 +100,10 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
+        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/, /\/auth/],
+        mode: 'production',
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -131,10 +137,13 @@ export default defineConfig(({ mode }) => ({
             handler: 'NetworkOnly'
           }
         ],
-        skipWaiting: false,
-        clientsClaim: false,
         cleanupOutdatedCaches: true,
-        sourcemap: true
+        sourcemap: true,
+        // Add build version for cache busting
+        swDest: 'sw.js',
+        additionalManifestEntries: [
+          { url: '/build-version.txt', revision: buildVersion }
+        ]
       },
       // Enable periodic background sync and push notifications
       devOptions: {

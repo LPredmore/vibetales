@@ -13,52 +13,54 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
-    // Use Vite PWA's built-in registration, don't register manually
     const setupUpdateListener = async () => {
       if ('serviceWorker' in navigator) {
         try {
-          // Wait for existing registration from Vite PWA
-          const existingRegistration = await navigator.serviceWorker.getRegistration();
+          // Check for updates immediately on startup
+          const checkForUpdates = async () => {
+            const existingRegistration = await navigator.serviceWorker.getRegistration();
+            if (existingRegistration) {
+              setRegistration(existingRegistration);
+              console.log('🔄 Checking for PWA updates...');
+              await existingRegistration.update();
+            }
+          };
+
+          // Initial check
+          await checkForUpdates();
           
-          if (existingRegistration) {
-            setRegistration(existingRegistration);
-            console.log('✅ Using existing service worker registration');
+          // Check for updates periodically (every 30 seconds)
+          const updateInterval = setInterval(checkForUpdates, 30000);
 
-            // Listen for updates on existing registration
-            existingRegistration.addEventListener('updatefound', () => {
-              console.log('🔍 Service worker update found');
-              const newWorker = existingRegistration.installing;
-              
-              if (newWorker) {
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    console.log('📦 New service worker installed, update available');
-                    setUpdateAvailable(true);
-                    
-                    // Notify parent component
-                    if (onUpdateAvailable) {
-                      onUpdateAvailable(() => applyUpdate());
-                    }
-                  }
-                });
-              }
-            });
+          // Listen for service worker updates
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('📦 New service worker activated, update available');
+            setUpdateAvailable(true);
+            
+            if (onUpdateAvailable) {
+              onUpdateAvailable(() => applyUpdate());
+            }
+          });
 
-            // Listen for messages from service worker
-            navigator.serviceWorker.addEventListener('message', (event) => {
-              if (event.data?.type === 'SKIP_WAITING') {
-                console.log('🚀 Service worker activated, reloading page');
-                window.location.reload();
-              }
-            });
-          }
+          // Listen for messages from service worker
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data?.type === 'SKIP_WAITING') {
+              console.log('🚀 Service worker activated, reloading page');
+              window.location.reload();
+            }
+          });
+
+          return () => clearInterval(updateInterval);
         } catch (error) {
           console.error('❌ Service worker setup failed:', error);
         }
       }
     };
 
-    setupUpdateListener();
+    const cleanup = setupUpdateListener();
+    return () => {
+      if (cleanup) cleanup.then(fn => fn && fn());
+    };
   }, [onUpdateAvailable]);
 
   const applyUpdate = async () => {
