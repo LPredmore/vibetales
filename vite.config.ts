@@ -15,19 +15,20 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' && componentTagger(),
     VitePWA({
-      registerType: 'autoUpdate',
-        includeAssets: [
-          'favicon-16x16.png',
-          'favicon-32x32.png',
-          'favicon-48x48.png',
-          'favicon-96x96.png',
-          'favicon-192x192.png',
-          'favicon-512x512.png',
-          'apple-touch-icon.png',
-          'placeholder.png',
-          'pwa-192x192-maskable.png',
-          'pwa-512x512-maskable.png'
-        ],
+      registerType: 'prompt',
+      injectRegister: false,
+      includeAssets: [
+        'favicon-16x16.png',
+        'favicon-32x32.png',
+        'favicon-48x48.png',
+        'favicon-96x96.png',
+        'favicon-192x192.png',
+        'favicon-512x512.png',
+        'apple-touch-icon.png',
+        'placeholder.png',
+        'pwa-192x192-maskable.png',
+        'pwa-512x512-maskable.png'
+      ],
       manifest: {
         id: '/',
         name: 'StoryBridge - Story Generator',
@@ -121,8 +122,11 @@ export default defineConfig(({ mode }) => ({
           }
         ],
         // Background sync for offline functionality
-        skipWaiting: true,
-        clientsClaim: true
+        skipWaiting: false,
+        clientsClaim: false,
+        // Add cache versioning for proper updates
+        cleanupOutdatedCaches: true,
+        sourcemap: true
       },
       // Enable periodic background sync and push notifications
       devOptions: {
