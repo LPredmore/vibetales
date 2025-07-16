@@ -142,18 +142,22 @@ const Index = () => {
         <div className="max-w-4xl mx-auto">
           <div className="clay-card p-4 sm:p-8">
             <Tabs defaultValue="story" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 mb-6 sm:mb-8 bg-transparent p-2 gap-2 h-auto">
-                <TabsTrigger value="story" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
-                  📚 Generate Story
+              <TabsList className="grid w-full grid-cols-4 mb-6 sm:mb-8 bg-transparent p-1 sm:p-2 gap-1 sm:gap-2 h-auto">
+                <TabsTrigger value="story" className="clay-tab-mobile text-gray-700 font-semibold min-h-[48px] px-2 sm:px-4 py-3 text-xs sm:text-base flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+                  <span className="text-lg sm:text-base">📚</span>
+                  <span className="text-xs sm:text-base leading-tight sm:leading-normal">Story</span>
                 </TabsTrigger>
-                <TabsTrigger value="words" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
-                  🎯 Sight Words
+                <TabsTrigger value="words" className="clay-tab-mobile text-gray-700 font-semibold min-h-[48px] px-2 sm:px-4 py-3 text-xs sm:text-base flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+                  <span className="text-lg sm:text-base">🎯</span>
+                  <span className="text-xs sm:text-base leading-tight sm:leading-normal">Words</span>
                 </TabsTrigger>
-                <TabsTrigger value="favorites" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
-                  ❤️ Favorites
+                <TabsTrigger value="favorites" className="clay-tab-mobile text-gray-700 font-semibold min-h-[48px] px-2 sm:px-4 py-3 text-xs sm:text-base flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+                  <span className="text-lg sm:text-base">❤️</span>
+                  <span className="text-xs sm:text-base leading-tight sm:leading-normal">Saved</span>
                 </TabsTrigger>
-                <TabsTrigger value="reports" className="clay-tab text-gray-700 font-semibold min-h-[44px] text-sm sm:text-base">
-                  🚩 Reports
+                <TabsTrigger value="reports" className="clay-tab-mobile text-gray-700 font-semibold min-h-[48px] px-2 sm:px-4 py-3 text-xs sm:text-base flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+                  <span className="text-lg sm:text-base">🚩</span>
+                  <span className="text-xs sm:text-base leading-tight sm:leading-normal">Report</span>
                 </TabsTrigger>
               </TabsList>
               
