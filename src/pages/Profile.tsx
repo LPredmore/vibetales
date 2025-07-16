@@ -66,9 +66,9 @@ const Profile = () => {
           .from("profiles")
           .select("*")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
 
-        if (error && error.code === 'PGRST116') {
+        if (!profile && !error) {
           // No profile exists, create one
           const { error: insertError } = await supabase
             .from("profiles")
@@ -106,11 +106,11 @@ const Profile = () => {
       // Update profile
       const { error: profileError } = await supabase
         .from("profiles")
-        .upsert({
-          user_id: user.id,
+        .update({
           name: data.name,
           email: data.email,
-        });
+        })
+        .eq("user_id", user.id);
 
       if (profileError) throw profileError;
 

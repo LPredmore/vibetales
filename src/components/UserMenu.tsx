@@ -25,7 +25,7 @@ export const UserMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10">
+        <Button variant="ghost" size="icon" className="text-black hover:bg-black/10">
           <Menu className="h-5 w-5" />
         </Button>
       </DropdownMenuTrigger>
