@@ -14,6 +14,9 @@
     <meta name="background-color" content="#F3E8FF" />
     <meta name="display" content="standalone" />
     
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
     <!-- iOS Specific -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -46,7 +49,121 @@
 
   <body>
     <div id="root"></div>
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
-    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Emergency Fallback Screen for Android PWA -->
+    <div id="emergency-fallback" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #F3E8FF; z-index: 9999; padding: 20px; font-family: Arial, sans-serif; text-align: center;">
+      <div style="max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        <h1 style="color: #8B5CF6; margin-bottom: 20px;">StoryBridge Loading...</h1>
+        <div id="fallback-info">
+          <p style="margin-bottom: 15px;">App is starting up...</p>
+          <div style="background: #f0f0f0; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; text-align: left; margin: 15px 0;">
+            <div>🌐 URL: <span id="current-url"></span></div>
+            <div>📱 User Agent: <span id="user-agent"></span></div>
+            <div>🔄 Service Worker: <span id="sw-status"></span></div>
+            <div>📦 App Version: <span id="app-version">Loading...</span></div>
+            <div>⏰ Load Time: <span id="load-time"></span></div>
+          </div>
+          <button onclick="location.reload()" style="background: #8B5CF6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px;">Retry</button>
+          <button onclick="clearCacheAndReload()" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px;">Clear Cache & Retry</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const startTime = Date.now();
+      let emergencyShown = false;
+      
+      // Populate emergency diagnostic info immediately
+      document.getElementById('current-url').textContent = window.location.href;
+      document.getElementById('user-agent').textContent = navigator.userAgent.substring(0, 50) + '...';
+      document.getElementById('sw-status').textContent = 'serviceWorker' in navigator ? 'Supported' : 'Not Supported';
+      document.getElementById('load-time').textContent = new Date().toLocaleTimeString();
+      
+      // Check for app version
+      fetch('/app-version.json')
+        .then(r => r.json())
+        .then(data => document.getElementById('app-version').textContent = data.version)
+        .catch(() => document.getElementById('app-version').textContent = 'Error loading version');
+      
+      // Clear cache function
+      function clearCacheAndReload() {
+        if ('caches' in window) {
+          caches.keys().then(names => {
+            return Promise.all(names.map(name => caches.delete(name)));
+          }).then(() => {
+            localStorage.clear();
+            sessionStorage.clear();
+            location.reload(true);
+          });
+        } else {
+          localStorage.clear();
+          sessionStorage.clear();
+          location.reload(true);
+        }
+      }
+      
+      // Emergency debug activation
+      let tapCount = 0;
+      let tapTimer = null;
+      document.addEventListener('click', function(e) {
+        if (e.clientX < 50 && e.clientY < 50) {
+          tapCount++;
+          clearTimeout(tapTimer);
+          tapTimer = setTimeout(() => tapCount = 0, 2000);
+          if (tapCount >= 5) {
+            document.getElementById('emergency-fallback').style.display = 'block';
+            emergencyShown = true;
+          }
+        }
+      });
+      
+      // Show emergency screen if app doesn't load within 10 seconds
+      setTimeout(() => {
+        if (!emergencyShown && (!document.querySelector('#root > *') || document.querySelector('#root').innerHTML.trim() === '')) {
+          console.error('🚨 App failed to load within 10 seconds - showing emergency screen');
+          document.getElementById('emergency-fallback').style.display = 'block';
+          emergencyShown = true;
+        }
+      }, 10000);
+      
+      // Debug URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('debug') === 'emergency' || urlParams.get('cache') === 'clear') {
+        document.getElementById('emergency-fallback').style.display = 'block';
+        emergencyShown = true;
+        if (urlParams.get('cache') === 'clear') {
+          clearCacheAndReload();
+        }
+      }
+    </script>
+    
+    <script>
+      // Enhanced script loading error detection
+      window.addEventListener('error', function(e) {
+        console.error('🚨 Script loading error:', e);
+        if (e.filename && e.filename.includes('.js')) {
+          if (!emergencyShown) {
+            document.getElementById('emergency-fallback').style.display = 'block';
+            emergencyShown = true;
+          }
+        }
+      });
+      
+      // Service worker registration with enhanced error handling
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          .then(registration => {
+            console.log('✅ Service Worker registered:', registration.scope);
+            document.getElementById('sw-status').textContent = 'Registered ✅';
+          })
+          .catch(error => {
+            console.error('❌ Service Worker registration failed:', error);
+            document.getElementById('sw-status').textContent = 'Failed ❌';
+          });
+      }
+    </script>
+    
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module" onerror="console.error('❌ GPT Engineer script failed to load')"></script>
+    <script type="module" src="/src/main.tsx" onerror="console.error('❌ Main app script failed to load'); if (!emergencyShown) { document.getElementById('emergency-fallback').style.display = 'block'; emergencyShown = true; }"></script>
   </body>
 </html>

@@ -169,8 +169,7 @@ export default defineConfig(({ mode }) => ({
         swDest: 'sw.js',
         additionalManifestEntries: [
           { url: '/build-version.txt', revision: buildVersion },
-          { url: '/app-version.json', revision: semanticVersion },
-          { url: '/manifest.json', revision: semanticVersion }
+          { url: '/app-version.json', revision: semanticVersion }
         ]
       },
       // Enable periodic background sync and push notifications
