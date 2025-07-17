@@ -6,8 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>StoryBridge - Story Generator</title>
     <meta name="description" content="Create magical stories for young readers with sight words practice" />
-    <meta name="author" content="StoryBridge" />
-    <meta name="keywords" content="story generator, sight words, reading, children, education" />
+    
+    <!-- Android WebView Cache Control -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#8B5CF6" />
@@ -22,29 +25,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="StoryBridge" />
     
-    <!-- Microsoft specific -->
-    <meta name="msapplication-TileColor" content="#8B5CF6" />
-    <meta name="msapplication-config" content="none" />
-    
     <!-- Icons -->
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
-    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="mask-icon" href="/pwa-512x512.png" color="#8B5CF6" />
-    
-    <!-- Social Media -->
-    <meta property="og:title" content="StoryBridge - Story Generator" />
-    <meta property="og:description" content="Create magical stories for young readers with sight words practice" />
-    <meta property="og:image" content="/pwa-512x512.png" />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="StoryBridge - Story Generator" />
-    <meta name="twitter:description" content="Create magical stories for young readers with sight words practice" />
-    <meta name="twitter:image" content="/pwa-512x512.png" />
   </head>
 
   <body>
@@ -54,292 +39,166 @@
     <div id="emergency-fallback" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #F3E8FF; z-index: 9999; padding: 20px; font-family: Arial, sans-serif; text-align: center; overflow-y: auto;">
       <div style="max-width: 500px; margin: 20px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
         <h1 style="color: #8B5CF6; margin-bottom: 20px;">🔧 StoryBridge Recovery Mode</h1>
-        <div id="fallback-info">
-          <p style="margin-bottom: 15px; color: #666;">App loading failed. Recovery mode activated.</p>
-          <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; text-align: left; margin: 15px 0; border: 1px solid #e9ecef;">
-            <div style="margin: 5px 0;">🌐 <strong>URL:</strong> <span id="current-url"></span></div>
-            <div style="margin: 5px 0;">📱 <strong>Device:</strong> <span id="user-agent"></span></div>
-            <div style="margin: 5px 0;">🔄 <strong>Service Worker:</strong> <span id="sw-status">Checking...</span></div>
-            <div style="margin: 5px 0;">⏰ <strong>Load Time:</strong> <span id="load-time"></span></div>
-            <div style="margin: 5px 0;">🎯 <strong>React App:</strong> <span id="react-status">Loading...</span></div>
-            <div style="margin: 5px 0;">🌐 <strong>Network:</strong> <span id="network-status">Testing...</span></div>
-            <div style="margin: 5px 0;">📱 <strong>PWA Mode:</strong> <span id="pwa-mode">Detecting...</span></div>
-            <div style="margin: 5px 0;">⚠️ <strong>Cache Issues:</strong> <span id="cache-issues">Analyzing...</span></div>
-          </div>
-          <div style="margin: 20px 0;">
-            <button onclick="nuclearReset()" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🗑️ Nuclear Reset</button>
-            <button onclick="bypassServiceWorker()" style="background: #059669; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🚫 Bypass SW</button>
-            <button onclick="forceRefresh()" style="background: #8B5CF6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🔄 Force Refresh</button>
-          </div>
-          <div id="error-log" style="background: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 5px; font-size: 12px; text-align: left; margin: 15px 0; display: none;">
-            <h4 style="color: #dc2626; margin: 0 0 10px 0;">🚨 Error Log:</h4>
-            <div id="error-content"></div>
-          </div>
+        <p style="margin-bottom: 15px; color: #666;">App failed to load. Activating recovery mode...</p>
+        <div style="margin: 20px 0;">
+          <button onclick="nuclearReset()" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🗑️ Clear All Data</button>
+          <button onclick="bypassServiceWorker()" style="background: #059669; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🚫 Bypass Cache</button>
+          <button onclick="window.location.reload()" style="background: #8B5CF6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🔄 Reload</button>
+        </div>
+        <div id="diagnostic-info" style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; text-align: left; margin: 15px 0;">
+          <div>🌐 URL: <span id="current-url"></span></div>
+          <div>📱 User Agent: <span id="user-agent"></span></div>
+          <div>🔄 Service Worker: <span id="sw-status">Checking...</span></div>
+          <div>📦 Cache: <span id="cache-status">Analyzing...</span></div>
         </div>
       </div>
     </div>
 
     <script>
-      const startTime = Date.now();
-      let emergencyShown = false;
-      let reactLoaded = false;
-      let errorLog = [];
-      
-      // Populate emergency diagnostic info
+      // Populate diagnostic info
       document.getElementById('current-url').textContent = window.location.href;
-      document.getElementById('user-agent').textContent = navigator.userAgent.substring(0, 60) + '...';
-      document.getElementById('load-time').textContent = new Date().toLocaleTimeString();
+      document.getElementById('user-agent').textContent = navigator.userAgent.substring(0, 80) + '...';
       
-      // Detect PWA mode
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-                    window.navigator.standalone === true ||
-                    document.referrer.includes('android-app://');
-      document.getElementById('pwa-mode').textContent = isPWA ? 'PWA Mode ✅' : 'Browser Mode 🌐';
-      
-      // Error logging
-      function logError(error) {
-        errorLog.push(`${new Date().toLocaleTimeString()}: ${error}`);
-        updateErrorDisplay();
-        console.error('Emergency Log:', error);
-      }
-      
-      function updateErrorDisplay() {
-        const errorEl = document.getElementById('error-log');
-        const contentEl = document.getElementById('error-content');
-        if (errorLog.length > 0) {
-          errorEl.style.display = 'block';
-          contentEl.innerHTML = errorLog.map(err => `<div style="margin: 2px 0; padding: 5px; background: white; border-radius: 3px; font-size: 11px;">${err}</div>`).join('');
-        }
-      }
-      
-      // Nuclear reset - completely wipe everything
+      // Nuclear reset function
       async function nuclearReset() {
-        logError('🗑️ Initiating nuclear reset...');
-        
         try {
-          // Step 1: Unregister ALL service workers
+          console.log('🗑️ Nuclear reset initiated');
+          
+          // Unregister all service workers
           if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
             for (const registration of registrations) {
               await registration.unregister();
-              logError(`✅ Unregistered SW: ${registration.scope}`);
+              console.log('✅ Unregistered SW:', registration.scope);
             }
           }
           
-          // Step 2: Delete ALL caches
+          // Delete all caches
           if ('caches' in window) {
             const cacheNames = await caches.keys();
             for (const cacheName of cacheNames) {
               await caches.delete(cacheName);
-              logError(`✅ Deleted cache: ${cacheName}`);
+              console.log('✅ Deleted cache:', cacheName);
             }
           }
           
-          // Step 3: Clear all storage
+          // Clear all storage
           localStorage.clear();
           sessionStorage.clear();
           
-          // Step 4: Clear IndexedDB if it exists
+          // Clear IndexedDB
           if ('indexedDB' in window) {
             try {
               const databases = await indexedDB.databases();
               for (const db of databases) {
                 indexedDB.deleteDatabase(db.name);
-                logError(`✅ Deleted IndexedDB: ${db.name}`);
               }
             } catch (e) {
-              logError(`⚠️ IndexedDB clear failed: ${e.message}`);
+              console.warn('IndexedDB clear failed:', e);
             }
           }
           
-          logError('🔄 Performing hard reload...');
-          
-          // Step 5: Force hard reload with extreme cache busting
-          setTimeout(() => {
-            window.location.href = window.location.protocol + '//' + window.location.host + 
-                                   window.location.pathname + '?nuclear_reset=' + Date.now() + 
-                                   '&cache_bust=' + Math.random();
-          }, 1000);
+          console.log('🔄 Reloading with cache bypass...');
+          window.location.href = window.location.origin + '?reset=' + Date.now();
           
         } catch (error) {
-          logError('❌ Nuclear reset failed: ' + error.message);
+          console.error('❌ Nuclear reset failed:', error);
+          alert('Reset failed. Try manually clearing browser data.');
         }
       }
       
-      // Bypass service worker entirely
+      // Bypass service worker
       function bypassServiceWorker() {
-        logError('🚫 Setting service worker bypass...');
         localStorage.setItem('bypass-sw', 'true');
-        localStorage.setItem('sw-bypass-timestamp', Date.now().toString());
-        window.location.href = window.location.href + '?no_sw=' + Date.now();
+        window.location.href = window.location.href + (window.location.search ? '&' : '?') + 'no_sw=' + Date.now();
       }
       
-      // Force refresh with cache bypass
-      function forceRefresh() {
-        logError('🔄 Force refresh with cache bypass...');
-        window.location.reload(true);
+      // Check service worker status
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          document.getElementById('sw-status').textContent = registrations.length > 0 ? 
+            `${registrations.length} registered` : 'None';
+        }).catch(e => {
+          document.getElementById('sw-status').textContent = 'Error: ' + e.message;
+        });
+      } else {
+        document.getElementById('sw-status').textContent = 'Not supported';
       }
       
-      // Test network and cache status
-      function analyzeCache() {
-        if ('caches' in window) {
-          caches.keys().then(cacheNames => {
-            if (cacheNames.length === 0) {
-              document.getElementById('cache-issues').textContent = 'No caches found 🟡';
-            } else {
-              document.getElementById('cache-issues').textContent = `${cacheNames.length} caches found 🟢`;
-              logError(`Found caches: ${cacheNames.join(', ')}`);
-            }
-          }).catch(e => {
-            document.getElementById('cache-issues').textContent = 'Cache access failed ❌';
-            logError(`Cache analysis failed: ${e.message}`);
-          });
-        } else {
-          document.getElementById('cache-issues').textContent = 'Cache API not supported ❌';
-        }
+      // Check cache status
+      if ('caches' in window) {
+        caches.keys().then(cacheNames => {
+          document.getElementById('cache-status').textContent = cacheNames.length > 0 ? 
+            `${cacheNames.length} caches` : 'No caches';
+        }).catch(e => {
+          document.getElementById('cache-status').textContent = 'Error: ' + e.message;
+        });
+      } else {
+        document.getElementById('cache-status').textContent = 'Not supported';
       }
       
-      // Test network connectivity
-      function testNetwork() {
-        const testUrl = '/favicon-16x16.png?t=' + Date.now();
-        fetch(testUrl, { cache: 'no-cache' })
-          .then(() => {
-            document.getElementById('network-status').textContent = 'Connected ✅';
-          })
-          .catch(e => {
-            document.getElementById('network-status').textContent = 'Connection Issues ❌';
-            logError('❌ Network test failed: ' + e.message);
-          });
-      }
-      
-      // Monitor React app loading
-      function checkReactApp() {
-        const rootEl = document.getElementById('root');
-        if (rootEl && rootEl.children.length > 0) {
-          reactLoaded = true;
-          document.getElementById('react-status').textContent = 'Loaded ✅';
-          return true;
-        }
-        return false;
-      }
-      
-      // Run diagnostics
-      analyzeCache();
-      testNetwork();
-      
-      // Show emergency screen if React doesn't load within 8 seconds (longer for Android)
-      setTimeout(() => {
-        if (!reactLoaded && !checkReactApp()) {
-          logError('❌ React app failed to load within 8 seconds');
-          document.getElementById('react-status').textContent = 'Failed ❌';
+      // Show emergency screen if React doesn't load within 10 seconds
+      let emergencyTimer = setTimeout(() => {
+        if (!document.getElementById('root').children.length) {
+          console.error('❌ React app failed to load - showing emergency screen');
           document.getElementById('emergency-fallback').style.display = 'block';
-          emergencyShown = true;
         }
-      }, 8000);
+      }, 10000);
+      
+      // Hide emergency screen if React loads
+      const observer = new MutationObserver(() => {
+        if (document.getElementById('root').children.length > 0) {
+          clearTimeout(emergencyTimer);
+          document.getElementById('emergency-fallback').style.display = 'none';
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.getElementById('root'), { childList: true });
       
       // Enhanced error tracking
       window.addEventListener('error', function(e) {
-        const errorMsg = e.filename ? 
-          `Script error in ${e.filename}:${e.lineno} - ${e.message}` : 
-          `Error: ${e.message}`;
-        logError(errorMsg);
+        console.error('Script error:', e.filename, e.lineno, e.message);
         
-        // Show emergency screen immediately for script loading errors
-        if (e.filename && e.filename.includes('.js') && !emergencyShown) {
+        // Show emergency screen for critical script errors
+        if (e.filename && e.filename.includes('.js')) {
           setTimeout(() => {
-            if (!reactLoaded) {
+            if (!document.getElementById('root').children.length) {
               document.getElementById('emergency-fallback').style.display = 'block';
-              emergencyShown = true;
             }
-          }, 2000);
+          }, 3000);
         }
       });
       
-      window.addEventListener('unhandledrejection', function(e) {
-        logError(`Promise rejection: ${e.reason}`);
-      });
-      
-      // Complete service worker reset and registration
-      async function resetAndRegisterServiceWorker() {
-        if (!('serviceWorker' in navigator)) {
-          document.getElementById('sw-status').textContent = 'Not Supported ❌';
-          return;
-        }
-        
-        // Check if user wants to bypass service worker
-        if (localStorage.getItem('bypass-sw') === 'true') {
-          document.getElementById('sw-status').textContent = 'Bypassed 🚫';
-          logError('🚫 Service worker bypassed by user setting');
-          return;
-        }
-        
-        try {
-          // Force unregister all existing service workers first
-          const existingRegistrations = await navigator.serviceWorker.getRegistrations();
-          for (const registration of existingRegistrations) {
-            await registration.unregister();
-            logError(`🗑️ Unregistered old SW: ${registration.scope}`);
-          }
+      // Service worker registration with bypass option
+      if ('serviceWorker' in navigator && !localStorage.getItem('bypass-sw')) {
+        navigator.serviceWorker.register('/sw.js', {
+          scope: '/',
+          updateViaCache: 'none'
+        }).then(registration => {
+          console.log('✅ Service worker registered:', registration.scope);
           
-          // Clear all caches to prevent conflicts
-          if ('caches' in window) {
-            const cacheNames = await caches.keys();
-            for (const cacheName of cacheNames) {
-              await caches.delete(cacheName);
-            }
-          }
+          // Force update check
+          registration.update();
           
-          // Find the correct service worker file (versioned)
-          const buildVersion = Date.now();
-          let swUrl = '/sw.js';
-          
-          // Try to find the versioned service worker file
-          try {
-            const response = await fetch('/sw-' + buildVersion + '.js', { method: 'HEAD' });
-            if (response.ok) {
-              swUrl = '/sw-' + buildVersion + '.js';
-            }
-          } catch (e) {
-            // Fallback to default sw.js
-          }
-          
-          // Register new service worker with aggressive cache busting
-          const registration = await navigator.serviceWorker.register(swUrl + '?v=' + Date.now(), { 
-            scope: '/',
-            updateViaCache: 'none'
-          });
-          
-          document.getElementById('sw-status').textContent = 'Registered ✅';
-          logError(`✅ New service worker registered: ${swUrl}`);
-          
-          // Force immediate activation
-          if (registration.waiting) {
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-          }
-          
-          // Listen for updates
+          // Handle updates
           registration.addEventListener('updatefound', () => {
-            logError('🔄 Service worker update found');
+            console.log('🔄 Service worker update found');
+            if (registration.installing) {
+              registration.installing.addEventListener('statechange', () => {
+                if (registration.installing.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('🔄 New service worker installed, reloading...');
+                  window.location.reload();
+                }
+              });
+            }
           });
           
-        } catch (error) {
-          document.getElementById('sw-status').textContent = 'Failed ❌';
-          logError('❌ Service worker registration failed: ' + error.message);
-        }
-      }
-      
-      // Register service worker
-      resetAndRegisterServiceWorker();
-      
-      // Auto-show emergency mode for debugging
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('debug') === 'true' || 
-          urlParams.get('nuclear_reset') || 
-          urlParams.get('no_sw') || 
-          urlParams.get('cache_bust')) {
-        document.getElementById('emergency-fallback').style.display = 'block';
-        emergencyShown = true;
-        logError('🔧 Emergency mode activated via URL parameter');
+        }).catch(error => {
+          console.error('❌ Service worker registration failed:', error);
+          // Continue without service worker
+        });
+      } else if (localStorage.getItem('bypass-sw')) {
+        console.log('🚫 Service worker bypassed by user setting');
       }
     </script>
     

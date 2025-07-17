@@ -1,3 +1,4 @@
+
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
@@ -9,7 +10,8 @@ debugLogger.logLifecycle('INFO', 'Application main.tsx loading', {
   url: window.location.href,
   userAgent: navigator.userAgent,
   serviceWorkerSupported: 'serviceWorker' in navigator,
-  rootElement: !!document.getElementById("root")
+  rootElement: !!document.getElementById("root"),
+  bypassSW: localStorage.getItem('bypass-sw')
 });
 
 // Set up network and storage monitoring
@@ -19,32 +21,43 @@ debugLogger.setupStorageMonitoring();
 // Mark performance for app render
 debugLogger.markPerformance('app-render-start');
 
-// Monitor DOM content loaded
-document.addEventListener('DOMContentLoaded', () => {
-  debugLogger.logLifecycle('INFO', 'DOM content loaded');
-  debugLogger.measurePerformance('dom-ready', 'app-init');
+// Enhanced error handling for Android WebView
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+  debugLogger.logError('CRITICAL', 'Unhandled promise rejection', {
+    reason: event.reason,
+    stack: event.reason?.stack
+  });
 });
 
-// Monitor window load
-window.addEventListener('load', () => {
-  debugLogger.logLifecycle('INFO', 'Window fully loaded');
-  debugLogger.measurePerformance('window-load', 'app-init');
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error);
+  debugLogger.logError('CRITICAL', 'Global error caught', {
+    message: event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno,
+    error: event.error?.stack
+  });
 });
 
 // Legacy console logs for backward compatibility
 console.log('🚀 StoryBridge PWA starting...');
 console.log('📱 User Agent:', navigator.userAgent);
 console.log('🔧 Service Worker supported:', 'serviceWorker' in navigator);
+console.log('🚫 Service Worker bypass:', localStorage.getItem('bypass-sw'));
 console.log('🏗️ Build timestamp:', new Date().toISOString());
 
 try {
   const rootElement = document.getElementById("root");
   if (!rootElement) {
+    const error = new Error('Root element not found');
     debugLogger.logError('CRITICAL', 'Root element not found', { 
       documentReady: document.readyState,
-      bodyChildren: document.body?.children.length
+      bodyChildren: document.body?.children.length,
+      headChildren: document.head?.children.length
     });
-    throw new Error('Root element not found');
+    throw error;
   }
 
   debugLogger.logLifecycle('INFO', 'Creating React root');
@@ -56,19 +69,34 @@ try {
   debugLogger.measurePerformance('react-render', 'app-render-start');
   debugLogger.logLifecycle('INFO', 'App component rendered successfully');
   
+  // Notify emergency screen that React loaded
+  setTimeout(() => {
+    if (rootElement.children.length > 0) {
+      const emergencyEl = document.getElementById('emergency-fallback');
+      if (emergencyEl) {
+        emergencyEl.style.display = 'none';
+      }
+    }
+  }, 100);
+  
 } catch (error) {
+  console.error('❌ Critical error during app initialization:', error);
   debugLogger.logError('CRITICAL', 'Failed to render application', {
     error: error.message,
-    stack: error.stack
+    stack: error.stack,
+    rootElementExists: !!document.getElementById("root"),
+    documentReady: document.readyState
   });
   
   // Show emergency error screen
-  document.body.innerHTML = `
-    <div style="padding: 20px; font-family: Arial; color: red;">
-      <h1>Application Failed to Start</h1>
-      <p>Error: ${error.message}</p>
-      <p>Check console for details or add ?debug=emergency to URL</p>
-      <button onclick="localStorage.clear(); location.reload();">Clear Cache & Reload</button>
-    </div>
-  `;
+  setTimeout(() => {
+    const emergencyEl = document.getElementById('emergency-fallback');
+    if (emergencyEl) {
+      emergencyEl.style.display = 'block';
+      const errorInfo = emergencyEl.querySelector('#diagnostic-info');
+      if (errorInfo) {
+        errorInfo.innerHTML += `<div style="color: red; margin-top: 10px;">❌ Error: ${error.message}</div>`;
+      }
+    }
+  }, 100);
 }
