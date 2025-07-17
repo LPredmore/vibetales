@@ -1,3 +1,4 @@
+
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
@@ -9,7 +10,12 @@ const config: CapacitorConfig = {
     cleartext: true
   },
   android: {
-    allowMixedContent: true
+    allowMixedContent: true,
+    webContentsDebuggingEnabled: true,
+    backgroundColor: '#F3E8FF'
+  },
+  ios: {
+    backgroundColor: '#F3E8FF'
   }
 };
 

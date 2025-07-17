@@ -62,8 +62,13 @@ export default defineConfig(({ mode }) => ({
         clientsClaim: true,
         cleanupOutdatedCaches: true,
         sourcemap: false,
-        swDest: 'sw.js',
-        // Custom runtime caching with fallbacks
+        swDest: `sw-${buildVersion}.js`, // Version the SW file to bypass cache
+        // Aggressive cache cleanup and reset strategy
+        additionalManifestEntries: [
+          { url: '/', revision: buildVersion },
+          { url: '/manifest.json', revision: buildVersion }
+        ],
+        // Network-first strategy for critical resources
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -91,26 +96,22 @@ export default defineConfig(({ mode }) => ({
             urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
             handler: 'NetworkOnly'
           },
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/auth\/.*/i,
-            handler: 'NetworkOnly'
-          },
-          // Fallback for main app resources
+          // Network-first for app resources to prevent stale cache issues
           {
             urlPattern: /\.(js|css|html)$/,
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst',
             options: {
-              cacheName: 'app-resources',
+              cacheName: `app-resources-${buildVersion}`,
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
+                maxAgeSeconds: 60 * 60 * 24 * 7
               }
             }
           }
         ]
       },
       devOptions: {
-        enabled: false // Disable in development to avoid conflicts
+        enabled: false
       }
     })
   ].filter(Boolean),
@@ -123,10 +124,10 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        // Use consistent naming for assets
-        assetFileNames: 'assets/[name]-[hash][extname]',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js'
+        // Consistent naming for assets to prevent cache mismatches
+        assetFileNames: `assets/[name]-${buildVersion}[extname]`,
+        chunkFileNames: `assets/[name]-${buildVersion}.js`,
+        entryFileNames: `assets/[name]-${buildVersion}.js`
       }
     }
   }
