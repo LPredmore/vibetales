@@ -25,14 +25,24 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
       const currentUrl = window.location.origin;
       const expectedUrl = 'https://lexileap.lovable.app';
       
-      if (currentUrl !== expectedUrl && !currentUrl.includes('lovableproject.com')) {
+      // Enhanced URL validation for mobile app users
+      if (currentUrl !== expectedUrl && 
+          !currentUrl.includes('lovableproject.com') && 
+          !currentUrl.includes('storybridge.lovable.app') &&
+          !currentUrl.includes('storybridgeapp.lovable.app')) {
         console.warn('⚠️ App is running on unexpected URL:', currentUrl);
       }
       
-      // If user is on old development URL, show warning
-      if (currentUrl.includes('66097099-bf56-454e-8862-15aab2304cbc.lovableproject.com')) {
-        console.error('🚨 Mobile app using outdated URL - needs app store update');
-        // Could add toast notification here if needed
+      // If user is on old URLs, allow them but log for debugging
+      if (currentUrl.includes('66097099-bf56-454e-8862-15aab2304cbc.lovableproject.com') ||
+          currentUrl.includes('storybridge.lovable.app') ||
+          currentUrl.includes('storybridgeapp.lovable.app')) {
+        console.log('🔄 App running on legacy URL, redirecting to new URL');
+        // For TWA users, don't force redirect as it might break the app
+        if (!isTWA()) {
+          window.location.href = expectedUrl;
+          return;
+        }
       }
       
       // CRITICAL: Fix service worker URL issue
