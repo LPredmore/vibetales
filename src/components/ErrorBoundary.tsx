@@ -1,7 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Download } from 'lucide-react';
+import { debugLogger } from '@/utils/debugLogger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -20,10 +21,28 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    debugLogger.logError('CRITICAL', 'ErrorBoundary caught error in getDerivedStateFromError', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    debugLogger.logError('CRITICAL', 'ErrorBoundary componentDidCatch', {
+      error: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      },
+      errorInfo: {
+        componentStack: errorInfo.componentStack
+      },
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      timestamp: new Date().toISOString()
+    });
     console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
@@ -47,6 +66,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
 const DefaultErrorFallback: React.FC<{ error?: Error; resetError: () => void }> = ({ error, resetError }) => {
   const clearCache = () => {
+    debugLogger.logError('INFO', 'User initiated cache clear from error boundary');
     localStorage.clear();
     sessionStorage.clear();
     if ('serviceWorker' in navigator) {
@@ -54,6 +74,30 @@ const DefaultErrorFallback: React.FC<{ error?: Error; resetError: () => void }> 
         registrations.forEach(registration => registration.unregister());
       });
     }
+    window.location.reload();
+  };
+
+  const downloadLogs = () => {
+    try {
+      const logs = debugLogger.exportLogs();
+      const blob = new Blob([logs], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `storybridge-debug-logs-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      debugLogger.logError('INFO', 'Debug logs downloaded by user');
+    } catch (downloadError) {
+      console.error('Failed to download logs:', downloadError);
+      debugLogger.logError('ERROR', 'Failed to download debug logs', downloadError);
+    }
+  };
+
+  const enableEmergencyMode = () => {
+    debugLogger.enableEmergencyMode();
     window.location.reload();
   };
 
@@ -83,6 +127,13 @@ const DefaultErrorFallback: React.FC<{ error?: Error; resetError: () => void }> 
             </Button>
             <Button onClick={clearCache} className="w-full" variant="outline">
               Clear Cache & Reload
+            </Button>
+            <Button onClick={downloadLogs} className="w-full" variant="secondary">
+              <Download className="mr-2 h-4 w-4" />
+              Download Debug Logs
+            </Button>
+            <Button onClick={enableEmergencyMode} className="w-full" variant="destructive" size="sm">
+              Enable Emergency Debug Mode
             </Button>
           </div>
         </CardContent>
