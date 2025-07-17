@@ -140,44 +140,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string, remember: boolean) => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+  setIsLoading(true);
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
 
-      // 1. Supabase persistence is set to localStorage by default in client config
+    // 1. Persist tokens in localStorage
+    await supabase.auth.setPersistence('local');
 
-      // 2. Request persistent storage for PWA
-      if ('storage' in navigator && 'persist' in navigator.storage) {
-        try {
-          const granted = await navigator.storage.persist();
-          console.log('Persistent storage granted:', granted);
-        } catch (persistErr) {
-          console.warn('Persistent storage request failed:', persistErr);
-        }
+    // 2. Request persistent storage for PWA
+    if ('storage' in navigator && 'persist' in navigator.storage) {
+      try {
+        const granted = await navigator.storage.persist();
+        console.log('Persistent storage granted:', granted);
+      } catch (persistErr) {
+        console.warn('Persistent storage request failed:', persistErr);
       }
-
-      // 3. Save session backup in sessionStorage
-      if (data.session) {
-        sessionStorage.setItem('session-backup', JSON.stringify(data.session));
-      }
-
-      // Store "remember me" preference
-      if (remember) {
-        localStorage.setItem('auth-remember', 'true');
-      }
-
-      setSession(data.session);
-      setUser(data.session.user);
-      toast.success('Successfully logged in!');
-    } catch (error: any) {
-      console.error('Login failed:', error);
-      toast.error(error.message || 'Error logging in');
-      throw error;
-    } finally {
-      setIsLoading(false);
     }
-  };
+
+    // 3. Save session backup in sessionStorage
+    if (data.session) {
+      sessionStorage.setItem('session-backup', JSON.stringify(data.session));
+    }
+
+    // Store "remember me" preference
+    if (remember) {
+      localStorage.setItem('auth-remember', 'true');
+    }
+
+    setSession(data.session);
+    setUser(data.session.user);
+    toast.success('Successfully logged in!');
+  } catch (error: any) {
+    console.error('Login failed:', error);
+    toast.error(error.message || 'Error logging in');
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const register = async (name: string, email: string, password: string) => {
     try {
