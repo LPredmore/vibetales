@@ -21,6 +21,20 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
       // Force TWA manifest refresh on startup
       await forceTWAManifestRefresh();
       
+      // CRITICAL: URL validation for mobile app users
+      const currentUrl = window.location.origin;
+      const expectedUrl = 'https://storybridgeapp.lovable.app';
+      
+      if (currentUrl !== expectedUrl && !currentUrl.includes('lovableproject.com')) {
+        console.warn('⚠️ App is running on unexpected URL:', currentUrl);
+      }
+      
+      // If user is on old development URL, show warning
+      if (currentUrl.includes('66097099-bf56-454e-8862-15aab2304cbc.lovableproject.com')) {
+        console.error('🚨 Mobile app using outdated URL - needs app store update');
+        // Could add toast notification here if needed
+      }
+      
       // CRITICAL: Fix service worker URL issue
       if ('serviceWorker' in navigator) {
         try {
