@@ -6,11 +6,11 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
 import fs from 'fs';
 
-// Generate build version for cache busting and TWA updates
+// Generate build version for cache busting
 const buildVersion = Date.now().toString();
 const semanticVersion = `1.0.${Math.floor(Date.now() / 1000)}`;
 
-// Update app-version.json and build-version.txt with current build info
+// Update app-version.json with current build info
 const updateAppVersion = () => {
   const versionInfo = {
     version: semanticVersion,
@@ -19,22 +19,16 @@ const updateAppVersion = () => {
   };
   
   try {
-    // Update app-version.json
     fs.writeFileSync('public/app-version.json', JSON.stringify(versionInfo, null, 2));
-    
-    // Update build-version.txt
     fs.writeFileSync('public/build-version.txt', semanticVersion);
-    
     console.log('📱 Updated version files:', semanticVersion);
   } catch (error) {
     console.warn('⚠️ Could not update version files:', error);
   }
 };
 
-// Update version file on build
 updateAppVersion();
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
@@ -44,8 +38,8 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' && componentTagger(),
     VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'script',
+      registerType: 'prompt',
+      injectRegister: false, // We'll handle registration manually
       includeAssets: [
         'favicon-16x16.png',
         'favicon-32x32.png',
@@ -58,78 +52,18 @@ export default defineConfig(({ mode }) => ({
         'pwa-192x192-maskable.png',
         'pwa-512x512-maskable.png'
       ],
-      manifest: {
-        id: '/',
-        name: 'StoryBridge - Story Generator',
-        short_name: 'StoryBridge',
-        description: 'Create magical stories for young readers with sight words practice',
-        lang: 'en',
-        dir: 'ltr',
-        theme_color: '#8B5CF6',
-        background_color: '#F3E8FF',
-        display: 'standalone',
-        display_override: ['window-controls-overlay', 'standalone'],
-        orientation: 'portrait',
-        scope: '/',
-        start_url: `/?v=${semanticVersion}`, // Add version to start_url for TWA detection
-        categories: ['education', 'books', 'kids'],
-        prefer_related_applications: false,
-        iarc_rating_id: 'e84b072d-71de-4af2-8a98-7e7db97db7d7',
-        launch_handler: {
-          client_mode: 'navigate-existing'
-        },
-        // Enhanced credentials handling for password managers
-        screenshots: [
-          {
-            src: '/pwa-512x512.png',
-            sizes: '390x844',
-            type: 'image/png',
-            form_factor: 'narrow',
-            label: 'StoryBridge mobile view'
-          },
-          {
-            src: '/pwa-512x512.png',
-            sizes: '1920x1080',
-            type: 'image/png',
-            form_factor: 'wide',
-            label: 'StoryBridge desktop view'
-          }
-        ],
-        // Simplified - removed advanced features
-        icons: [
-          { src: 'favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-          { src: 'favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-          { src: 'favicon-48x48.png', sizes: '48x48', type: 'image/png' },
-          { src: 'favicon-96x96.png', sizes: '96x96', type: 'image/png' },
-          { src: 'favicon-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: 'favicon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: 'pwa-192x192-maskable.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-          { src: 'pwa-512x512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-          { src: 'apple-touch-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' }
-        ],
-        shortcuts: [
-          {
-            name: 'Create Story',
-            short_name: 'Create',
-            description: 'Create a new story',
-            url: '/',
-            icons: [
-              {
-                src: 'pwa-192x192.png',
-                sizes: '192x192',
-                type: 'image/png'
-              }
-            ]
-          }
-        ]
-      },
+      manifest: false, // Use our own manifest.json
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,txt}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/, /\/auth/],
+        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
         mode: 'production',
         skipWaiting: true,
         clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        sourcemap: false,
+        swDest: 'sw.js',
+        // Custom runtime caching with fallbacks
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -138,7 +72,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 365
               }
             }
           },
@@ -149,11 +83,10 @@ export default defineConfig(({ mode }) => ({
               cacheName: 'openrouter-api-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 // 1 day
+                maxAgeSeconds: 60 * 60 * 24
               }
             }
           },
-          // CRITICAL: Never cache Supabase auth endpoints
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
             handler: 'NetworkOnly'
@@ -161,20 +94,23 @@ export default defineConfig(({ mode }) => ({
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/auth\/.*/i,
             handler: 'NetworkOnly'
+          },
+          // Fallback for main app resources
+          {
+            urlPattern: /\.(js|css|html)$/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'app-resources',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
+              }
+            }
           }
-        ],
-        cleanupOutdatedCaches: true,
-        sourcemap: true,
-        // Add build version for cache busting and TWA updates
-        swDest: 'sw.js',
-        additionalManifestEntries: [
-          { url: '/build-version.txt', revision: buildVersion },
-          { url: '/app-version.json', revision: semanticVersion }
         ]
       },
-      // Enable periodic background sync and push notifications
       devOptions: {
-        enabled: true
+        enabled: false // Disable in development to avoid conflicts
       }
     })
   ].filter(Boolean),
@@ -183,9 +119,15 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Ensure .well-known files are served with correct MIME type
-  define: {
-    __ASSET_LINKS_ENABLED__: true
-  },
-  publicDir: 'public'
+  publicDir: 'public',
+  build: {
+    rollupOptions: {
+      output: {
+        // Use consistent naming for assets
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js'
+      }
+    }
+  }
 }));
