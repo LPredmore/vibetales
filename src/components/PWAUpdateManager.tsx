@@ -23,7 +23,7 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
       
       // CRITICAL: URL validation for mobile app users
       const currentUrl = window.location.origin;
-      const expectedUrl = 'https://storybridgeapp.lovable.app';
+      const expectedUrl = 'https://lexileap.lovable.app';
       
       if (currentUrl !== expectedUrl && !currentUrl.includes('lovableproject.com')) {
         console.warn('⚠️ App is running on unexpected URL:', currentUrl);
@@ -39,13 +39,13 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
       if ('serviceWorker' in navigator) {
         try {
           // Check if we're on the correct production URL
-          const expectedUrl = 'https://storybridgeapp.lovable.app';
+          const expectedUrl = 'https://lexileap.lovable.app';
           const currentUrl = window.location.origin;
           
           // If service worker is registered with wrong URL, unregister it
           const registrations = await navigator.serviceWorker.getRegistrations();
           for (const reg of registrations) {
-            if (reg.scope && !reg.scope.includes('storybridgeapp.lovable.app')) {
+            if (reg.scope && !reg.scope.includes('lexileap.lovable.app')) {
               console.log('🗑️ Unregistering service worker with incorrect URL:', reg.scope);
               await reg.unregister();
             }

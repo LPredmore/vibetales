@@ -2,10 +2,10 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.66097099bf56454e886215aab2304cbc',
-  appName: 'storybridgeapp',
+  appName: 'StoryBridge',
   webDir: 'dist',
   server: {
-    url: 'https://storybridgeapp.lovable.app',
+    url: 'https://lexileap.lovable.app',
     cleartext: true
   },
   android: {
