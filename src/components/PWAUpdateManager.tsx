@@ -21,8 +21,22 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
       // Force TWA manifest refresh on startup
       await forceTWAManifestRefresh();
       
+      // CRITICAL: Fix service worker URL issue
       if ('serviceWorker' in navigator) {
         try {
+          // Check if we're on the correct production URL
+          const expectedUrl = 'https://storybridgeapp.lovable.app';
+          const currentUrl = window.location.origin;
+          
+          // If service worker is registered with wrong URL, unregister it
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const reg of registrations) {
+            if (reg.scope && !reg.scope.includes('storybridgeapp.lovable.app')) {
+              console.log('🗑️ Unregistering service worker with incorrect URL:', reg.scope);
+              await reg.unregister();
+            }
+          }
+          
           // Enhanced update checking for TWA and PWA
           const checkForUpdates = async () => {
             const existingRegistration = await navigator.serviceWorker.getRegistration();
