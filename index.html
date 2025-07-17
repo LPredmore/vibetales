@@ -3,14 +3,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>StoryBridge - Story Generator</title>
     <meta name="description" content="Create magical stories for young readers with sight words practice" />
     
-    <!-- Android WebView Cache Control -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <!-- Android WebView Critical Meta Tags -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, proxy-revalidate, max-age=0" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="StoryBridge" />
     
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#8B5CF6" />
@@ -20,174 +26,269 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
     
-    <!-- iOS Specific -->
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="StoryBridge" />
-    
     <!-- Icons -->
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    
+    <!-- Preload critical resources -->
+    <link rel="modulepreload" href="/src/main.tsx" />
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Loading indicator that shows immediately -->
+      <div id="initial-loader" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #F3E8FF; display: flex; align-items: center; justify-content: center; font-family: Arial, sans-serif; z-index: 9998;">
+        <div style="text-align: center;">
+          <div style="width: 40px; height: 40px; border: 4px solid #8B5CF6; border-top: 4px solid transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+          <div style="color: #8B5CF6; font-size: 18px; font-weight: bold;">Loading StoryBridge...</div>
+          <div id="loading-progress" style="color: #666; font-size: 14px; margin-top: 10px;">Initializing...</div>
+        </div>
+      </div>
+    </div>
     
-    <!-- Emergency Recovery Screen -->
+    <!-- Emergency Recovery Screen (hidden by default) -->
     <div id="emergency-fallback" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #F3E8FF; z-index: 9999; padding: 20px; font-family: Arial, sans-serif; text-align: center; overflow-y: auto;">
       <div style="max-width: 500px; margin: 20px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-        <h1 style="color: #8B5CF6; margin-bottom: 20px;">🔧 StoryBridge Recovery Mode</h1>
-        <p style="margin-bottom: 15px; color: #666;">App failed to load. Activating recovery mode...</p>
+        <h1 style="color: #dc2626; margin-bottom: 20px;">🚨 App Recovery Mode</h1>
+        <p style="margin-bottom: 15px; color: #666;">The app failed to load properly. This usually happens due to cache issues on Android devices.</p>
+        
         <div style="margin: 20px 0;">
-          <button onclick="nuclearReset()" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🗑️ Clear All Data</button>
-          <button onclick="bypassServiceWorker()" style="background: #059669; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🚫 Bypass Cache</button>
-          <button onclick="window.location.reload()" style="background: #8B5CF6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🔄 Reload</button>
+          <button onclick="forceReload()" style="background: #8B5CF6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px; font-weight: bold;">🔄 Force Reload</button>
+          <button onclick="clearAllData()" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🗑️ Clear All Data</button>
+          <button onclick="bypassCache()" style="background: #059669; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🚫 Bypass Cache</button>
         </div>
-        <div id="diagnostic-info" style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; text-align: left; margin: 15px 0;">
+        
+        <div id="diagnostic-info" style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; text-align: left; margin: 15px 0; max-height: 200px; overflow-y: auto;">
+          <div><strong>Diagnostics:</strong></div>
           <div>🌐 URL: <span id="current-url"></span></div>
           <div>📱 User Agent: <span id="user-agent"></span></div>
           <div>🔄 Service Worker: <span id="sw-status">Checking...</span></div>
           <div>📦 Cache: <span id="cache-status">Analyzing...</span></div>
+          <div>🛠️ Root Element: <span id="root-status">Checking...</span></div>
+          <div>📜 JavaScript: <span id="js-status">Loading...</span></div>
         </div>
+        
+        <details style="margin-top: 15px;">
+          <summary style="cursor: pointer; color: #8B5CF6; font-weight: bold;">Advanced Options</summary>
+          <div style="margin-top: 10px;">
+            <button onclick="enableDebugMode()" style="background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin: 3px; font-size: 12px;">🐛 Debug Mode</button>
+            <button onclick="downloadLogs()" style="background: #6366f1; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin: 3px; font-size: 12px;">📥 Download Logs</button>
+          </div>
+        </details>
       </div>
     </div>
 
-    <script>
-      // Populate diagnostic info
-      document.getElementById('current-url').textContent = window.location.href;
-      document.getElementById('user-agent').textContent = navigator.userAgent.substring(0, 80) + '...';
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
       
-      // Nuclear reset function
-      async function nuclearReset() {
+      /* Ensure the app takes full height on mobile */
+      html, body, #root {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+    </style>
+
+    <script>
+      // Global error tracking
+      let errorCount = 0;
+      let loadStartTime = Date.now();
+      let diagnosticData = {
+        errors: [],
+        warnings: [],
+        loadEvents: []
+      };
+      
+      // Update loading progress
+      function updateProgress(message) {
+        const progressEl = document.getElementById('loading-progress');
+        if (progressEl) {
+          progressEl.textContent = message;
+        }
+        diagnosticData.loadEvents.push({ time: Date.now(), message });
+      }
+      
+      // Populate diagnostic info immediately
+      updateProgress('Populating diagnostics...');
+      document.getElementById('current-url').textContent = window.location.href;
+      document.getElementById('user-agent').textContent = navigator.userAgent.substring(0, 100) + '...';
+      document.getElementById('root-status').textContent = document.getElementById('root') ? 'Found' : 'Missing';
+      
+      // Enhanced error tracking
+      window.addEventListener('error', function(e) {
+        errorCount++;
+        console.error('❌ Script error:', e.filename, e.lineno, e.message);
+        diagnosticData.errors.push({
+          type: 'script',
+          message: e.message,
+          filename: e.filename,
+          lineno: e.lineno,
+          time: Date.now()
+        });
+        
+        document.getElementById('js-status').textContent = `${errorCount} error(s)`;
+        
+        // Show emergency screen after 2 errors or if main script fails
+        if (errorCount >= 2 || (e.filename && e.filename.includes('main'))) {
+          setTimeout(showEmergencyScreen, 1000);
+        }
+      });
+      
+      window.addEventListener('unhandledrejection', function(e) {
+        console.error('❌ Unhandled promise rejection:', e.reason);
+        diagnosticData.errors.push({
+          type: 'promise',
+          reason: e.reason,
+          time: Date.now()
+        });
+        updateProgress('Promise rejection detected');
+      });
+      
+      // Recovery functions
+      function forceReload() {
+        updateProgress('Force reloading...');
+        window.location.href = window.location.origin + '?force=' + Date.now();
+      }
+      
+      async function clearAllData() {
+        updateProgress('Clearing all data...');
         try {
-          console.log('🗑️ Nuclear reset initiated');
-          
-          // Unregister all service workers
+          // Clear service workers
           if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
             for (const registration of registrations) {
               await registration.unregister();
-              console.log('✅ Unregistered SW:', registration.scope);
             }
           }
           
-          // Delete all caches
+          // Clear caches
           if ('caches' in window) {
             const cacheNames = await caches.keys();
             for (const cacheName of cacheNames) {
               await caches.delete(cacheName);
-              console.log('✅ Deleted cache:', cacheName);
             }
           }
           
-          // Clear all storage
+          // Clear storage
           localStorage.clear();
           sessionStorage.clear();
           
           // Clear IndexedDB
           if ('indexedDB' in window) {
-            try {
-              const databases = await indexedDB.databases();
-              for (const db of databases) {
-                indexedDB.deleteDatabase(db.name);
-              }
-            } catch (e) {
-              console.warn('IndexedDB clear failed:', e);
+            const databases = await indexedDB.databases();
+            for (const db of databases) {
+              indexedDB.deleteDatabase(db.name);
             }
           }
           
-          console.log('🔄 Reloading with cache bypass...');
-          window.location.href = window.location.origin + '?reset=' + Date.now();
+          updateProgress('Data cleared, reloading...');
+          setTimeout(() => window.location.reload(), 1000);
           
         } catch (error) {
-          console.error('❌ Nuclear reset failed:', error);
-          alert('Reset failed. Try manually clearing browser data.');
+          console.error('❌ Clear data failed:', error);
+          updateProgress('Clear failed: ' + error.message);
         }
       }
       
-      // Bypass service worker
-      function bypassServiceWorker() {
+      function bypassCache() {
         localStorage.setItem('bypass-sw', 'true');
-        window.location.href = window.location.href + (window.location.search ? '&' : '?') + 'no_sw=' + Date.now();
+        localStorage.setItem('force-reload', 'true');
+        window.location.href = window.location.href + (window.location.search ? '&' : '?') + 'no_cache=' + Date.now();
+      }
+      
+      function enableDebugMode() {
+        localStorage.setItem('emergency-debug', 'true');
+        window.location.href = window.location.href + (window.location.search ? '&' : '?') + 'debug=emergency';
+      }
+      
+      function downloadLogs() {
+        const logs = {
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+          url: window.location.href,
+          diagnostics: diagnosticData,
+          localStorage: Object.keys(localStorage).reduce((acc, key) => {
+            acc[key] = localStorage.getItem(key);
+            return acc;
+          }, {}),
+          loadTime: Date.now() - loadStartTime
+        };
+        
+        const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `storybridge-debug-${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+      
+      function showEmergencyScreen() {
+        document.getElementById('initial-loader').style.display = 'none';
+        document.getElementById('emergency-fallback').style.display = 'block';
+        updateProgress('Emergency screen activated');
       }
       
       // Check service worker status
+      updateProgress('Checking service worker...');
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => {
-          document.getElementById('sw-status').textContent = registrations.length > 0 ? 
-            `${registrations.length} registered` : 'None';
+          const status = registrations.length > 0 ? `${registrations.length} registered` : 'None registered';
+          document.getElementById('sw-status').textContent = status;
+          updateProgress('Service worker check complete');
         }).catch(e => {
           document.getElementById('sw-status').textContent = 'Error: ' + e.message;
+          updateProgress('Service worker error: ' + e.message);
         });
       } else {
         document.getElementById('sw-status').textContent = 'Not supported';
+        updateProgress('Service worker not supported');
       }
       
       // Check cache status
+      updateProgress('Checking cache...');
       if ('caches' in window) {
         caches.keys().then(cacheNames => {
-          document.getElementById('cache-status').textContent = cacheNames.length > 0 ? 
-            `${cacheNames.length} caches` : 'No caches';
+          const status = cacheNames.length > 0 ? `${cacheNames.length} caches found` : 'No caches';
+          document.getElementById('cache-status').textContent = status;
+          updateProgress('Cache check complete');
         }).catch(e => {
           document.getElementById('cache-status').textContent = 'Error: ' + e.message;
+          updateProgress('Cache error: ' + e.message);
         });
       } else {
         document.getElementById('cache-status').textContent = 'Not supported';
+        updateProgress('Cache not supported');
       }
       
-      // Show emergency screen if React doesn't load within 10 seconds
-      let emergencyTimer = setTimeout(() => {
-        if (!document.getElementById('root').children.length) {
-          console.error('❌ React app failed to load - showing emergency screen');
-          document.getElementById('emergency-fallback').style.display = 'block';
-        }
-      }, 10000);
-      
-      // Hide emergency screen if React loads
-      const observer = new MutationObserver(() => {
-        if (document.getElementById('root').children.length > 0) {
-          clearTimeout(emergencyTimer);
-          document.getElementById('emergency-fallback').style.display = 'none';
-          observer.disconnect();
-        }
-      });
-      observer.observe(document.getElementById('root'), { childList: true });
-      
-      // Enhanced error tracking
-      window.addEventListener('error', function(e) {
-        console.error('Script error:', e.filename, e.lineno, e.message);
-        
-        // Show emergency screen for critical script errors
-        if (e.filename && e.filename.includes('.js')) {
-          setTimeout(() => {
-            if (!document.getElementById('root').children.length) {
-              document.getElementById('emergency-fallback').style.display = 'block';
-            }
-          }, 3000);
-        }
-      });
-      
-      // Service worker registration with bypass option
+      // Register service worker only if not bypassed
+      updateProgress('Initializing service worker...');
       if ('serviceWorker' in navigator && !localStorage.getItem('bypass-sw')) {
         navigator.serviceWorker.register('/sw.js', {
           scope: '/',
           updateViaCache: 'none'
         }).then(registration => {
-          console.log('✅ Service worker registered:', registration.scope);
-          
-          // Force update check
-          registration.update();
+          console.log('✅ Service worker registered successfully');
+          updateProgress('Service worker registered');
           
           // Handle updates
           registration.addEventListener('updatefound', () => {
             console.log('🔄 Service worker update found');
+            updateProgress('Service worker updating...');
             if (registration.installing) {
               registration.installing.addEventListener('statechange', () => {
                 if (registration.installing.state === 'installed' && navigator.serviceWorker.controller) {
                   console.log('🔄 New service worker installed, reloading...');
-                  window.location.reload();
+                  updateProgress('Update complete, reloading...');
+                  setTimeout(() => window.location.reload(), 1000);
                 }
               });
             }
@@ -195,13 +296,46 @@
           
         }).catch(error => {
           console.error('❌ Service worker registration failed:', error);
-          // Continue without service worker
+          updateProgress('Service worker failed: ' + error.message);
+          diagnosticData.warnings.push({
+            type: 'sw_registration',
+            error: error.message,
+            time: Date.now()
+          });
         });
-      } else if (localStorage.getItem('bypass-sw')) {
-        console.log('🚫 Service worker bypassed by user setting');
+      } else {
+        console.log('🚫 Service worker bypassed');
+        updateProgress('Service worker bypassed');
       }
+      
+      // Show emergency screen after timeout
+      let emergencyTimer = setTimeout(() => {
+        if (!document.getElementById('root').children.length || document.getElementById('root').children.length === 1) {
+          console.error('❌ React app failed to load within 5 seconds');
+          updateProgress('App load timeout - showing emergency screen');
+          showEmergencyScreen();
+        }
+      }, 5000); // Reduced from 10 seconds to 5 seconds
+      
+      // Hide emergency screen and loader if React loads successfully
+      const observer = new MutationObserver(() => {
+        const rootChildren = document.getElementById('root').children;
+        // Check if we have more than just the loader
+        if (rootChildren.length > 1 || (rootChildren.length === 1 && !rootChildren[0].id)) {
+          clearTimeout(emergencyTimer);
+          document.getElementById('initial-loader').style.display = 'none';
+          document.getElementById('emergency-fallback').style.display = 'none';
+          observer.disconnect();
+          updateProgress('App loaded successfully');
+          console.log('✅ React app loaded successfully');
+        }
+      });
+      observer.observe(document.getElementById('root'), { childList: true, subtree: true });
+      
+      updateProgress('Initialization complete, loading app...');
     </script>
     
+    <!-- Load the main application -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
