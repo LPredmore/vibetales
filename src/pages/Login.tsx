@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
+import { debugLogger } from "@/utils/debugLogger";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -35,13 +36,21 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     
+    debugLogger.logAutofill('INFO', 'Login form submitted', { 
+      email, 
+      remember, 
+      isTWA,
+      formAutoComplete: e.currentTarget?.getAttribute('autocomplete'),
+      emailAutoComplete: document.getElementById('email')?.getAttribute('autocomplete'),
+      passwordAutoComplete: document.getElementById('password')?.getAttribute('autocomplete')
+    });
+    
     try {
-      console.log('📝 Login form submitted', { email, remember, isTWA });
       await login(email, password, remember);
       toast.success("Successfully logged in!");
       navigate("/");
     } catch (error: any) {
-      console.error('Login form error:', error);
+      debugLogger.logAuth('ERROR', 'Login form error', error);
       toast.error(error.message || "Failed to login. Please try again.");
     } finally {
       setIsLoading(false);

@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthGuard } from "@/components/AuthGuard";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PWAUpdateManager } from "@/components/PWAUpdateManager";
+import { DebugToggle } from "@/components/DebugToggle";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -24,6 +25,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <PWAUpdateManager />
+          <DebugToggle />
           <BrowserRouter>
             <Routes>
               <Route
