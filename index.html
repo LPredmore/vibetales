@@ -50,21 +50,31 @@
   <body>
     <div id="root"></div>
     
-    <!-- Emergency Fallback Screen for Android PWA -->
-    <div id="emergency-fallback" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #F3E8FF; z-index: 9999; padding: 20px; font-family: Arial, sans-serif; text-align: center;">
-      <div style="max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-        <h1 style="color: #8B5CF6; margin-bottom: 20px;">StoryBridge Loading...</h1>
+    <!-- Emergency Fallback Screen for Android PWA - Enhanced with JavaScript bundle failure detection -->
+    <div id="emergency-fallback" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #F3E8FF; z-index: 9999; padding: 20px; font-family: Arial, sans-serif; text-align: center; overflow-y: auto;">
+      <div style="max-width: 500px; margin: 20px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        <h1 style="color: #8B5CF6; margin-bottom: 20px;">🔧 StoryBridge Diagnostics</h1>
         <div id="fallback-info">
-          <p style="margin-bottom: 15px;">App is starting up...</p>
-          <div style="background: #f0f0f0; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; text-align: left; margin: 15px 0;">
-            <div>🌐 URL: <span id="current-url"></span></div>
-            <div>📱 User Agent: <span id="user-agent"></span></div>
-            <div>🔄 Service Worker: <span id="sw-status"></span></div>
-            <div>📦 App Version: <span id="app-version">Loading...</span></div>
-            <div>⏰ Load Time: <span id="load-time"></span></div>
+          <p style="margin-bottom: 15px; color: #666;">Analyzing app loading status...</p>
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 11px; text-align: left; margin: 15px 0; border: 1px solid #e9ecef;">
+            <div style="margin: 5px 0;">🌐 <strong>URL:</strong> <span id="current-url"></span></div>
+            <div style="margin: 5px 0;">📱 <strong>Device:</strong> <span id="user-agent"></span></div>
+            <div style="margin: 5px 0;">🔄 <strong>Service Worker:</strong> <span id="sw-status">Checking...</span></div>
+            <div style="margin: 5px 0;">📦 <strong>App Version:</strong> <span id="app-version">Loading...</span></div>
+            <div style="margin: 5px 0;">⏰ <strong>Load Time:</strong> <span id="load-time"></span></div>
+            <div style="margin: 5px 0;">🎯 <strong>Main Bundle:</strong> <span id="bundle-status">Checking...</span></div>
+            <div style="margin: 5px 0;">🌐 <strong>Network:</strong> <span id="network-status">Testing...</span></div>
+            <div style="margin: 5px 0;">📱 <strong>PWA Mode:</strong> <span id="pwa-mode">Detecting...</span></div>
           </div>
-          <button onclick="location.reload()" style="background: #8B5CF6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px;">Retry</button>
-          <button onclick="clearCacheAndReload()" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px;">Clear Cache & Retry</button>
+          <div style="margin: 20px 0;">
+            <button onclick="location.reload()" style="background: #8B5CF6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🔄 Retry</button>
+            <button onclick="clearCacheAndReload()" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🗑️ Clear Cache</button>
+            <button onclick="forceRefresh()" style="background: #059669; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">⚡ Force Refresh</button>
+          </div>
+          <div id="error-details" style="background: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 5px; font-size: 12px; text-align: left; margin: 15px 0; display: none;">
+            <h4 style="color: #dc2626; margin: 0 0 10px 0;">🚨 Error Details:</h4>
+            <div id="error-content"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -72,20 +82,36 @@
     <script>
       const startTime = Date.now();
       let emergencyShown = false;
+      let loadErrors = [];
       
       // Populate emergency diagnostic info immediately
       document.getElementById('current-url').textContent = window.location.href;
-      document.getElementById('user-agent').textContent = navigator.userAgent.substring(0, 50) + '...';
-      document.getElementById('sw-status').textContent = 'serviceWorker' in navigator ? 'Supported' : 'Not Supported';
+      document.getElementById('user-agent').textContent = navigator.userAgent.substring(0, 60) + '...';
+      document.getElementById('sw-status').textContent = 'serviceWorker' in navigator ? 'Supported ✅' : 'Not Supported ❌';
       document.getElementById('load-time').textContent = new Date().toLocaleTimeString();
       
-      // Check for app version
-      fetch('/app-version.json')
-        .then(r => r.json())
-        .then(data => document.getElementById('app-version').textContent = data.version)
-        .catch(() => document.getElementById('app-version').textContent = 'Error loading version');
+      // Detect PWA mode
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                    window.navigator.standalone === true ||
+                    document.referrer.includes('android-app://');
+      document.getElementById('pwa-mode').textContent = isPWA ? 'PWA Mode ✅' : 'Browser Mode 🌐';
       
-      // Clear cache function
+      // Test network connectivity
+      function testNetwork() {
+        const networkTest = Date.now();
+        fetch('/favicon-16x16.png?t=' + networkTest)
+          .then(() => document.getElementById('network-status').textContent = 'Connected ✅')
+          .catch(() => document.getElementById('network-status').textContent = 'Connection Issues ❌');
+      }
+      testNetwork();
+      
+      // Check for app version
+      fetch('/app-version.json?t=' + Date.now())
+        .then(r => r.json())
+        .then(data => document.getElementById('app-version').textContent = data.version + ' ✅')
+        .catch(() => document.getElementById('app-version').textContent = 'Version Error ❌');
+      
+      // Enhanced cache clearing
       function clearCacheAndReload() {
         if ('caches' in window) {
           caches.keys().then(names => {
@@ -93,6 +119,11 @@
           }).then(() => {
             localStorage.clear();
             sessionStorage.clear();
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(registration => registration.unregister());
+              });
+            }
             location.reload(true);
           });
         } else {
@@ -100,6 +131,20 @@
           sessionStorage.clear();
           location.reload(true);
         }
+      }
+      
+      // Force refresh with cache bypass
+      function forceRefresh() {
+        window.location.href = window.location.href + '?t=' + Date.now();
+      }
+      
+      // Track loading errors
+      function addError(error) {
+        loadErrors.push(error);
+        const errorEl = document.getElementById('error-details');
+        const contentEl = document.getElementById('error-content');
+        errorEl.style.display = 'block';
+        contentEl.innerHTML = loadErrors.map(err => `<div style="margin: 5px 0; padding: 5px; background: white; border-radius: 3px;">${err}</div>`).join('');
       }
       
       // Emergency debug activation
@@ -117,14 +162,24 @@
         }
       });
       
-      // Show emergency screen if app doesn't load within 10 seconds
+      // Monitor JavaScript bundle loading
+      let bundleLoaded = false;
+      const bundleTimeout = setTimeout(() => {
+        if (!bundleLoaded) {
+          document.getElementById('bundle-status').textContent = 'Failed to Load ❌';
+          addError('Main JavaScript bundle failed to load within 5 seconds');
+        }
+      }, 5000);
+      
+      // Show emergency screen if app doesn't load within 8 seconds (reduced from 10)
       setTimeout(() => {
         if (!emergencyShown && (!document.querySelector('#root > *') || document.querySelector('#root').innerHTML.trim() === '')) {
-          console.error('🚨 App failed to load within 10 seconds - showing emergency screen');
+          console.error('🚨 App failed to load within 8 seconds - showing emergency screen');
+          addError('React app failed to render within timeout period');
           document.getElementById('emergency-fallback').style.display = 'block';
           emergencyShown = true;
         }
-      }, 10000);
+      }, 8000);
       
       // Debug URL parameters
       const urlParams = new URLSearchParams(window.location.search);
@@ -141,12 +196,34 @@
       // Enhanced script loading error detection
       window.addEventListener('error', function(e) {
         console.error('🚨 Script loading error:', e);
+        
+        let errorMsg = 'Unknown error';
+        if (e.filename) {
+          if (e.filename.includes('.js')) {
+            errorMsg = `JavaScript file failed: ${e.filename}`;
+            document.getElementById('bundle-status').textContent = 'Load Error ❌';
+          } else {
+            errorMsg = `Resource failed: ${e.filename}`;
+          }
+        } else if (e.message) {
+          errorMsg = `Error: ${e.message}`;
+        }
+        
+        addError(errorMsg);
+        
         if (e.filename && e.filename.includes('.js')) {
           if (!emergencyShown) {
             document.getElementById('emergency-fallback').style.display = 'block';
             emergencyShown = true;
           }
         }
+      });
+      
+      // Detect when main bundle successfully loads
+      window.addEventListener('DOMContentLoaded', function() {
+        bundleLoaded = true;
+        clearTimeout(bundleTimeout);
+        document.getElementById('bundle-status').textContent = 'Loaded ✅';
       });
       
       // Service worker registration with enhanced error handling
@@ -164,6 +241,6 @@
     </script>
     
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module" onerror="console.error('❌ GPT Engineer script failed to load')"></script>
-    <script type="module" src="/src/main.tsx" onerror="console.error('❌ Main app script failed to load'); if (!emergencyShown) { document.getElementById('emergency-fallback').style.display = 'block'; emergencyShown = true; }"></script>
+    <script type="module" src="/src/main.tsx" onerror="console.error('❌ Main app script failed to load'); addError('Main React app script (main.tsx) failed to load'); document.getElementById('bundle-status').textContent = 'Failed ❌'; if (!emergencyShown) { document.getElementById('emergency-fallback').style.display = 'block'; emergencyShown = true; }"></script>
   </body>
 </html>
