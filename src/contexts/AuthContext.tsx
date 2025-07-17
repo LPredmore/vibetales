@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
-import { isTWA } from '@/utils/twaDetection';
+import { isPWA, isTWA } from '@/utils/twaDetection';
 import { debugLogger } from '@/utils/debugLogger';
 
 interface AuthContextType {
@@ -13,6 +13,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isLoading: boolean;
   isTWA: boolean;
+  isPWA: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,13 +23,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [twaEnvironment, setTwaEnvironment] = useState(false);
+  const [pwaEnvironment, setPwaEnvironment] = useState(false);
 
-  // Initialize TWA detection after component mount
+  // Initialize PWA and TWA detection after component mount
   useEffect(() => {
     const twaDetected = isTWA();
+    const pwaDetected = isPWA();
     setTwaEnvironment(twaDetected);
+    setPwaEnvironment(pwaDetected);
     debugLogger.logTWA('INFO', 'AuthProvider initialized', { 
       twaDetected,
+      pwaDetected,
       userAgent: navigator.userAgent,
       referrer: document.referrer,
       standalone: window.matchMedia('(display-mode: standalone)').matches
@@ -63,21 +68,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Enhanced TWA session recovery on app resume and startup
+  // Enhanced PWA/TWA session recovery on app resume and startup
   useEffect(() => {
-    if (!twaEnvironment) return;
+    if (!pwaEnvironment && !twaEnvironment) return;
 
     // Immediate session recovery on startup
     if (!session) {
-      console.log('🚀 TWA startup session recovery');
+      console.log('🚀 PWA/TWA startup session recovery');
       recoverSession();
     }
 
     const handleVisibilityChange = () => {
       if (!document.hidden && !session) {
-        debugLogger.logTWA('INFO', 'TWA app resumed, attempting session recovery', {
+        debugLogger.logTWA('INFO', 'PWA/TWA app resumed, attempting session recovery', {
           hidden: document.hidden,
-          hasSession: !!session
+          hasSession: !!session,
+          isPWA: pwaEnvironment,
+          isTWA: twaEnvironment
         });
         recoverSession();
       }
@@ -85,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const handleFocus = () => {
       if (!session) {
-        debugLogger.logTWA('INFO', 'TWA app focused, attempting session recovery');
+        debugLogger.logTWA('INFO', 'PWA/TWA app focused, attempting session recovery');
         recoverSession();
       }
     };
@@ -98,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [session, twaEnvironment, recoverSession]);
+  }, [session, twaEnvironment, pwaEnvironment, recoverSession]);
 
   useEffect(() => {
     debugLogger.logAuth('INFO', 'Setting up auth state management');
@@ -179,7 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string, remember: boolean) => {
   setIsLoading(true);
-  debugLogger.logAuth('INFO', 'Login attempt started', { email, remember, isTWA: twaEnvironment });
+  debugLogger.logAuth('INFO', 'Login attempt started', { email, remember, isTWA: twaEnvironment, isPWA: pwaEnvironment });
   
   try {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -295,7 +302,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, login, register, logout, isLoading, isTWA: twaEnvironment }}>
+    <AuthContext.Provider value={{ user, session, login, register, logout, isLoading, isTWA: twaEnvironment, isPWA: pwaEnvironment }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,7 +3,24 @@
  * Critical for Google Play Store PWA updates
  */
 
-// Detect if app is running in TWA environment
+// Detect if app is running in PWA environment (mobile or desktop)
+export const isPWA = (): boolean => {
+  // Check for standalone display mode (PWA installed)
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  
+  // Check for mobile user agent
+  const userAgent = navigator.userAgent;
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  
+  // Check if it's likely a PWA environment
+  const isPWALikely = isStandalone || 
+                      (isMobile && !window.location.href.includes('localhost')) ||
+                      'serviceWorker' in navigator;
+  
+  return isPWALikely;
+};
+
+// Legacy TWA detection for backward compatibility
 export const isTWA = (): boolean => {
   // Check for TWA-specific user agent
   const userAgent = navigator.userAgent;
