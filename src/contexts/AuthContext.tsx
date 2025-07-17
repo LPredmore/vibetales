@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Enhanced session recovery on startup
-    const recoverSession = async () => {
+    const startupRecoverSession = async () => {
       // 1. Try standard recovery
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -120,7 +120,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const { access_token, refresh_token, expires_at } = JSON.parse(backup);
             if (Date.now() / 1000 < expires_at) {
-              await supabase.auth.setSession({ access_token, refresh_token });
+              const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
+              if (data.session) {
+                setSession(data.session);
+                setUser(data.session.user);
+              }
+            } else {
+              sessionStorage.removeItem('session-backup');
             }
           } catch {
             sessionStorage.removeItem('session-backup');
@@ -131,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     };
 
-    recoverSession();
+    startupRecoverSession();
 
     return () => {
       console.log('🧹 Cleaning up auth subscription');
@@ -145,8 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
 
-    // 1. Persist tokens in localStorage
-    await supabase.auth.setPersistence('local');
+    // 1. Session is already persisted by default in Supabase client config
 
     // 2. Request persistent storage for PWA
     if ('storage' in navigator && 'persist' in navigator.storage) {
@@ -165,7 +170,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Store "remember me" preference
     if (remember) {
-      localStorage.setItem('auth-remember', 'true');
+      localStorage.setItem('auth-remember-preference', 'true');
+    } else {
+      localStorage.removeItem('auth-remember-preference');
     }
 
     setSession(data.session);
@@ -212,6 +219,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Clear all auth-related localStorage items
       localStorage.removeItem('auth-remember-preference');
       localStorage.removeItem('twa-remember-login');
+      localStorage.removeItem('auth-remember');
+      sessionStorage.removeItem('session-backup');
       
       // Attempt server logout
       const { error } = await supabase.auth.signOut();
