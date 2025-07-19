@@ -144,6 +144,8 @@ export default defineConfig(({ mode }) => ({
       output: {
         // Consistent naming for Android compatibility
         assetFileNames: (assetInfo) => {
+          if (!assetInfo.name) return `assets/[name]-[hash][extname]`;
+          
           const info = assetInfo.name.split('.');
           const extType = info[info.length - 1];
           if (/\.(css)$/.test(assetInfo.name)) {
