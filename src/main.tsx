@@ -4,141 +4,143 @@ import App from './App.tsx'
 import './index.css'
 import { debugLogger } from './utils/debugLogger'
 
+// Android-specific initialization logging
+const isAndroid = /Android/i.test(navigator.userAgent);
+const isWebView = navigator.userAgent.includes('wv');
+
+console.log('🚀 StoryBridge PWA starting on Android:', isAndroid);
+console.log('📱 WebView detected:', isWebView);
+console.log('🌐 URL:', window.location.href);
+console.log('🔧 Service Worker supported:', 'serviceWorker' in navigator);
+console.log('🚫 Service Worker bypass:', localStorage.getItem('bypass-sw'));
+
 // Initialize comprehensive logging for Android debugging
-debugLogger.logLifecycle('INFO', 'Application main.tsx loading', {
+debugLogger.logLifecycle('INFO', 'Android PWA main.tsx loading', {
   buildTimestamp: new Date().toISOString(),
   url: window.location.href,
   userAgent: navigator.userAgent,
+  isAndroid,
+  isWebView,
   serviceWorkerSupported: 'serviceWorker' in navigator,
   rootElement: !!document.getElementById("root"),
   bypassSW: localStorage.getItem('bypass-sw'),
-  forceReload: localStorage.getItem('force-reload'),
-  isAndroid: /Android/i.test(navigator.userAgent),
-  isWebView: navigator.userAgent.includes('wv'),
+  nuclearReset: new URLSearchParams(window.location.search).get('nuclear_reset'),
   displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser'
 });
 
 // Set up monitoring
 debugLogger.setupNetworkMonitoring();
 debugLogger.setupStorageMonitoring();
-debugLogger.markPerformance('app-render-start');
+debugLogger.markPerformance('android-app-render-start');
 
-// Enhanced error handling specifically for Android WebView
+// Enhanced Android error handling
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('❌ Unhandled promise rejection:', event.reason);
-  debugLogger.logError('CRITICAL', 'Unhandled promise rejection', {
+  console.error('❌ Android unhandled promise rejection:', event.reason);
+  debugLogger.logError('CRITICAL', 'Android unhandled promise rejection', {
     reason: event.reason?.toString(),
     stack: event.reason?.stack,
     url: window.location.href,
-    userAgent: navigator.userAgent
+    userAgent: navigator.userAgent,
+    isAndroid,
+    isWebView
   });
   
-  // Prevent the default browser error handling that might show blank screen
-  event.preventDefault();
+  // Don't prevent default to maintain error visibility
 });
 
 window.addEventListener('error', (event) => {
-  console.error('❌ Global error:', event.error);
-  debugLogger.logError('CRITICAL', 'Global error caught', {
+  console.error('❌ Android global error:', event.error);
+  debugLogger.logError('CRITICAL', 'Android global error caught', {
     message: event.message,
     filename: event.filename,
     lineno: event.lineno,
     colno: event.colno,
     error: event.error?.stack,
-    url: window.location.href
+    url: window.location.href,
+    isAndroid,
+    isWebView
   });
-  
-  // Don't prevent default for script errors as we want them to be handled
 });
 
 // Android-specific startup logging
-if (/Android/i.test(navigator.userAgent)) {
+if (isAndroid) {
   console.log('📱 Android device detected - Enhanced logging enabled');
-  debugLogger.logAndroid('INFO', 'Android device startup', {
+  debugLogger.logAndroid('INFO', 'Android device PWA startup', {
     version: navigator.userAgent.match(/Android (\d+\.?\d*)/)?.[1],
-    webView: navigator.userAgent.includes('wv'),
+    webView: isWebView,
     chrome: navigator.userAgent.includes('Chrome'),
     viewport: { width: window.innerWidth, height: window.innerHeight },
     screen: { width: screen.width, height: screen.height },
-    devicePixelRatio: window.devicePixelRatio
+    devicePixelRatio: window.devicePixelRatio,
+    nuclearReset: new URLSearchParams(window.location.search).get('nuclear_reset') === null ? false : true
   });
-}
-
-// Legacy console logs for immediate visibility
-console.log('🚀 StoryBridge PWA starting...');
-console.log('📱 User Agent:', navigator.userAgent);
-console.log('🔧 Service Worker supported:', 'serviceWorker' in navigator);
-console.log('🚫 Service Worker bypass:', localStorage.getItem('bypass-sw'));
-console.log('🔄 Force reload flag:', localStorage.getItem('force-reload'));
-console.log('🏗️ Build timestamp:', new Date().toISOString());
-
-// Clear force reload flag after reading it
-if (localStorage.getItem('force-reload')) {
-  localStorage.removeItem('force-reload');
 }
 
 try {
   const rootElement = document.getElementById("root");
   if (!rootElement) {
-    const error = new Error('Root element not found');
-    debugLogger.logError('CRITICAL', 'Root element not found in DOM', { 
+    const error = new Error('Root element not found in Android PWA');
+    debugLogger.logError('CRITICAL', 'Android PWA root element not found', { 
       documentReady: document.readyState,
       bodyChildren: document.body?.children.length,
       headChildren: document.head?.children.length,
-      entireHTML: document.documentElement.outerHTML.substring(0, 500)
+      isAndroid,
+      isWebView
     });
     throw error;
   }
 
-  // Log successful root element detection
-  console.log('✅ Root element found:', rootElement);
-  debugLogger.logLifecycle('INFO', 'Root element found, creating React root');
+  console.log('✅ Android PWA root element found:', rootElement);
+  debugLogger.logLifecycle('INFO', 'Android PWA root element found, creating React root');
   
   const root = createRoot(rootElement);
   
-  debugLogger.logLifecycle('INFO', 'Rendering App component');
-  console.log('⚛️ Rendering React App...');
+  debugLogger.logLifecycle('INFO', 'Android PWA rendering App component');
+  console.log('⚛️ Android PWA rendering React App...');
   
   root.render(<App />);
   
-  debugLogger.measurePerformance('react-render', 'app-render-start');
-  debugLogger.logLifecycle('INFO', 'App component render call completed');
-  console.log('✅ React render call completed');
+  debugLogger.measurePerformance('android-react-render', 'android-app-render-start');
+  debugLogger.logLifecycle('INFO', 'Android PWA App component render call completed');
+  console.log('✅ Android PWA React render call completed');
   
-  // Notify loading indicators that React is attempting to render
+  // Android-specific render verification
   setTimeout(() => {
     const loader = document.getElementById('initial-loader');
     const rootChildren = rootElement.children;
     
-    // Check if React actually rendered content
     if (rootChildren.length > 1 || (rootChildren.length === 1 && !rootChildren[0].id)) {
-      console.log('✅ React content detected, hiding loader');
-      debugLogger.logLifecycle('INFO', 'React content rendered successfully');
+      console.log('✅ Android PWA React content detected, hiding loader');
+      debugLogger.logLifecycle('INFO', 'Android PWA React content rendered successfully');
       if (loader) {
         loader.style.display = 'none';
       }
     } else {
-      console.warn('⚠️ React may not have rendered properly');
-      debugLogger.logLifecycle('WARN', 'React render verification failed', {
+      console.warn('⚠️ Android PWA React may not have rendered properly');
+      debugLogger.logLifecycle('WARN', 'Android PWA React render verification failed', {
         rootChildren: rootChildren.length,
         firstChildId: rootChildren[0]?.id,
-        firstChildTag: rootChildren[0]?.tagName
+        firstChildTag: rootChildren[0]?.tagName,
+        isAndroid,
+        isWebView
       });
     }
   }, 100);
   
 } catch (error) {
-  console.error('❌ CRITICAL: App initialization failed:', error);
-  debugLogger.logError('CRITICAL', 'Failed to render application', {
+  console.error('❌ CRITICAL: Android PWA initialization failed:', error);
+  debugLogger.logError('CRITICAL', 'Android PWA failed to render application', {
     error: error.message,
     stack: error.stack,
     rootElementExists: !!document.getElementById("root"),
     documentReady: document.readyState,
     url: window.location.href,
-    userAgent: navigator.userAgent
+    userAgent: navigator.userAgent,
+    isAndroid,
+    isWebView
   });
   
-  // Show emergency error screen immediately on critical failure
+  // Show emergency error screen for Android
   setTimeout(() => {
     const emergencyEl = document.getElementById('emergency-fallback');
     const loaderEl = document.getElementById('initial-loader');
@@ -151,14 +153,13 @@ try {
       if (errorInfo) {
         const errorDiv = document.createElement('div');
         errorDiv.style.cssText = 'color: red; margin-top: 10px; font-weight: bold;';
-        errorDiv.innerHTML = `❌ Critical Error: ${error.message}`;
+        errorDiv.innerHTML = `❌ Android Critical Error: ${error.message}`;
         errorInfo.appendChild(errorDiv);
       }
       
-      console.log('🚨 Emergency screen activated due to critical error');
+      console.log('🚨 Android emergency screen activated due to critical error');
     }
   }, 100);
   
-  // Re-throw to ensure error is visible in console
   throw error;
 }

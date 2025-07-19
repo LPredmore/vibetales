@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -21,41 +22,36 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
       // Force TWA manifest refresh on startup
       await forceTWAManifestRefresh();
       
-      // CRITICAL: URL validation for mobile app users
+      // FIXED: Proper domain allowlist to prevent service worker unregistration
+      const allowedOrigins = [
+        'lexileap.lovable.app',           // Preview domain
+        'storybridgeapp.lovable.app',     // Production host
+        'storybridge.lovable.app',
+        '66097099-bf56-454e-8862-15aab2304cbc.lovableproject.com'
+      ];
+      
       const currentUrl = window.location.origin;
-      const expectedUrl = 'https://lexileap.lovable.app';
+      console.log('🌐 Current URL:', currentUrl);
       
-      // Enhanced URL validation for mobile app users
-      if (currentUrl !== expectedUrl && 
-          !currentUrl.includes('lovableproject.com') && 
-          !currentUrl.includes('storybridge.lovable.app') &&
-          !currentUrl.includes('storybridgeapp.lovable.app')) {
+      // Enhanced domain validation that preserves preview environments
+      const isAllowedDomain = allowedOrigins.some(host => currentUrl.includes(host));
+      
+      if (!isAllowedDomain) {
         console.warn('⚠️ App is running on unexpected URL:', currentUrl);
+      } else {
+        console.log('✅ App running on approved domain');
       }
       
-      // If user is on old URLs, allow them but log for debugging
-      if (currentUrl.includes('66097099-bf56-454e-8862-15aab2304cbc.lovableproject.com') ||
-          currentUrl.includes('storybridge.lovable.app') ||
-          currentUrl.includes('storybridgeapp.lovable.app')) {
-        console.log('🔄 App running on legacy URL, redirecting to new URL');
-        // For TWA users, don't force redirect as it might break the app
-        if (!isTWA()) {
-          window.location.href = expectedUrl;
-          return;
-        }
-      }
-      
-      // CRITICAL: Fix service worker URL issue
+      // CRITICAL: Fix service worker URL issue with proper domain checking
       if ('serviceWorker' in navigator) {
         try {
-          // Check if we're on the correct production URL
-          const expectedUrl = 'https://lexileap.lovable.app';
-          const currentUrl = window.location.origin;
-          
-          // If service worker is registered with wrong URL, unregister it
+          // Check if we're on an allowed domain before unregistering service workers
           const registrations = await navigator.serviceWorker.getRegistrations();
           for (const reg of registrations) {
-            if (reg.scope && !reg.scope.includes('lexileap.lovable.app')) {
+            if (
+              reg.scope &&
+              !allowedOrigins.some(host => reg.scope.includes(host))
+            ) {
               console.log('🗑️ Unregistering service worker with incorrect URL:', reg.scope);
               await reg.unregister();
             }

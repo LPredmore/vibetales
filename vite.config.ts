@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
-        // Use NetworkFirst for all requests to prevent stale cache issues on Android
+        // Android-optimized caching strategy
         runtimeCaching: [
           {
             urlPattern: /^\/$/,
@@ -36,18 +36,19 @@ export default defineConfig(({ mode }) => ({
                 maxEntries: 1,
                 maxAgeSeconds: 60 * 60 // 1 hour
               },
-              networkTimeoutSeconds: 5
+              networkTimeoutSeconds: 3 // Reduced for Android
             }
           },
           {
             urlPattern: /\.(?:js|css)$/,
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst', // Changed from StaleWhileRevalidate for Android
             options: {
               cacheName: `assets-${buildVersion}`,
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
-              }
+                maxEntries: 50, // Reduced for Android memory constraints
+                maxAgeSeconds: 60 * 60 * 24 // 1 day instead of 1 week
+              },
+              networkTimeoutSeconds: 3
             }
           },
           {
@@ -56,8 +57,8 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: `images-${buildVersion}`,
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                maxEntries: 50, // Reduced for Android
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
               }
             }
           },
@@ -71,9 +72,10 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: 'api-cache',
               expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60
-              }
+                maxEntries: 20, // Reduced
+                maxAgeSeconds: 60 * 30 // 30 minutes
+              },
+              networkTimeoutSeconds: 5
             }
           }
         ]
@@ -140,16 +142,26 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        // Simple, consistent naming for Android compatibility
-        assetFileNames: 'assets/[name].[hash][extname]',
-        chunkFileNames: 'assets/[name].[hash].js',
-        entryFileNames: 'assets/[name].[hash].js'
+        // Consistent naming for Android compatibility
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name.split('.');
+          const extType = info[info.length - 1];
+          if (/\.(css)$/.test(assetInfo.name)) {
+            return `assets/[name]-[hash].css`;
+          }
+          if (/\.(png|jpe?g|svg|gif|tiff|bmp|ico)$/i.test(assetInfo.name)) {
+            return `assets/images/[name]-[hash][extname]`;
+          }
+          return `assets/[name]-[hash][extname]`;
+        },
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js'
       }
     },
-    // Ensure proper minification
+    // Ensure proper minification and optimization for Android
     minify: 'terser',
     sourcemap: false,
-    // Ensure chunks are properly split for better loading
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 800, // Reduced for mobile
+    target: ['es2015', 'edge18', 'firefox60', 'chrome61', 'safari11'] // Better Android support
   }
 }));
