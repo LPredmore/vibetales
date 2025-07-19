@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RefreshCw, Download } from 'lucide-react';
 import { isTWA, forceTWAManifestRefresh, checkTWAUpdate, logTWAInfo } from '@/utils/twaDetection';
+import { ALLOWED_ORIGINS, isAllowedDomain, getCurrentDomain } from '@/utils/domainConfig';
 
 interface PWAUpdateManagerProps {
   onUpdateAvailable?: (updateFunction: () => void) => void;
@@ -22,27 +23,18 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
       // Force TWA manifest refresh on startup
       await forceTWAManifestRefresh();
       
-      // FIXED: Proper domain allowlist to prevent service worker unregistration
-      const allowedOrigins = [
-        'lexileap.lovable.app',           // Preview domain
-        'storybridgeapp.lovable.app',     // Production host
-        'storybridge.lovable.app',
-        '66097099-bf56-454e-8862-15aab2304cbc.lovableproject.com'
-      ];
-      
-      const currentUrl = window.location.origin;
+      const currentUrl = getCurrentDomain();
       console.log('🌐 Current URL:', currentUrl);
       
-      // Enhanced domain validation that preserves preview environments
-      const isAllowedDomain = allowedOrigins.some(host => currentUrl.includes(host));
-      
-      if (!isAllowedDomain) {
+      // Enhanced domain validation using centralized config
+      if (!isAllowedDomain(currentUrl)) {
         console.warn('⚠️ App is running on unexpected URL:', currentUrl);
+        console.warn('⚠️ Allowed domains:', ALLOWED_ORIGINS);
       } else {
         console.log('✅ App running on approved domain');
       }
       
-      // CRITICAL: Fix service worker URL issue with proper domain checking
+      // CRITICAL: Fix service worker URL issue with centralized domain checking
       if ('serviceWorker' in navigator) {
         try {
           // Check if we're on an allowed domain before unregistering service workers
@@ -50,7 +42,7 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
           for (const reg of registrations) {
             if (
               reg.scope &&
-              !allowedOrigins.some(host => reg.scope.includes(host))
+              !ALLOWED_ORIGINS.some(host => reg.scope.includes(host))
             ) {
               console.log('🗑️ Unregistering service worker with incorrect URL:', reg.scope);
               await reg.unregister();
