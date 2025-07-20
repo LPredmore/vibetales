@@ -34,21 +34,9 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
         console.log('✅ App running on approved domain');
       }
       
-      // CRITICAL: Fix service worker URL issue with centralized domain checking
+      // Let VitePWA handle all service worker registration
       if ('serviceWorker' in navigator) {
         try {
-          // Check if we're on an allowed domain before unregistering service workers
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          for (const reg of registrations) {
-            if (
-              reg.scope &&
-              !ALLOWED_ORIGINS.some(host => reg.scope.includes(host))
-            ) {
-              console.log('🗑️ Unregistering service worker with incorrect URL:', reg.scope);
-              await reg.unregister();
-            }
-          }
-          
           // Enhanced update checking for TWA and PWA
           const checkForUpdates = async () => {
             const existingRegistration = await navigator.serviceWorker.getRegistration();

@@ -11,8 +11,7 @@ const isWebView = navigator.userAgent.includes('wv');
 console.log('🚀 StoryBridge PWA starting on Android:', isAndroid);
 console.log('📱 WebView detected:', isWebView);
 console.log('🌐 URL:', window.location.href);
-console.log('🔧 Service Worker supported:', 'serviceWorker' in navigator);
-console.log('🚫 Service Worker bypass:', localStorage.getItem('bypass-sw'));
+console.log('🔧 VitePWA will handle service worker registration');
 
 // Initialize comprehensive logging for Android debugging
 debugLogger.logLifecycle('INFO', 'Android PWA main.tsx loading', {
@@ -23,8 +22,6 @@ debugLogger.logLifecycle('INFO', 'Android PWA main.tsx loading', {
   isWebView,
   serviceWorkerSupported: 'serviceWorker' in navigator,
   rootElement: !!document.getElementById("root"),
-  bypassSW: localStorage.getItem('bypass-sw'),
-  nuclearReset: new URLSearchParams(window.location.search).get('nuclear_reset'),
   displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser'
 });
 
@@ -44,8 +41,6 @@ window.addEventListener('unhandledrejection', (event) => {
     isAndroid,
     isWebView
   });
-  
-  // Don't prevent default to maintain error visibility
 });
 
 window.addEventListener('error', (event) => {
@@ -71,8 +66,7 @@ if (isAndroid) {
     chrome: navigator.userAgent.includes('Chrome'),
     viewport: { width: window.innerWidth, height: window.innerHeight },
     screen: { width: screen.width, height: screen.height },
-    devicePixelRatio: window.devicePixelRatio,
-    nuclearReset: new URLSearchParams(window.location.search).get('nuclear_reset') === null ? false : true
+    devicePixelRatio: window.devicePixelRatio
   });
 }
 
@@ -153,11 +147,11 @@ try {
       if (errorInfo) {
         const errorDiv = document.createElement('div');
         errorDiv.style.cssText = 'color: red; margin-top: 10px; font-weight: bold;';
-        errorDiv.innerHTML = `❌ Android Critical Error: ${error.message}`;
+        errorDiv.innerHTML = `❌ Critical Error: ${error.message}`;
         errorInfo.appendChild(errorDiv);
       }
       
-      console.log('🚨 Android emergency screen activated due to critical error');
+      console.log('🚨 Emergency screen activated due to critical error');
     }
   }, 100);
   

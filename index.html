@@ -48,21 +48,18 @@
     <!-- Android Emergency Recovery Screen -->
     <div id="emergency-fallback" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #F3E8FF; z-index: 9999; padding: 20px; font-family: Arial, sans-serif; text-align: center; overflow-y: auto;">
       <div style="max-width: 500px; margin: 20px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-        <h1 style="color: #dc2626; margin-bottom: 20px;">🚨 Android Recovery Mode</h1>
-        <p style="margin-bottom: 15px; color: #666;">The PWA failed to load on your Android device. This is usually due to service worker or cache issues.</p>
+        <h1 style="color: #dc2626; margin-bottom: 20px;">🚨 Recovery Mode</h1>
+        <p style="margin-bottom: 15px; color: #666;">The app failed to load. This is usually due to cache or connection issues.</p>
         
         <div style="margin: 20px 0;">
-          <button onclick="nuclearReset()" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px; font-weight: bold;">💥 Nuclear Reset</button>
-          <button onclick="bypassServiceWorker()" style="background: #059669; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🚫 Bypass Service Worker</button>
-          <button onclick="forceHardReload()" style="background: #8B5CF6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🔄 Hard Reload</button>
+          <button onclick="clearCachesAndReload()" style="background: #dc2626; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px; font-weight: bold;">🔄 Clear Cache & Reload</button>
+          <button onclick="forceHardReload()" style="background: #8B5CF6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;">🚀 Hard Reload</button>
         </div>
         
         <div id="diagnostic-info" style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; text-align: left; margin: 15px 0;">
-          <div><strong>Android Diagnostics:</strong></div>
+          <div><strong>Diagnostics:</strong></div>
           <div>🌐 URL: <span id="current-url"></span></div>
           <div>📱 User Agent: <span id="user-agent"></span></div>
-          <div>🔄 Service Worker: <span id="sw-status">Checking...</span></div>
-          <div>📦 Cache Status: <span id="cache-status">Analyzing...</span></div>
           <div>⚛️ React Status: <span id="react-status">Loading...</span></div>
         </div>
       </div>
@@ -83,7 +80,7 @@
     </style>
 
     <script>
-      // Android-specific error tracking and recovery
+      // Simplified loading and recovery system
       let loadStartTime = Date.now();
       let emergencyTimeout;
       
@@ -92,27 +89,18 @@
         if (progressEl) {
           progressEl.textContent = message;
         }
-        console.log('📱 Android Loading:', message);
+        console.log('📱 Loading:', message);
       }
       
       // Populate diagnostics immediately
-      updateProgress('Initializing diagnostics...');
+      updateProgress('Initializing...');
       document.getElementById('current-url').textContent = window.location.href;
       document.getElementById('user-agent').textContent = navigator.userAgent.substring(0, 100) + '...';
       
-      // Android recovery functions
-      async function nuclearReset() {
-        updateProgress('Nuclear reset initiated...');
+      // Recovery functions
+      async function clearCachesAndReload() {
+        updateProgress('Clearing caches...');
         try {
-          // Unregister all service workers
-          if ('serviceWorker' in navigator) {
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            for (const registration of registrations) {
-              await registration.unregister();
-            }
-          }
-          
-          // Clear all caches
           if ('caches' in window) {
             const cacheNames = await caches.keys();
             for (const cacheName of cacheNames) {
@@ -120,34 +108,18 @@
             }
           }
           
-          // Clear all storage
           localStorage.clear();
           sessionStorage.clear();
           
-          // Clear IndexedDB
-          if ('indexedDB' in window) {
-            const databases = await indexedDB.databases();
-            for (const db of databases) {
-              indexedDB.deleteDatabase(db.name);
-            }
-          }
-          
-          updateProgress('Nuclear reset complete, reloading...');
+          updateProgress('Caches cleared, reloading...');
           setTimeout(() => {
-            window.location.href = window.location.origin + '?nuclear_reset=' + Date.now();
+            window.location.href = window.location.origin + '?cache_cleared=' + Date.now();
           }, 1000);
           
         } catch (error) {
-          console.error('❌ Nuclear reset failed:', error);
-          updateProgress('Nuclear reset failed: ' + error.message);
+          console.error('❌ Cache clear failed:', error);
+          updateProgress('Cache clear failed: ' + error.message);
         }
-      }
-      
-      function bypassServiceWorker() {
-        localStorage.setItem('bypass-sw', 'true');
-        localStorage.setItem('android-recovery', 'true');
-        updateProgress('Service worker bypassed, reloading...');
-        window.location.href = window.location.origin + '?no_sw=' + Date.now();
       }
       
       function forceHardReload() {
@@ -161,77 +133,32 @@
         updateProgress('Emergency recovery activated');
       }
       
-      // Enhanced error handling for Android
+      // Enhanced error handling
       let errorCount = 0;
       window.addEventListener('error', function(e) {
         errorCount++;
-        console.error('❌ Android Error:', e.filename, e.lineno, e.message);
+        console.error('❌ Error:', e.filename, e.lineno, e.message);
         document.getElementById('react-status').textContent = `${errorCount} error(s)`;
         
-        if (errorCount >= 2) {
+        if (errorCount >= 3) {
           setTimeout(showEmergencyScreen, 500);
         }
       });
       
       window.addEventListener('unhandledrejection', function(e) {
-        console.error('❌ Android Promise rejection:', e.reason);
+        console.error('❌ Promise rejection:', e.reason);
         updateProgress('Promise rejection detected');
       });
       
-      // Check service worker status for Android
-      updateProgress('Checking service worker...');
-      if ('serviceWorker' in navigator && !localStorage.getItem('bypass-sw')) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-          const status = registrations.length > 0 ? `${registrations.length} active` : 'None active';
-          document.getElementById('sw-status').textContent = status;
-          updateProgress('Service worker: ' + status);
-          
-          // Register service worker
-          navigator.serviceWorker.register('/sw.js', {
-            scope: '/',
-            updateViaCache: 'none'
-          }).then(registration => {
-            console.log('✅ Android SW registered');
-            updateProgress('Service worker registered');
-          }).catch(error => {
-            console.error('❌ Android SW registration failed:', error);
-            updateProgress('SW registration failed');
-            document.getElementById('sw-status').textContent = 'Failed: ' + error.message;
-          });
-          
-        }).catch(e => {
-          document.getElementById('sw-status').textContent = 'Error: ' + e.message;
-          updateProgress('SW check failed: ' + e.message);
-        });
-      } else {
-        document.getElementById('sw-status').textContent = 'Bypassed';
-        updateProgress('Service worker bypassed');
-      }
-      
-      // Check cache status
-      updateProgress('Checking cache...');
-      if ('caches' in window) {
-        caches.keys().then(cacheNames => {
-          const status = cacheNames.length > 0 ? `${cacheNames.length} caches` : 'No caches';
-          document.getElementById('cache-status').textContent = status;
-          updateProgress('Cache: ' + status);
-        }).catch(e => {
-          document.getElementById('cache-status').textContent = 'Error: ' + e.message;
-          updateProgress('Cache error: ' + e.message);
-        });
-      } else {
-        document.getElementById('cache-status').textContent = 'Not supported';
-      }
-      
-      // Reduced timeout for Android (3 seconds)
+      // Increased timeout for emergency recovery (10 seconds instead of 3)
       emergencyTimeout = setTimeout(() => {
         const rootChildren = document.getElementById('root').children;
         if (!rootChildren.length || (rootChildren.length === 1 && rootChildren[0].id === 'initial-loader')) {
-          console.error('❌ Android PWA failed to load within 3 seconds');
+          console.error('❌ App failed to load within 10 seconds');
           updateProgress('Load timeout - activating recovery');
           showEmergencyScreen();
         }
-      }, 3000);
+      }, 10000);
       
       // Hide loader when React loads
       const observer = new MutationObserver(() => {
@@ -241,8 +168,8 @@
           document.getElementById('initial-loader').style.display = 'none';
           document.getElementById('emergency-fallback').style.display = 'none';
           observer.disconnect();
-          updateProgress('Android PWA loaded successfully');
-          console.log('✅ Android PWA loaded');
+          updateProgress('App loaded successfully');
+          console.log('✅ App loaded');
         }
       });
       observer.observe(document.getElementById('root'), { childList: true, subtree: true });
