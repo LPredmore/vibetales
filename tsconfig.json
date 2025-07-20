@@ -15,7 +15,7 @@
     "allowJs": true,
     "noUnusedLocals": false,
     "strictNullChecks": false,
-    "types": ["jest", "node"]
+    "types": ["node","jest"]
   },
   "include": [
     "src",
