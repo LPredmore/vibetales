@@ -1,5 +1,5 @@
 
 {
-  "allowedOrigins": ["lexileap.lovable.app"],
-  "productionHost": "lexileap.lovable.app"
+  "allowedOrigins": ["storybridgeapp.lovable.app"],
+  "productionHost": "storybridgeapp.lovable.app"
 }

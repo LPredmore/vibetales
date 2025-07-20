@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   appName: 'StoryBridge',
   webDir: 'dist',
   server: {
-    url: 'https://lexileap.lovable.app',
+    url: 'https://storybridgeapp.lovable.app',
     cleartext: true
   },
   android: {
