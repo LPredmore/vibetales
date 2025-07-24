@@ -105,11 +105,11 @@ const Index = () => {
       
       toast.success("Story generated successfully!");
       
-      // Auto-scroll to story section when generated
+      // Auto-scroll to story section when generated (less aggressive)
       setTimeout(() => {
         document.getElementById('story-section')?.scrollIntoView({ 
           behavior: 'smooth', 
-          block: 'start' 
+          block: 'nearest' 
         });
       }, 100);
       
@@ -139,7 +139,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
+    <div className="bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
       <div className="container px-4 py-4 sm:py-8 max-w-6xl mx-auto">
         {/* Header with Logo and Logout Button */}
         <div className="flex justify-between items-start mb-6 sm:mb-8">
