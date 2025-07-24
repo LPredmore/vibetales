@@ -79,14 +79,13 @@
 
   body {
     @apply bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 text-foreground;
-    /* Enable smooth scrolling and touch scrolling */
+    /* Enable smooth scrolling and momentum scrolling for mobile */
     -webkit-overflow-scrolling: touch;
     overflow-x: hidden;
-    overflow-y: scroll;
+    overflow-y: auto;
     scroll-behavior: smooth;
-    /* Ensure body can expand and scroll naturally */
+    /* Standard viewport height - let content flow naturally */
     min-height: 100vh;
-    min-height: 100dvh;
   }
 
   /* Improved touch targets for mobile */
