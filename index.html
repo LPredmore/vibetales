@@ -127,21 +127,67 @@
         window.location.href = window.location.href + (window.location.search ? '&' : '?') + 'force_reload=' + Date.now();
       }
       
+      // Circuit breaker to prevent infinite calls
+      let emergencyScreenActivated = false;
+      let emergencyCallCount = 0;
+      
       function showEmergencyScreen() {
-        document.getElementById('initial-loader').style.display = 'none';
-        document.getElementById('emergency-fallback').style.display = 'block';
-        updateProgress('Emergency recovery activated');
+        emergencyCallCount++;
+        
+        // Prevent infinite recursion
+        if (emergencyScreenActivated || emergencyCallCount > 3) {
+          console.warn('⚠️ Emergency screen already activated or too many calls, skipping');
+          return;
+        }
+        
+        // Check for safe mode
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('safe') === 'true') {
+          console.log('🔒 Safe mode enabled, skipping emergency screen');
+          return;
+        }
+        
+        try {
+          const loaderEl = document.getElementById('initial-loader');
+          const emergencyEl = document.getElementById('emergency-fallback');
+          
+          if (loaderEl) {
+            loaderEl.style.display = 'none';
+          }
+          
+          if (emergencyEl) {
+            emergencyEl.style.display = 'block';
+            emergencyScreenActivated = true;
+            updateProgress('Emergency recovery activated');
+            console.log('🚨 Emergency screen activated');
+          } else {
+            console.error('❌ Emergency fallback element not found');
+          }
+        } catch (error) {
+          console.error('❌ Error in showEmergencyScreen:', error);
+        }
       }
       
-      // Enhanced error handling
+      // Enhanced error handling with circuit breaker
       let errorCount = 0;
+      let maxErrors = 5;
+      
       window.addEventListener('error', function(e) {
         errorCount++;
         console.error('❌ Error:', e.filename, e.lineno, e.message);
-        document.getElementById('react-status').textContent = `${errorCount} error(s)`;
         
-        if (errorCount >= 3) {
+        // Update react status safely
+        const reactStatusEl = document.getElementById('react-status');
+        if (reactStatusEl) {
+          reactStatusEl.textContent = `${errorCount} error(s)`;
+        }
+        
+        // Only trigger emergency if we hit the threshold and haven't already activated
+        if (errorCount >= maxErrors && !emergencyScreenActivated) {
+          console.warn(`⚠️ Error threshold reached (${errorCount}/${maxErrors}), activating emergency screen`);
           setTimeout(showEmergencyScreen, 500);
+        } else if (errorCount > maxErrors) {
+          console.warn('⚠️ Too many errors, emergency system disabled');
         }
       });
       
@@ -160,19 +206,46 @@
         }
       }, 10000);
       
-      // Hide loader when React loads
-      const observer = new MutationObserver(() => {
-        const rootChildren = document.getElementById('root').children;
-        if (rootChildren.length > 1 || (rootChildren.length === 1 && !rootChildren[0].id)) {
-          clearTimeout(emergencyTimeout);
-          document.getElementById('initial-loader').style.display = 'none';
-          document.getElementById('emergency-fallback').style.display = 'none';
+      // Hide loader when React loads - with better error handling
+      const observer = new MutationObserver((mutations) => {
+        try {
+          const rootEl = document.getElementById('root');
+          if (!rootEl) return;
+          
+          const rootChildren = rootEl.children;
+          if (rootChildren.length > 1 || (rootChildren.length === 1 && !rootChildren[0].id)) {
+            clearTimeout(emergencyTimeout);
+            
+            // Safely hide elements
+            const loaderEl = document.getElementById('initial-loader');
+            const emergencyEl = document.getElementById('emergency-fallback');
+            
+            if (loaderEl) loaderEl.style.display = 'none';
+            if (emergencyEl) emergencyEl.style.display = 'none';
+            
+            observer.disconnect();
+            updateProgress('App loaded successfully');
+            console.log('✅ App loaded successfully');
+            
+            // Reset emergency system
+            emergencyScreenActivated = false;
+            emergencyCallCount = 0;
+          }
+        } catch (error) {
+          console.error('❌ MutationObserver error:', error);
           observer.disconnect();
-          updateProgress('App loaded successfully');
-          console.log('✅ App loaded');
         }
       });
-      observer.observe(document.getElementById('root'), { childList: true, subtree: true });
+      
+      // Safely start observing
+      try {
+        const rootEl = document.getElementById('root');
+        if (rootEl) {
+          observer.observe(rootEl, { childList: true, subtree: true });
+        }
+      } catch (error) {
+        console.error('❌ Failed to start MutationObserver:', error);
+      }
       
       updateProgress('Loading React application...');
     </script>
