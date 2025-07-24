@@ -78,10 +78,14 @@
   }
 
   body {
-    @apply bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 text-foreground min-h-screen;
-    /* Prevent bounce scrolling on iOS */
+    @apply bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 text-foreground;
+    /* Enable smooth scrolling on mobile */
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    /* Allow content to expand beyond viewport */
+    min-height: 100vh;
+    height: auto;
   }
 
   /* Improved touch targets for mobile */

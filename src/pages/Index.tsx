@@ -130,7 +130,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 overflow-y-auto">
       <div className="container px-4 py-4 sm:py-8 max-w-6xl mx-auto">
         {/* Header with Logo and Logout Button */}
         <div className="flex justify-between items-start mb-6 sm:mb-8">
