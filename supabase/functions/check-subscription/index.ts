@@ -22,28 +22,7 @@ serve(async (req) => {
     let userEmail = '';
     let userId = '';
 
-    // Handle GET requests first (from SightWordManager)
-    if (req.method === 'GET') {
-      const authHeader = req.headers.get('Authorization');
-      if (!authHeader) {
-        throw new Error('No authorization header');
-      }
-
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-      
-      if (userError || !user?.email) {
-        console.log('Auth error or no user:', userError?.message || 'No user');
-        return new Response(
-          JSON.stringify({ subscribed: false }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      userEmail = user.email;
-      userId = user.id;
-      console.log('GET request - checking subscription for user:', userEmail);
-    } else if (req.method === 'POST') {
+    if (req.method === 'POST') {
       // Handle POST requests with userId in body (from generate-story function)
       const body = await req.json();
       userId = body.userId;
@@ -64,10 +43,28 @@ serve(async (req) => {
       }
       
       userEmail = userData.user.email;
-      userId = userData.user.id;
       console.log('POST request - checking subscription for user ID:', userId, 'email:', userEmail);
     } else {
-      throw new Error(`Unsupported method: ${req.method}`);
+      // Handle GET requests with authorization header (existing behavior)
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        throw new Error('No authorization header');
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+      
+      if (userError || !user?.email) {
+        console.log('Auth error or no user:', userError?.message || 'No user');
+        return new Response(
+          JSON.stringify({ subscribed: false }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      userEmail = user.email;
+      userId = user.id;
+      console.log('GET request - checking subscription for user:', userEmail);
     }
 
     // Get the Stripe secret key from environment variables

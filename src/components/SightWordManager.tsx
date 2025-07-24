@@ -12,10 +12,10 @@ import { UpgradePrompt } from "./sight-words/UpgradePrompt";
 interface SightWordManagerProps {
   words: SightWord[];
   setWords: (words: SightWord[]) => void;
-  isExternalLoading?: boolean;
 }
 
-export const SightWordManager = ({ words, setWords, isExternalLoading = false }: SightWordManagerProps) => {
+export const SightWordManager = ({ words, setWords }: SightWordManagerProps) => {
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { user } = useAuth();
@@ -27,17 +27,11 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
     const checkSubscription = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('check-subscription');
-        if (error) {
-          console.error('Subscription check error:', error);
-          // Don't show error toast for subscription checks - just default to unsubscribed
-          setIsSubscribed(false);
-          return;
-        }
-        setIsSubscribed(data?.subscribed || false);
+        if (error) throw error;
+        setIsSubscribed(data.subscribed);
       } catch (err) {
         console.error('Error checking subscription:', err);
-        // Silently handle subscription check errors and default to unsubscribed
-        setIsSubscribed(false);
+        toast.error("Failed to check subscription status");
       }
     };
 
@@ -46,7 +40,49 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
     }
   }, [user]);
 
-  // Words are now loaded by parent component, so we don't need to load them here
+  useEffect(() => {
+    const loadWords = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('sight_words')
+          .select('words_objects')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (error) throw error;
+        
+        if (data && data.words_objects) {
+          // Convert JSONB objects to SightWord objects
+          const sightWords: SightWord[] = data.words_objects.map((obj: any) => ({
+            word: obj.word,
+            active: obj.active
+          }));
+          setWords(sightWords);
+        } else {
+          // Create new record if none exists
+          const { error: insertError } = await supabase
+            .from('sight_words')
+            .insert({ user_id: user.id, words_objects: [] });
+            
+          if (insertError) throw insertError;
+          setWords([]);
+        }
+      } catch (err) {
+        console.error('Error loading sight words:', err);
+        toast.error("Failed to load sight words");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadWords();
+  }, [user, setWords]);
 
   const handleCheckout = async () => {
     try {
@@ -140,8 +176,8 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
     toast.success("All words deactivated!");
   };
 
-  if (isExternalLoading) {
-    return <div className="flex justify-center items-center p-8">Loading sight words...</div>;
+  if (isLoading) {
+    return <div className="flex justify-center items-center p-8">Loading...</div>;
   }
 
   return (

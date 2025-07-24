@@ -12,8 +12,6 @@ import { toast } from "sonner";
 import { ReadingLevelSelector } from "./ReadingLevelSelector";
 import { InterestLevelSelector } from "./InterestLevelSelector";
 import { ThemeSelector } from "./ThemeSelector";
-import { LanguageSelector } from "./LanguageSelector";
-import { ThemeLessonSelector } from "./ThemeLessonSelector";
 import { StorySettings } from "./StorySettings";
 
 interface StoryFormProps {
@@ -24,10 +22,8 @@ export interface StoryFormData {
   readingLevel: string;
   interestLevel: string;
   theme: string;
-  language: string;
   length: string;
-  themeLesson?: string;
-  hasThemeLesson: boolean;
+  customTheme?: string;
   isDrSeussStyle: boolean;
   useSightWords: boolean;
 }
@@ -36,9 +32,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
   const [readingLevel, setReadingLevel] = useState("");
   const [interestLevel, setInterestLevel] = useState("");
   const [theme, setTheme] = useState("");
-  const [language, setLanguage] = useState("english");
-  const [themeLesson, setThemeLesson] = useState("");
-  const [hasThemeLesson, setHasThemeLesson] = useState(false);
+  const [customTheme, setCustomTheme] = useState("");
   const [length, setLength] = useState("");
   const [isDrSeussStyle, setIsDrSeussStyle] = useState(false);
   const [useSightWords, setUseSightWords] = useState(true);
@@ -48,9 +42,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
     const savedReadingLevel = localStorage.getItem('storyForm_readingLevel');
     const savedInterestLevel = localStorage.getItem('storyForm_interestLevel');
     const savedTheme = localStorage.getItem('storyForm_theme');
-    const savedLanguage = localStorage.getItem('storyForm_language');
-    const savedThemeLesson = localStorage.getItem('storyForm_themeLesson');
-    const savedHasThemeLesson = localStorage.getItem('storyForm_hasThemeLesson');
+    const savedCustomTheme = localStorage.getItem('storyForm_customTheme');
     const savedLength = localStorage.getItem('storyForm_length');
     const savedIsDrSeussStyle = localStorage.getItem('storyForm_isDrSeussStyle');
     const savedUseSightWords = localStorage.getItem('storyForm_useSightWords');
@@ -58,9 +50,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
     if (savedReadingLevel) setReadingLevel(savedReadingLevel);
     if (savedInterestLevel) setInterestLevel(savedInterestLevel);
     if (savedTheme) setTheme(savedTheme);
-    if (savedLanguage) setLanguage(savedLanguage);
-    if (savedThemeLesson) setThemeLesson(savedThemeLesson);
-    if (savedHasThemeLesson) setHasThemeLesson(savedHasThemeLesson === 'true');
+    if (savedCustomTheme) setCustomTheme(savedCustomTheme);
     if (savedLength) setLength(savedLength);
     if (savedIsDrSeussStyle) setIsDrSeussStyle(savedIsDrSeussStyle === 'true');
     if (savedUseSightWords) setUseSightWords(savedUseSightWords === 'true');
@@ -82,25 +72,9 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
     localStorage.setItem('storyForm_theme', value);
   };
 
-  const handleLanguageChange = (value: string) => {
-    setLanguage(value);
-    localStorage.setItem('storyForm_language', value);
-    
-    // Reset Dr. Seuss style if changing away from English
-    if (value !== 'english' && isDrSeussStyle) {
-      setIsDrSeussStyle(false);
-      localStorage.setItem('storyForm_isDrSeussStyle', 'false');
-    }
-  };
-
-  const handleThemeLessonChange = (value: string) => {
-    setThemeLesson(value);
-    localStorage.setItem('storyForm_themeLesson', value);
-  };
-
-  const handleHasThemeLessonChange = (enabled: boolean) => {
-    setHasThemeLesson(enabled);
-    localStorage.setItem('storyForm_hasThemeLesson', enabled.toString());
+  const handleCustomThemeChange = (value: string) => {
+    setCustomTheme(value);
+    localStorage.setItem('storyForm_customTheme', value);
   };
 
   const handleLengthChange = (value: string) => {
@@ -120,22 +94,20 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!readingLevel || !interestLevel || !theme || !language || !length) {
+    if (!readingLevel || !interestLevel || !length) {
       toast.error("Please fill in all required fields");
       return;
     }
-    if (hasThemeLesson && !themeLesson.trim()) {
-      toast.error("Please enter a theme/lesson or disable the option");
+    if (theme === "custom" && !customTheme.trim()) {
+      toast.error("Please enter a custom theme or select a predefined one");
       return;
     }
     onSubmit({
       readingLevel,
       interestLevel,
-      theme,
-      language,
+      theme: theme === "custom" ? customTheme : theme,
       length,
-      themeLesson: hasThemeLesson ? themeLesson : undefined,
-      hasThemeLesson,
+      customTheme: theme === "custom" ? customTheme : undefined,
       isDrSeussStyle,
       useSightWords,
     });
@@ -158,29 +130,16 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <ThemeSelector
-          theme={theme}
-          onThemeChange={handleThemeChange}
-        />
-
-        <LanguageSelector
-          language={language}
-          onLanguageChange={handleLanguageChange}
-        />
-      </div>
-
-      <ThemeLessonSelector
-        enabled={hasThemeLesson}
-        themeLesson={themeLesson}
-        onEnabledChange={handleHasThemeLessonChange}
-        onThemeLessonChange={handleThemeLessonChange}
+      <ThemeSelector
+        theme={theme}
+        customTheme={customTheme}
+        onThemeChange={handleThemeChange}
+        onCustomThemeChange={handleCustomThemeChange}
       />
 
       <StorySettings
         isDrSeussStyle={isDrSeussStyle}
         useSightWords={useSightWords}
-        language={language}
         onDrSeussStyleChange={handleDrSeussStyleChange}
         onUseSightWordsChange={handleUseSightWordsChange}
       />

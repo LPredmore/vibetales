@@ -31,7 +31,7 @@ export const generateStory = async (
   storyData: StoryFormData & { keywords: string[] }
 ) => {
   // Validate required fields
-  const requiredFields = ['readingLevel', 'interestLevel', 'theme', 'length', 'language'];
+  const requiredFields = ['readingLevel', 'interestLevel', 'theme', 'length'];
   for (const field of requiredFields) {
     if (!storyData[field as keyof StoryFormData]) {
       throw new Error(`Missing required field: ${field}`);
@@ -55,10 +55,7 @@ export const generateStory = async (
       readingLevel: storyData.readingLevel,
       interestLevel: storyData.interestLevel,
       theme: storyData.theme,
-      themeLesson: storyData.themeLesson,
-      hasThemeLesson: storyData.hasThemeLesson,
       length: storyData.length,
-      language: storyData.language,
       isDrSeussStyle: storyData.isDrSeussStyle,
       useSightWords: storyData.useSightWords,
       keywords: storyData.keywords
@@ -79,33 +76,15 @@ export const generateStory = async (
 
   if (error) {
     console.error("Edge function error details:", error);
-    console.error("Error data:", error.data);
-    console.error("Error context:", error.context);
     
     // Handle authentication errors specifically
     if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
       throw new Error('Session expired. Please log in again.');
     }
     
-    // Check for 429 status (rate limit) in various ways
-    const is429Error = error.message?.includes('429') || 
-                      error.context?.status === 429 ||
-                      error.status === 429;
-    
-    // Check for limit reached flag in error data
-    const hasLimitFlag = error.data?.limitReached === true ||
-                        error.context?.data?.limitReached === true;
-    
-    // Check for limit-related error messages
-    const hasLimitMessage = error.message?.includes('Daily story limit reached') || 
-                           error.data?.error?.includes('Daily story limit reached') ||
-                           error.context?.error?.includes('limitReached');
-    
-    console.log("Limit detection:", { is429Error, hasLimitFlag, hasLimitMessage });
-    
     // Handle specific limit errors
-    if (is429Error || hasLimitFlag || hasLimitMessage) {
-      console.log("Detected LIMIT_REACHED scenario");
+    if (error.message?.includes('Daily story limit reached') || 
+        error.context?.error?.includes('limitReached')) {
       throw new Error('LIMIT_REACHED');
     }
     
