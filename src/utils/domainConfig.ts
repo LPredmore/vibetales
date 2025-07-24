@@ -5,7 +5,12 @@ export const ALLOWED_ORIGINS = hostsConfig.allowedOrigins;
 export const PRODUCTION_HOST = hostsConfig.productionHost;
 
 export const isAllowedDomain = (url: string): boolean => {
-  return ALLOWED_ORIGINS.some(host => url.includes(host));
+  // Handle protocol-agnostic domain checking
+  const cleanUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  return ALLOWED_ORIGINS.some(host => {
+    const cleanHost = host.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    return cleanUrl === cleanHost || cleanUrl.includes(cleanHost);
+  });
 };
 
 export const getCurrentDomain = (): string => {

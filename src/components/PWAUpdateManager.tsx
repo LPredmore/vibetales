@@ -24,14 +24,21 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
       await forceTWAManifestRefresh();
       
       const currentUrl = getCurrentDomain();
-      console.log('🌐 Current URL:', currentUrl);
       
-      // Enhanced domain validation using centralized config
-      if (!isAllowedDomain(currentUrl)) {
-        console.warn('⚠️ App is running on unexpected URL:', currentUrl);
-        console.warn('⚠️ Allowed domains:', ALLOWED_ORIGINS);
-      } else {
-        console.log('✅ App running on approved domain');
+      // Only log domain validation in debug mode to prevent console spam
+      const isDebugMode = localStorage.getItem('enable-debug') === 'true' || 
+                         window.location.search.includes('debug=true');
+      
+      if (isDebugMode) {
+        console.log('🌐 Current URL:', currentUrl);
+        
+        // Enhanced domain validation using centralized config
+        if (!isAllowedDomain(currentUrl)) {
+          console.warn('⚠️ App is running on unexpected URL:', currentUrl);
+          console.warn('⚠️ Allowed domains:', ALLOWED_ORIGINS);
+        } else {
+          console.log('✅ App running on approved domain');
+        }
       }
       
       // Let VitePWA handle all service worker registration
@@ -42,7 +49,14 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
             const existingRegistration = await navigator.serviceWorker.getRegistration();
             if (existingRegistration) {
               setRegistration(existingRegistration);
-              console.log('🔄 Checking for PWA updates...');
+              
+              // Only log in debug mode
+              const isDebugMode = localStorage.getItem('enable-debug') === 'true' || 
+                                 window.location.search.includes('debug=true');
+              if (isDebugMode) {
+                console.log('🔄 Checking for PWA updates...');
+              }
+              
               await existingRegistration.update();
             }
             

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { EmergencyDebugOverlay } from './EmergencyDebugOverlay';
 import { debugLogger } from '@/utils/debugLogger';
+import { shouldBypassDebug } from '@/utils/safeMode';
 
 export const EmergencyDebugActivator: React.FC = () => {
   const [showEmergencyDebug, setShowEmergencyDebug] = useState(false);
@@ -8,14 +9,14 @@ export const EmergencyDebugActivator: React.FC = () => {
   useEffect(() => {
     // Check for emergency debug activation via URL or localStorage
     const checkEmergencyDebug = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const isDisabled = urlParams.get('debug') === 'false' || urlParams.get('safe') === 'true';
-      
-      // Skip if debug is explicitly disabled
-      if (isDisabled) {
+      // Skip all debug functionality if in safe mode
+      if (shouldBypassDebug()) {
         localStorage.removeItem('emergency-debug');
+        setShowEmergencyDebug(false);
         return;
       }
+      
+      const urlParams = new URLSearchParams(window.location.search);
       
       const emergencyMode = urlParams.get('debug') === 'emergency' || 
                            localStorage.getItem('emergency-debug') === 'true';
