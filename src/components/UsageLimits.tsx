@@ -124,19 +124,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   }
 
   if (hasPremium) {
-    return (
-      <Card className="clay-card border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-amber-800">
-            <Crown className="h-5 w-5" />
-            Premium Active
-          </CardTitle>
-          <CardDescription className="text-amber-700">
-            You have unlimited stories! Generate as many as you'd like.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
+    return null; // Don't show anything for premium users
   }
 
   const dailyUsed = limits?.daily_stories_used || 0;

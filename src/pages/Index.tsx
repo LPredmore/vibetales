@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { UserMenu } from "@/components/UserMenu";
+import { AIContentDisclaimer } from "@/components/AIContentDisclaimer";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 const Index = () => {
   const [story, setStory] = useState<{
@@ -248,6 +250,17 @@ const Index = () => {
                   )}
                   
                   <StoryForm onSubmit={handleSubmit} />
+                  
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="w-full mt-2">
+                        AI Content Notice
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <AIContentDisclaimer />
+                    </DialogContent>
+                  </Dialog>
                   
                   {story && (
                     <div id="story-section">
