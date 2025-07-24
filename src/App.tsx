@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthGuard } from "@/components/AuthGuard";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { PWAUpdateManager } from "@/components/PWAUpdateManager";
 import { DebugToggle } from "@/components/DebugToggle";
 import { EmergencyDebugActivator } from "@/components/EmergencyDebugActivator";
 import { debugLogger } from "@/utils/debugLogger";
@@ -61,7 +60,6 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <PWAUpdateManager />
             <DebugToggle />
             <EmergencyDebugActivator />
             <BrowserRouter>
