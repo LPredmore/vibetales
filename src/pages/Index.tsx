@@ -94,8 +94,13 @@ const Index = () => {
       setShowLimitPrompt(false); // Hide limit prompt if it was showing
       
       // Refresh usage limits after successful story generation
-      if (refreshLimits) {
-        await refreshLimits();
+      if (refreshLimits && typeof refreshLimits === 'function') {
+        try {
+          await refreshLimits();
+        } catch (refreshError) {
+          console.warn("Failed to refresh usage limits:", refreshError);
+          // Don't affect the main success flow
+        }
       }
       
       toast.success("Story generated successfully!");
