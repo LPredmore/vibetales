@@ -104,6 +104,15 @@ const Index = () => {
       }
       
       toast.success("Story generated successfully!");
+      
+      // Auto-scroll to story section when generated
+      setTimeout(() => {
+        document.getElementById('story-section')?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }, 100);
+      
       console.log("=== Story Generation Complete ===");
     } catch (error) {
       console.error("=== Story Generation Failed ===");
@@ -130,7 +139,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 overflow-y-auto">
+    <div className="min-h-dvh bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">
       <div className="container px-4 py-4 sm:py-8 max-w-6xl mx-auto">
         {/* Header with Logo and Logout Button */}
         <div className="flex justify-between items-start mb-6 sm:mb-8">
@@ -185,12 +194,14 @@ const Index = () => {
                   <StoryForm onSubmit={handleSubmit} />
                   
                   {story && (
-                    <StoryDisplay 
-                      title={story.title} 
-                      content={story.content}
-                      readingLevel={story.readingLevel}
-                      theme={story.theme}
-                    />
+                    <div id="story-section">
+                      <StoryDisplay 
+                        title={story.title} 
+                        content={story.content}
+                        readingLevel={story.readingLevel}
+                        theme={story.theme}
+                      />
+                    </div>
                   )}
                 </div>
               </TabsContent>

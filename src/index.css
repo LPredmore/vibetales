@@ -79,12 +79,14 @@
 
   body {
     @apply bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 text-foreground;
-    /* Enable smooth scrolling on mobile */
+    /* Enable smooth scrolling across all browsers */
     -webkit-overflow-scrolling: touch;
     overflow-x: hidden;
     overflow-y: auto;
-    /* Allow content to expand beyond viewport */
+    scroll-behavior: smooth;
+    /* Fix viewport height for consistent cross-browser behavior */
     min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
     height: auto;
   }
 
