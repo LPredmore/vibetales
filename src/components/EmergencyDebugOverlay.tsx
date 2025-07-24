@@ -59,9 +59,13 @@ export const EmergencyDebugOverlay: React.FC<EmergencyDebugOverlayProps> = ({ on
       const a = document.createElement('a');
       a.href = url;
       a.download = `emergency-debug-logs-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      
+      // Add null checks for DOM manipulation
+      if (document.body) {
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to download logs:', error);

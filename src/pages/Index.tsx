@@ -113,7 +113,13 @@ const Index = () => {
         setShowLimitPrompt(true);
         toast.info("You have reached your limit today. Wait until tomorrow or upgrade to premium for unlimited stories.");
       } else {
-        toast.error("Failed to generate story. Please try again.");
+        // Only show error if not a domain-related issue
+        const isDomainError = error instanceof Error && 
+          (error.message?.includes('unexpected URL') || error.message?.includes('allowedOrigins'));
+        
+        if (!isDomainError) {
+          toast.error("Failed to generate story. Please try again.");
+        }
       }
     }
   };

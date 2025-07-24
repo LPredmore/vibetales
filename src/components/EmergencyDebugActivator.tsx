@@ -9,6 +9,14 @@ export const EmergencyDebugActivator: React.FC = () => {
     // Check for emergency debug activation via URL or localStorage
     const checkEmergencyDebug = () => {
       const urlParams = new URLSearchParams(window.location.search);
+      const isDisabled = urlParams.get('debug') === 'false' || urlParams.get('safe') === 'true';
+      
+      // Skip if debug is explicitly disabled
+      if (isDisabled) {
+        localStorage.removeItem('emergency-debug');
+        return;
+      }
+      
       const emergencyMode = urlParams.get('debug') === 'emergency' || 
                            localStorage.getItem('emergency-debug') === 'true';
       

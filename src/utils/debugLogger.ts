@@ -49,20 +49,35 @@ class DebugLogger {
 
   private setupGlobalErrorHandlers() {
     window.addEventListener('error', (event) => {
-      this.log('ERROR', 'CRITICAL', 'Unhandled error', {
-        message: event.message,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-        error: event.error?.stack
-      });
+      // Prevent infinite loops by checking for debug-related errors
+      const isDebugError = event.filename?.includes('debugLogger') || 
+                          event.error?.stack?.includes('debugLogger') ||
+                          event.message?.includes('null (reading \'style\')') ||
+                          event.message?.includes('EmergencyDebugOverlay');
+      
+      if (!isDebugError) {
+        this.log('ERROR', 'CRITICAL', 'Unhandled error', {
+          message: event.message,
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno,
+          error: event.error?.stack
+        });
+      }
     });
 
     window.addEventListener('unhandledrejection', (event) => {
-      this.log('ERROR', 'CRITICAL', 'Unhandled promise rejection', {
-        reason: event.reason,
-        stack: event.reason?.stack
-      });
+      // Skip debug-related promise rejections
+      const isDebugError = event.reason?.toString?.()?.includes('debugLogger') ||
+                          event.reason?.stack?.includes('debugLogger') ||
+                          event.reason?.toString?.()?.includes('EmergencyDebugOverlay');
+      
+      if (!isDebugError) {
+        this.log('ERROR', 'CRITICAL', 'Unhandled promise rejection', {
+          reason: event.reason,
+          stack: event.reason?.stack
+        });
+      }
     });
   }
 
