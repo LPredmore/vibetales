@@ -25,65 +25,18 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
-        // Android-optimized caching strategy with domain-specific patterns
+        // Simplified caching strategy to reduce memory usage
         runtimeCaching: [
           {
-            urlPattern: /^\/$/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: `main-page-${buildVersion}`,
-              expiration: {
-                maxEntries: 1,
-                maxAgeSeconds: 60 * 60 // 1 hour
-              },
-              networkTimeoutSeconds: 3 // Reduced for Android
-            }
-          },
-          {
-            urlPattern: /^https:\/\/storybridgeapp\.lovable\.app\/.*\.(js|css)$/,
-            handler: 'NetworkFirst', // Changed from StaleWhileRevalidate for Android
-            options: {
-              cacheName: `storybridgeapp-assets-${buildVersion}`,
-              expiration: {
-                maxEntries: 50, // Reduced for Android memory constraints
-                maxAgeSeconds: 60 * 60 * 24 // 1 day
-              },
-              networkTimeoutSeconds: 3
-            }
-          },
-          {
-            urlPattern: /^https:\/\/storybridgeapp\.lovable\.app\/.*\.(html)$/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: `storybridgeapp-pages-${buildVersion}`,
-              expiration: {
-                maxEntries: 20,
-                maxAgeSeconds: 60 * 60 // 1 hour
-              },
-              networkTimeoutSeconds: 3
-            }
-          },
-          {
             urlPattern: /\.(?:js|css)$/,
-            handler: 'NetworkFirst', // Changed from StaleWhileRevalidate for Android
+            handler: 'NetworkFirst',
             options: {
               cacheName: `assets-${buildVersion}`,
               expiration: {
-                maxEntries: 50, // Reduced for Android memory constraints
-                maxAgeSeconds: 60 * 60 * 24 // 1 day instead of 1 week
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 // 1 day
               },
-              networkTimeoutSeconds: 3
-            }
-          },
-          {
-            urlPattern: /^https:\/\/storybridgeapp\.lovable\.app\/.*\.(png|jpg|jpeg|svg|gif|webp|ico)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: `storybridgeapp-images-${buildVersion}`,
-              expiration: {
-                maxEntries: 50, // Reduced for Android
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
-              }
+              networkTimeoutSeconds: 5
             }
           },
           {
@@ -92,26 +45,14 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: `images-${buildVersion}`,
               expiration: {
-                maxEntries: 50, // Reduced for Android
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 3 // 3 days
               }
             }
           },
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
             handler: 'NetworkOnly'
-          },
-          {
-            urlPattern: /^https:\/\/openrouter\.ai\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 20, // Reduced
-                maxAgeSeconds: 60 * 30 // 30 minutes
-              },
-              networkTimeoutSeconds: 5
-            }
           }
         ]
       },

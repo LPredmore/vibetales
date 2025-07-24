@@ -2,139 +2,46 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { debugLogger } from './utils/debugLogger'
 
-// Android-specific initialization logging
-const isAndroid = /Android/i.test(navigator.userAgent);
-const isWebView = navigator.userAgent.includes('wv');
+// Minimal initialization - avoid heavy debug logging on startup
+const isDev = process.env.NODE_ENV === 'development';
+const isDebugMode = localStorage.getItem('enable-debug') === 'true' || 
+                   window.location.search.includes('debug=true');
 
-console.log('🚀 StoryBridge PWA starting on Android:', isAndroid);
-console.log('📱 WebView detected:', isWebView);
-console.log('🌐 URL:', window.location.href);
-console.log('🔧 VitePWA will handle service worker registration');
-
-// Initialize comprehensive logging for Android debugging
-debugLogger.logLifecycle('INFO', 'Android PWA main.tsx loading', {
-  buildTimestamp: new Date().toISOString(),
-  url: window.location.href,
-  userAgent: navigator.userAgent,
-  isAndroid,
-  isWebView,
-  serviceWorkerSupported: 'serviceWorker' in navigator,
-  rootElement: !!document.getElementById("root"),
-  displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser'
-});
-
-// Set up monitoring
-debugLogger.setupNetworkMonitoring();
-debugLogger.setupStorageMonitoring();
-debugLogger.markPerformance('android-app-render-start');
-
-// Enhanced Android error handling
+// Essential error handling only
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('❌ Android unhandled promise rejection:', event.reason);
-  debugLogger.logError('CRITICAL', 'Android unhandled promise rejection', {
-    reason: event.reason?.toString(),
-    stack: event.reason?.stack,
-    url: window.location.href,
-    userAgent: navigator.userAgent,
-    isAndroid,
-    isWebView
-  });
+  console.error('❌ Unhandled promise rejection:', event.reason);
 });
 
 window.addEventListener('error', (event) => {
-  console.error('❌ Android global error:', event.error);
-  debugLogger.logError('CRITICAL', 'Android global error caught', {
-    message: event.message,
-    filename: event.filename,
-    lineno: event.lineno,
-    colno: event.colno,
-    error: event.error?.stack,
-    url: window.location.href,
-    isAndroid,
-    isWebView
-  });
+  console.error('❌ Global error:', event.error);
 });
-
-// Android-specific startup logging
-if (isAndroid) {
-  console.log('📱 Android device detected - Enhanced logging enabled');
-  debugLogger.logAndroid('INFO', 'Android device PWA startup', {
-    version: navigator.userAgent.match(/Android (\d+\.?\d*)/)?.[1],
-    webView: isWebView,
-    chrome: navigator.userAgent.includes('Chrome'),
-    viewport: { width: window.innerWidth, height: window.innerHeight },
-    screen: { width: screen.width, height: screen.height },
-    devicePixelRatio: window.devicePixelRatio
-  });
-}
 
 try {
   const rootElement = document.getElementById("root");
   if (!rootElement) {
-    const error = new Error('Root element not found in Android PWA');
-    debugLogger.logError('CRITICAL', 'Android PWA root element not found', { 
-      documentReady: document.readyState,
-      bodyChildren: document.body?.children.length,
-      headChildren: document.head?.children.length,
-      isAndroid,
-      isWebView
-    });
-    throw error;
+    throw new Error('Root element not found');
   }
 
-  console.log('✅ Android PWA root element found:', rootElement);
-  debugLogger.logLifecycle('INFO', 'Android PWA root element found, creating React root');
-  
   const root = createRoot(rootElement);
-  
-  debugLogger.logLifecycle('INFO', 'Android PWA rendering App component');
-  console.log('⚛️ Android PWA rendering React App...');
-  
   root.render(<App />);
   
-  debugLogger.measurePerformance('android-react-render', 'android-app-render-start');
-  debugLogger.logLifecycle('INFO', 'Android PWA App component render call completed');
-  console.log('✅ Android PWA React render call completed');
-  
-  // Android-specific render verification
+  // Simple render verification
   setTimeout(() => {
     const loader = document.getElementById('initial-loader');
     const rootChildren = rootElement.children;
     
     if (rootChildren.length > 1 || (rootChildren.length === 1 && !rootChildren[0].id)) {
-      console.log('✅ Android PWA React content detected, hiding loader');
-      debugLogger.logLifecycle('INFO', 'Android PWA React content rendered successfully');
       if (loader) {
         loader.style.display = 'none';
       }
-    } else {
-      console.warn('⚠️ Android PWA React may not have rendered properly');
-      debugLogger.logLifecycle('WARN', 'Android PWA React render verification failed', {
-        rootChildren: rootChildren.length,
-        firstChildId: rootChildren[0]?.id,
-        firstChildTag: rootChildren[0]?.tagName,
-        isAndroid,
-        isWebView
-      });
     }
   }, 100);
   
 } catch (error) {
-  console.error('❌ CRITICAL: Android PWA initialization failed:', error);
-  debugLogger.logError('CRITICAL', 'Android PWA failed to render application', {
-    error: error.message,
-    stack: error.stack,
-    rootElementExists: !!document.getElementById("root"),
-    documentReady: document.readyState,
-    url: window.location.href,
-    userAgent: navigator.userAgent,
-    isAndroid,
-    isWebView
-  });
+  console.error('❌ CRITICAL: App initialization failed:', error);
   
-  // Show emergency error screen for Android
+  // Show emergency screen
   setTimeout(() => {
     const emergencyEl = document.getElementById('emergency-fallback');
     const loaderEl = document.getElementById('initial-loader');
@@ -150,10 +57,15 @@ try {
         errorDiv.innerHTML = `❌ Critical Error: ${error.message}`;
         errorInfo.appendChild(errorDiv);
       }
-      
-      console.log('🚨 Emergency screen activated due to critical error');
     }
   }, 100);
   
   throw error;
+}
+
+// Lazy load debug logger only when needed
+if (isDev || isDebugMode) {
+  import('./utils/debugLogger').then(({ debugLogger }) => {
+    debugLogger.logLifecycle('INFO', 'Debug logger loaded');
+  });
 }

@@ -1,6 +1,6 @@
 interface LogEntry {
   timestamp: string;
-  category: 'AUTH' | 'SESSION' | 'STORAGE' | 'VERSION' | 'TWA' | 'AUTOFILL' | 'LIFECYCLE' | 'NETWORK' | 'PERFORMANCE' | 'ERROR' | 'ANDROID' | 'CACHE' | 'ROUTING';
+  category: 'AUTH' | 'SESSION' | 'STORAGE' | 'VERSION' | 'TWA' | 'AUTOFILL' | 'LIFECYCLE' | 'NETWORK' | 'PERFORMANCE' | 'ERROR' | 'ANDROID' | 'CACHE' | 'ROUTING' | 'SYSTEM';
   level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' | 'CRITICAL';
   message: string;
   data?: any;
@@ -11,18 +11,32 @@ interface LogEntry {
 
 class DebugLogger {
   private logs: LogEntry[] = [];
-  private maxLogs = 1000; // Increased for comprehensive debugging
+  private maxLogs = 200; // Reduced from 1000
   private storageKey = 'storybridge-debug-logs';
   private performanceMarks: Map<string, number> = new Map();
   private isEmergencyMode: boolean = false;
+  private initialized = false;
+  private monitoringSetup = false;
 
   constructor() {
+    // Minimal initialization - only check emergency mode and load persisted logs
     this.checkEmergencyMode();
-    this.setupGlobalErrorHandlers();
     this.loadPersistedLogs();
-    this.logSystemInfo();
-    this.logAndroidSpecificInfo();
-    this.startPerformanceMonitoring();
+    this.initialized = true;
+  }
+
+  private lazyInit() {
+    if (this.monitoringSetup) return;
+    
+    // Only setup monitoring when actually needed
+    this.setupGlobalErrorHandlers();
+    this.monitoringSetup = true;
+    
+    this.log('SYSTEM', 'INFO', 'DebugLogger lazy initialized', {
+      buildTimestamp: new Date().toISOString(),
+      emergencyMode: this.isEmergencyMode,
+      storedLogs: this.logs.length
+    });
   }
 
   private checkEmergencyMode() {
@@ -52,78 +66,36 @@ class DebugLogger {
     });
   }
 
-  private startPerformanceMonitoring() {
-    // Monitor performance
-    if ('performance' in window) {
-      this.markPerformance('app-init');
-      this.log('PERFORMANCE', 'INFO', 'Performance monitoring started', {
-        memory: (performance as any).memory,
-        timing: performance.timing
-      });
-    }
-  }
-
-  private logSystemInfo() {
-    this.log('VERSION', 'INFO', 'App starting', {
-      userAgent: navigator.userAgent,
-      timestamp: new Date().toISOString(),
-      url: window.location.href,
-      isTWA: this.detectTWA(),
-      storage: {
-        localStorage: typeof Storage !== 'undefined',
-        sessionStorage: typeof Storage !== 'undefined',
-        persistentStorage: 'storage' in navigator && 'persist' in navigator.storage
-      }
-    });
-  }
-
-  private detectTWA(): boolean {
-    const userAgent = navigator.userAgent;
-    const isTWA = userAgent.includes('wv') || 
-                  document.referrer.includes('android-app://') ||
-                  window.matchMedia('(display-mode: standalone)').matches;
-    return isTWA;
-  }
-
-  private logAndroidSpecificInfo() {
-    const userAgent = navigator.userAgent;
-    const isAndroid = /Android/i.test(userAgent);
-    
-    this.log('ANDROID', 'INFO', 'Android device detection', {
-      isAndroid,
-      userAgent,
-      isTWA: this.detectTWA(),
-      webView: userAgent.includes('wv'),
-      chrome: userAgent.includes('Chrome'),
-      version: userAgent.match(/Android (\d+\.?\d*)/)?.[1],
-      displayMode: window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser',
-      orientation: screen.orientation?.type,
-      screenSize: { width: screen.width, height: screen.height },
-      viewportSize: { width: window.innerWidth, height: window.innerHeight }
-    });
-  }
-
   markPerformance(name: string) {
     const timestamp = performance.now();
     this.performanceMarks.set(name, timestamp);
-    this.log('PERFORMANCE', 'DEBUG', `Performance mark: ${name}`, { timestamp });
+    if (this.isEmergencyMode) {
+      this.log('PERFORMANCE', 'DEBUG', `Performance mark: ${name}`, { timestamp });
+    }
   }
 
   measurePerformance(name: string, startMark: string) {
     const startTime = this.performanceMarks.get(startMark);
     if (startTime) {
       const duration = performance.now() - startTime;
-      this.log('PERFORMANCE', 'INFO', `Performance measure: ${name}`, { 
-        duration: `${duration.toFixed(2)}ms`,
-        startMark,
-        endTime: performance.now()
-      });
+      if (this.isEmergencyMode) {
+        this.log('PERFORMANCE', 'INFO', `Performance measure: ${name}`, { 
+          duration: `${duration.toFixed(2)}ms`,
+          startMark,
+          endTime: performance.now()
+        });
+      }
       return duration;
     }
     return null;
   }
 
   log(category: LogEntry['category'], level: LogEntry['level'], message: string, data?: any) {
+    if (!this.initialized) return;
+    
+    // Initialize monitoring only when first log is made
+    this.lazyInit();
+    
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       category,
@@ -139,26 +111,24 @@ class DebugLogger {
       this.logs = this.logs.slice(-this.maxLogs);
     }
 
-    // Console output with color coding
-    const color = this.getConsoleColor(level);
-    console.log(
-      `%c[${category}] ${message}`,
-      `color: ${color}; font-weight: bold;`,
-      data || ''
-    );
-
-    // Persist logs
-    this.persistLogs();
+    // Simplified console output
+    const emoji = this.getLogEmoji(category, level);
+    console.log(`${emoji} [${category}:${level}] ${message}`, data || '');
+    
+    // Only persist critical logs immediately
+    if (level === 'CRITICAL' || this.isEmergencyMode) {
+      this.persistLogs();
+    }
   }
 
-  private getConsoleColor(level: LogEntry['level']): string {
-    switch (level) {
-      case 'ERROR': return '#ff4444';
-      case 'WARN': return '#ffaa00';
-      case 'INFO': return '#4444ff';
-      case 'DEBUG': return '#888888';
-      default: return '#000000';
-    }
+  private getLogEmoji(category: string, level: string): string {
+    if (level === 'CRITICAL' || level === 'ERROR') return '❌';
+    if (level === 'WARN') return '⚠️';
+    if (category === 'NETWORK') return '🌐';
+    if (category === 'PERFORMANCE') return '⚡';
+    if (category === 'AUTH') return '🔐';
+    if (category === 'ANDROID') return '📱';
+    return 'ℹ️';
   }
 
   private persistLogs() {
@@ -191,7 +161,7 @@ class DebugLogger {
   clearLogs() {
     this.logs = [];
     localStorage.removeItem(this.storageKey);
-    this.log('VERSION', 'INFO', 'Debug logs cleared');
+    this.log('SYSTEM', 'INFO', 'Debug logs cleared');
   }
 
   exportLogs(): string {
@@ -260,75 +230,65 @@ class DebugLogger {
   enableEmergencyMode() {
     localStorage.setItem('emergency-debug', 'true');
     this.isEmergencyMode = true;
-    this.log('VERSION', 'CRITICAL', 'Emergency debug mode enabled');
+    this.log('SYSTEM', 'CRITICAL', 'Emergency debug mode enabled');
   }
 
   disableEmergencyMode() {
     localStorage.removeItem('emergency-debug');
     this.isEmergencyMode = false;
-    this.log('VERSION', 'INFO', 'Emergency debug mode disabled');
+    this.log('SYSTEM', 'INFO', 'Emergency debug mode disabled');
   }
 
   isEmergencyModeActive(): boolean {
     return this.isEmergencyMode;
   }
 
-  // Network monitoring
+  // Conditional network monitoring - only in emergency mode
   setupNetworkMonitoring() {
-    // Monitor fetch requests
+    if (this.monitoringSetup || !this.isEmergencyMode) return;
+    
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
-      const start = performance.now();
       const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
-      
-      this.logNetwork('INFO', 'Network request started', { url, args });
       
       try {
         const response = await originalFetch(...args);
-        const duration = performance.now() - start;
-        
-        this.logNetwork('INFO', 'Network request completed', {
-          url,
-          status: response.status,
-          statusText: response.statusText,
-          duration: `${duration.toFixed(2)}ms`,
-          headers: Object.fromEntries(response.headers.entries())
-        });
-        
+        if (response.status >= 400) {
+          this.logNetwork('ERROR', `Network error: ${response.status} ${url}`, {
+            status: response.status,
+            url
+          });
+        }
         return response;
       } catch (error) {
-        const duration = performance.now() - start;
-        this.logNetwork('ERROR', 'Network request failed', {
-          url,
+        this.logNetwork('ERROR', `Network error: ${url}`, {
           error: error.message,
-          duration: `${duration.toFixed(2)}ms`
+          url
         });
         throw error;
       }
     };
   }
 
-  // Storage monitoring
+  // Minimal storage monitoring - only in emergency mode
   setupStorageMonitoring() {
+    if (!this.isEmergencyMode) return;
+    
     const originalSetItem = localStorage.setItem;
-    const originalGetItem = localStorage.getItem;
-    const originalRemoveItem = localStorage.removeItem;
-
     localStorage.setItem = (key: string, value: string) => {
-      this.logStorage('DEBUG', 'localStorage.setItem', { key, valueLength: value.length });
+      if (key.includes('debug') || key.includes('error')) {
+        this.logStorage('INFO', `localStorage.setItem: ${key}`);
+      }
       return originalSetItem.call(localStorage, key, value);
     };
+  }
 
-    localStorage.getItem = (key: string) => {
-      const result = originalGetItem.call(localStorage, key);
-      this.logStorage('DEBUG', 'localStorage.getItem', { key, found: !!result });
-      return result;
-    };
-
-    localStorage.removeItem = (key: string) => {
-      this.logStorage('DEBUG', 'localStorage.removeItem', { key });
-      return originalRemoveItem.call(localStorage, key);
-    };
+  detectTWA(): boolean {
+    const userAgent = navigator.userAgent;
+    const isTWA = userAgent.includes('wv') || 
+                  document.referrer.includes('android-app://') ||
+                  window.matchMedia('(display-mode: standalone)').matches;
+    return isTWA;
   }
 }
 
