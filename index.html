@@ -71,11 +71,20 @@
         100% { transform: rotate(360deg); }
       }
       
-      html, body, #root {
+      html, body {
         height: 100%;
         margin: 0;
         padding: 0;
-        overflow: hidden;
+        overflow-y: auto;
+        overflow-x: hidden;
+        /* Enable momentum scrolling on iOS */
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      #root {
+        min-height: 100%;
+        margin: 0;
+        padding: 0;
       }
     </style>
 
