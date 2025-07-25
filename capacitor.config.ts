@@ -18,7 +18,7 @@ const config: CapacitorConfig = {
     useLegacyBridge: false,
     loggingBehavior: 'debug',
     // Additional Android-specific settings
-    appendUserAgent: 'StoryBridge/1.0',
+    appendUserAgent: 'LexiLeap/1.0',
     overrideUserAgent: undefined,
     handleColor: '#8B5CF6',
     // WebView settings
