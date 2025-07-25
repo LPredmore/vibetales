@@ -8,7 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-interface UsageLimitsProps {}
+interface UsageLimitsProps {
+  onRefreshLimits?: (refreshFunction: () => Promise<void>) => void;
+}
 
 interface UserLimits {
   daily_stories_used: number;
@@ -16,7 +18,7 @@ interface UserLimits {
   trial_used: boolean;
 }
 
-export const UsageLimits = ({}: UsageLimitsProps) => {
+export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   const { user } = useAuth();
   const [limits, setLimits] = useState<UserLimits | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
@@ -29,6 +31,13 @@ export const UsageLimits = ({}: UsageLimitsProps) => {
       checkPremiumStatus();
     }
   }, [user]);
+
+  // Expose refresh function to parent component
+  useEffect(() => {
+    if (onRefreshLimits) {
+      onRefreshLimits(fetchUserLimits);
+    }
+  }, [onRefreshLimits]);
 
   const fetchUserLimits = async () => {
     if (!user?.id) {
@@ -115,19 +124,7 @@ export const UsageLimits = ({}: UsageLimitsProps) => {
   }
 
   if (hasPremium) {
-    return (
-      <Card className="clay-card border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-amber-800">
-            <Crown className="h-5 w-5" />
-            Premium Active
-          </CardTitle>
-          <CardDescription className="text-amber-700">
-            You have unlimited stories! Generate as many as you'd like.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
+    return null; // Don't show anything for premium users
   }
 
   const dailyUsed = limits?.daily_stories_used || 0;
@@ -168,7 +165,10 @@ export const UsageLimits = ({}: UsageLimitsProps) => {
             ) : (
               <>
                 <Crown className="mr-2 h-4 w-4" />
-                Upgrade to Premium
+                <span className="text-center">
+                  Upgrade to Premium for<br />
+                  Unlimited Stories
+                </span>
               </>
             )}
           </Button>
