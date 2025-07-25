@@ -2,8 +2,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.66097099bf56454e886215aab2304cbc',
-  appName: 'StoryBridge',
+  appId: 'app.lovable.lexileap.twa',
+  appName: 'LexiLeap',
   webDir: 'dist',
   server: {
     url: 'https://lexileap.lovable.app',

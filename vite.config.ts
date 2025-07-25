@@ -71,7 +71,7 @@ export default defineConfig(({ mode }) => ({
       manifest: {
         id: "/",
         name: "StoryBridge - Story Generator",
-        short_name: "StoryBridge",
+        short_name: "LexiLeap",
         description: "Create magical stories for young readers with sight words practice",
         lang: "en",
         dir: "ltr",
@@ -81,7 +81,7 @@ export default defineConfig(({ mode }) => ({
         display_override: ["window-controls-overlay", "standalone"],
         orientation: "portrait",
         scope: "/",
-        start_url: "/?source=pwabuilder",
+        start_url: "/",
         categories: ["education", "books", "kids"],
         prefer_related_applications: false,
         icons: [

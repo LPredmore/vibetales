@@ -116,22 +116,39 @@ export const checkTWAUpdate = async (): Promise<boolean> => {
   if (!isTWA()) return false;
   
   try {
-    // Get cached version
+    // Get cached version and build number
     const cachedVersion = localStorage.getItem('twa-app-version');
+    const cachedBuildNumber = localStorage.getItem('twa-build-number');
     
-    // Get current version
+    // Get current version info
     const currentVersion = await getTWAVersion();
     
     if (!currentVersion) return false;
     
-    // Store current version
-    localStorage.setItem('twa-app-version', currentVersion);
+    // Get build number from version info
+    const response = await fetch('/app-version.json', { cache: 'no-cache' });
+    let currentBuildNumber = null;
+    if (response.ok) {
+      const versionInfo = await response.json();
+      currentBuildNumber = versionInfo.buildNumber;
+    }
     
-    // Check if version changed
-    const needsUpdate = cachedVersion && cachedVersion !== currentVersion;
+    // Store current version and build number
+    localStorage.setItem('twa-app-version', currentVersion);
+    if (currentBuildNumber) {
+      localStorage.setItem('twa-build-number', currentBuildNumber);
+    }
+    
+    // Check if version or build number changed
+    const versionChanged = cachedVersion && cachedVersion !== currentVersion;
+    const buildChanged = cachedBuildNumber && currentBuildNumber && cachedBuildNumber !== currentBuildNumber;
+    const needsUpdate = versionChanged || buildChanged;
     
     if (needsUpdate) {
-      console.log('📱 TWA update detected:', cachedVersion, '->', currentVersion);
+      console.log('📱 TWA update detected:', {
+        version: cachedVersion + ' -> ' + currentVersion,
+        build: cachedBuildNumber + ' -> ' + currentBuildNumber
+      });
     }
     
     return !!needsUpdate;
