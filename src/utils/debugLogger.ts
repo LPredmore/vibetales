@@ -207,6 +207,45 @@ class DebugLogger {
 
   logTWA(level: LogEntry['level'], message: string, data?: any) {
     this.log('TWA', level, message, data);
+    // Also log to Android logcat if available
+    if ((window as any).android?.log) {
+      (window as any).android.log(`TWA: ${message}`, JSON.stringify(data || {}));
+    }
+  }
+
+  // Comprehensive TWA startup diagnostics
+  logTWAStartup() {
+    this.logTWA('INFO', '=== TWA STARTUP DIAGNOSTICS ===');
+    this.logTWA('INFO', 'User Agent', navigator.userAgent);
+    this.logTWA('INFO', 'URL', window.location.href);
+    this.logTWA('INFO', 'Referrer', document.referrer);
+    this.logTWA('INFO', 'Display Mode', window.matchMedia('(display-mode: standalone)').matches);
+    this.logTWA('INFO', 'Service Worker Support', 'serviceWorker' in navigator);
+    this.logTWA('INFO', 'Android Object', 'android' in window);
+    this.logTWA('INFO', 'TWA Object', 'TWA' in window);
+    this.logTWA('INFO', 'Viewport', `${window.innerWidth}x${window.innerHeight}`);
+    this.logTWA('INFO', 'Screen', `${screen.width}x${screen.height}`);
+    this.logTWA('INFO', 'Connection', (navigator as any).connection?.effectiveType || 'unknown');
+    this.checkStorageQuota().then(quota => {
+      this.logTWA('INFO', 'Storage Quota', quota);
+    });
+    this.logTWA('INFO', '=== END DIAGNOSTICS ===');
+  }
+
+  private async checkStorageQuota() {
+    try {
+      if ('storage' in navigator && 'estimate' in navigator.storage) {
+        const estimate = await navigator.storage.estimate();
+        return {
+          quota: estimate.quota,
+          usage: estimate.usage,
+          available: (estimate.quota || 0) - (estimate.usage || 0)
+        };
+      }
+    } catch (error) {
+      return { error: (error as Error).message };
+    }
+    return 'not supported';
   }
 
   logAutofill(level: LogEntry['level'], message: string, data?: any) {

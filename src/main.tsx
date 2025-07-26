@@ -63,9 +63,16 @@ try {
   throw error;
 }
 
-// Lazy load debug logger only when needed
-if (isDev || isDebugMode) {
+// Lazy load debug logger only when needed - with TWA diagnostics
+const shouldEnableDebug = isDev || isDebugMode || window.location.search.includes('debug=emergency');
+
+if (shouldEnableDebug) {
   import('./utils/debugLogger').then(({ debugLogger }) => {
     debugLogger.logLifecycle('INFO', 'Debug logger loaded');
+    
+    // Run comprehensive TWA startup diagnostics
+    setTimeout(() => {
+      debugLogger.logTWAStartup();
+    }, 1000);
   });
 }
