@@ -2,11 +2,11 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.lexileap.twa',
-  appName: 'LexiLeap',
+  appId: 'com.bestselfs.storybridge.twa',
+  appName: 'StoryBridge',
   webDir: 'dist',
   server: {
-    url: 'https://lexileap.lovable.app',
+    url: 'https://storybridge.bestselfs.com',
     cleartext: true
   },
   android: {
@@ -18,7 +18,7 @@ const config: CapacitorConfig = {
     useLegacyBridge: false,
     loggingBehavior: 'debug',
     // Additional Android-specific settings
-    appendUserAgent: 'LexiLeap/1.0',
+    appendUserAgent: 'StoryBridge/1.0',
     overrideUserAgent: undefined,
     handleColor: '#8B5CF6',
     // WebView settings

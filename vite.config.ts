@@ -70,8 +70,8 @@ export default defineConfig(({ mode }) => ({
       ],
       manifest: {
         id: "/",
-        name: "LexiLeap - Story Generator",
-        short_name: "LexiLeap",
+        name: "StoryBridge - Story Generator",
+        short_name: "StoryBridge",
         description: "Create magical stories for young readers with sight words practice",
         lang: "en",
         dir: "ltr",
