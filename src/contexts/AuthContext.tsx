@@ -25,19 +25,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [twaEnvironment, setTwaEnvironment] = useState(false);
   const [pwaEnvironment, setPwaEnvironment] = useState(false);
 
-  // Initialize PWA and TWA detection after component mount
+  // Simplified TWA/PWA detection for faster initialization
   useEffect(() => {
     const twaDetected = isTWA();
     const pwaDetected = isPWA();
     setTwaEnvironment(twaDetected);
     setPwaEnvironment(pwaDetected);
-    debugLogger.logTWA('INFO', 'AuthProvider initialized', { 
-      twaDetected,
-      pwaDetected,
-      userAgent: navigator.userAgent,
-      referrer: document.referrer,
-      standalone: window.matchMedia('(display-mode: standalone)').matches
-    });
+    console.log('📱 Auth environment detected:', { twaDetected, pwaDetected });
   }, []);
 
   // Enhanced session recovery function
@@ -134,46 +128,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Enhanced session recovery on startup
+    // Simplified session recovery for faster startup
     const startupRecoverSession = async () => {
-      debugLogger.logSession('INFO', 'Starting startup session recovery');
-      
-      // 1. Try standard recovery
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        debugLogger.logSession('INFO', 'No standard session found, checking backup');
-        
-        // 2. Fallback: sessionStorage backup
-        const backup = sessionStorage.getItem('session-backup');
-        if (backup) {
-          debugLogger.logSession('INFO', 'Found session backup, attempting restore');
-          try {
-            const { access_token, refresh_token, expires_at } = JSON.parse(backup);
-            if (Date.now() / 1000 < expires_at) {
-              const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
-              if (data.session) {
-                setSession(data.session);
-                setUser(data.session.user);
-                debugLogger.logSession('INFO', 'Session restored from backup successfully');
-              } else {
-                debugLogger.logSession('WARN', 'Failed to restore session from backup', error);
-              }
-            } else {
-              debugLogger.logSession('WARN', 'Session backup expired, removing');
-              sessionStorage.removeItem('session-backup');
-            }
-          } catch (e) {
-            debugLogger.logSession('ERROR', 'Failed to parse session backup', e);
-            sessionStorage.removeItem('session-backup');
-          }
-        } else {
-          debugLogger.logSession('INFO', 'No session backup found');
-        }
-      } else {
-        debugLogger.logSession('INFO', 'Standard session recovered successfully');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('🔐 Session check:', !!session);
+      } catch (error) {
+        console.error('❌ Session recovery error:', error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     };
 
     startupRecoverSession();
