@@ -341,7 +341,7 @@ const Profile = () => {
                 </Button>
               </form>
             </CardContent>
-            </Card>
+          </Card>
 
           <Separator />
 
