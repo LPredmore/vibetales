@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Save, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Save, Eye, EyeOff, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -340,6 +340,28 @@ const Profile = () => {
                   Update Password
                 </Button>
               </form>
+            </CardContent>
+            </Card>
+
+          <Separator />
+
+          {/* Data & Privacy */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Data & Privacy</CardTitle>
+              <CardDescription>
+                Learn about how your data is handled and our privacy practices.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                onClick={() => window.open("https://bestselfs.com/data", "_blank")}
+                className="w-full"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                View Data & Privacy Policy
+              </Button>
             </CardContent>
           </Card>
         </motion.div>
