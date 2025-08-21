@@ -110,10 +110,17 @@ const Profile = () => {
   const checkSubscriptionStatus = async () => {
     try {
       setSubscriptionLoading(true);
+      console.log('🔍 Profile: Starting subscription check');
       const { data: session } = await supabase.auth.getSession();
       
-      if (!session.session) return;
+      console.log('🔍 Profile: Session data:', { hasSession: !!session.session, userId: session.session?.user?.id });
+      
+      if (!session.session) {
+        console.log('⚠️ Profile: No session found, skipping subscription check');
+        return;
+      }
 
+      console.log('🔍 Profile: Calling check-subscription function');
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: {
           Authorization: `Bearer ${session.session.access_token}`,
@@ -121,13 +128,14 @@ const Profile = () => {
       });
 
       if (error) {
-        console.error('Error checking subscription:', error);
+        console.error('❌ Profile: Error checking subscription:', error);
         return;
       }
 
+      console.log('✅ Profile: Subscription status received:', data);
       setSubscriptionStatus(data);
     } catch (error) {
-      console.error('Error checking subscription status:', error);
+      console.error('❌ Profile: Error checking subscription status:', error);
     } finally {
       setSubscriptionLoading(false);
     }
