@@ -9,6 +9,13 @@ interface UpgradePromptProps {
 }
 
 export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) => {
+  const handleDirectUpgrade = () => {
+    // Open direct Stripe payment link in a new tab
+    window.open('https://buy.stripe.com/fZu5kFamRdfAeW31CSfMA00', '_blank');
+    // Call the original onUpgrade for any additional handling
+    onUpgrade();
+  };
+
   return (
     <Card className="border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50">
       <CardHeader className="pb-3">
@@ -22,7 +29,7 @@ export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) =
       </CardHeader>
       <CardContent>
         <Button
-          onClick={onUpgrade}
+          onClick={handleDirectUpgrade}
           disabled={isProcessing}
           className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
         >

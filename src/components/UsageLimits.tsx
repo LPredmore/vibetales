@@ -23,7 +23,6 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   const [limits, setLimits] = useState<UserLimits | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -81,36 +80,14 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     }
   };
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = () => {
     if (!user) {
       toast.error("Please log in to upgrade");
       return;
     }
 
-    setIsProcessing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { userId: user.id }
-      });
-
-      if (error) {
-        console.error('Checkout error:', error);
-        toast.error("Failed to create checkout session");
-        return;
-      }
-
-      if (data?.url) {
-        // Open Stripe checkout in a new tab to prevent session disruption
-        window.open(data.url, '_blank');
-      } else {
-        toast.error("No checkout URL received");
-      }
-    } catch (error) {
-      console.error('Upgrade error:', error);
-      toast.error("Failed to start upgrade process");
-    } finally {
-      setIsProcessing(false);
-    }
+    // Open direct Stripe payment link in a new tab
+    window.open('https://buy.stripe.com/fZu5kFamRdfAeW31CSfMA00', '_blank');
   };
 
   if (loading) {
@@ -154,23 +131,13 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
           />
           <Button
             onClick={handleUpgrade}
-            disabled={isProcessing}
             className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
           >
-            {isProcessing ? (
-              <>
-                <Crown className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <Crown className="mr-2 h-4 w-4" />
-                <span className="text-center">
-                  Upgrade to Premium for<br />
-                  Unlimited Stories
-                </span>
-              </>
-            )}
+            <Crown className="mr-2 h-4 w-4" />
+            <span className="text-center">
+              Upgrade to Premium for<br />
+              Unlimited Stories
+            </span>
           </Button>
         </div>
       </CardContent>
