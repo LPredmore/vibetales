@@ -44,6 +44,7 @@ const Profile = () => {
     subscribed: boolean;
     subscription_tier?: string;
     subscription_end?: string;
+    error?: string;
   } | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -113,14 +114,20 @@ const Profile = () => {
       console.log('🔍 Profile: Starting subscription check');
       const { data: session } = await supabase.auth.getSession();
       
-      console.log('🔍 Profile: Session data:', { hasSession: !!session.session, userId: session.session?.user?.id });
+      console.log('🔍 Profile: Session data:', { 
+        hasSession: !!session.session, 
+        userId: session.session?.user?.id,
+        email: session.session?.user?.email,
+        accessToken: session.session?.access_token ? 'present' : 'missing'
+      });
       
       if (!session.session) {
         console.log('⚠️ Profile: No session found, skipping subscription check');
+        setSubscriptionStatus({ subscribed: false, error: 'No active session' });
         return;
       }
 
-      console.log('🔍 Profile: Calling check-subscription function');
+      console.log('🔍 Profile: Calling check-subscription function with token');
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: {
           Authorization: `Bearer ${session.session.access_token}`,
@@ -129,13 +136,24 @@ const Profile = () => {
 
       if (error) {
         console.error('❌ Profile: Error checking subscription:', error);
+        setSubscriptionStatus({ subscribed: false, error: error.message || 'Unknown error' });
         return;
       }
 
-      console.log('✅ Profile: Subscription status received:', data);
-      setSubscriptionStatus(data);
+      console.log('✅ Profile: Subscription status received:', JSON.stringify(data, null, 2));
+      console.log('🔍 Profile: Data type:', typeof data, 'Is object:', typeof data === 'object');
+      
+      // Ensure we have a valid response format
+      if (data && typeof data === 'object') {
+        setSubscriptionStatus(data);
+        console.log('✅ Profile: Subscription status set successfully:', data);
+      } else {
+        console.log('⚠️ Profile: Invalid data format received:', data);
+        setSubscriptionStatus({ subscribed: false, error: 'Invalid response format' });
+      }
     } catch (error) {
       console.error('❌ Profile: Error checking subscription status:', error);
+      setSubscriptionStatus({ subscribed: false, error: error instanceof Error ? error.message : 'Unknown error' });
     } finally {
       setSubscriptionLoading(false);
     }
@@ -456,59 +474,129 @@ const Profile = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {subscriptionLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                  <span className="text-sm text-muted-foreground">Checking subscription status...</span>
-                </div>
-              ) : subscriptionStatus ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Status:</span>
-                    <Badge variant={subscriptionStatus.subscribed ? "default" : "secondary"}>
-                      {subscriptionStatus.subscribed ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
-                  
-                  {subscriptionStatus.subscription_tier && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Plan:</span>
-                      <span className="text-sm text-muted-foreground">{subscriptionStatus.subscription_tier}</span>
-                    </div>
+              <div className="space-y-4">
+                {/* Force Refresh Button */}
+                <Button 
+                  onClick={checkSubscriptionStatus}
+                  disabled={subscriptionLoading}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  {subscriptionLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                      Checking...
+                    </>
+                  ) : (
+                    'Check Subscription Status'
                   )}
+                </Button>
+
+                {/* Status Display */}
+                {(() => {
+                  console.log('🎨 Profile: Rendering subscription section, status:', subscriptionStatus);
                   
-                  {subscriptionStatus.subscription_end && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Next billing:</span>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(subscriptionStatus.subscription_end).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
+                  if (subscriptionLoading) {
+                    return (
+                      <div className="flex items-center space-x-2 p-4 border rounded-lg">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                        <span className="text-sm text-muted-foreground">Checking subscription status...</span>
+                      </div>
+                    );
+                  }
                   
-                  {subscriptionStatus.subscribed && (
-                    <Button 
-                      onClick={handleManageSubscription}
-                      disabled={portalLoading}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      {portalLoading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-                          Opening...
-                        </>
-                      ) : (
-                        "Manage Subscription"
+                  if (!subscriptionStatus) {
+                    console.log('🎨 Profile: No subscription status available');
+                    return (
+                      <div className="p-4 border rounded-lg border-yellow-200 bg-yellow-50">
+                        <p className="text-sm text-yellow-800">
+                          Subscription status not loaded yet. Click "Check Subscription Status" above.
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  if (subscriptionStatus.error) {
+                    console.log('🎨 Profile: Showing error state:', subscriptionStatus.error);
+                    return (
+                      <div className="p-4 border rounded-lg border-red-200 bg-red-50">
+                        <p className="text-sm text-red-800">
+                          Error loading subscription: {subscriptionStatus.error}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  console.log('🎨 Profile: Showing subscription details for subscribed:', subscriptionStatus.subscribed);
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <span className="text-sm font-medium">Status:</span>
+                        <Badge variant={subscriptionStatus.subscribed ? "default" : "secondary"}>
+                          {subscriptionStatus.subscribed ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                      
+                      {subscriptionStatus.subscription_tier && (
+                        <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <span className="text-sm font-medium">Plan:</span>
+                          <span className="text-sm text-muted-foreground">{subscriptionStatus.subscription_tier}</span>
+                        </div>
                       )}
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Unable to load subscription information.
-                </p>
-              )}
+                      
+                      {subscriptionStatus.subscription_end && (
+                        <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <span className="text-sm font-medium">Next billing:</span>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(subscriptionStatus.subscription_end).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {subscriptionStatus.subscribed ? (
+                        <Button 
+                          onClick={handleManageSubscription}
+                          disabled={portalLoading}
+                          variant="destructive"
+                          className="w-full"
+                        >
+                          {portalLoading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Opening portal...
+                            </>
+                          ) : (
+                            <>
+                              <ExternalLink className="mr-2 h-4 w-4" />
+                              Manage Subscription & Billing
+                            </>
+                          )}
+                        </Button>
+                      ) : (
+                        <div className="p-4 border rounded-lg border-blue-200 bg-blue-50">
+                          <p className="text-sm text-blue-800">
+                            No active subscription found. You can subscribe to premium features on the main page.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Debug Information */}
+                <details className="mt-4">
+                  <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                    Debug Information (Click to expand)
+                  </summary>
+                  <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono">
+                    <div><strong>User:</strong> {user?.email || 'Not logged in'}</div>
+                    <div><strong>Loading:</strong> {subscriptionLoading.toString()}</div>
+                    <div><strong>Raw Status:</strong> {JSON.stringify(subscriptionStatus, null, 2)}</div>
+                    <div><strong>Portal Loading:</strong> {portalLoading.toString()}</div>
+                  </div>
+                </details>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
