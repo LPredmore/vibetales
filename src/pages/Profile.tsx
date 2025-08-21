@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +40,13 @@ const Profile = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<{
+    subscribed: boolean;
+    subscription_tier?: string;
+    subscription_end?: string;
+  } | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -96,7 +104,73 @@ const Profile = () => {
     };
 
     loadProfile();
+    checkSubscriptionStatus();
   }, [user, profileForm, toast]);
+
+  const checkSubscriptionStatus = async () => {
+    try {
+      setSubscriptionLoading(true);
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (!session.session) return;
+
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('Error checking subscription:', error);
+        return;
+      }
+
+      setSubscriptionStatus(data);
+    } catch (error) {
+      console.error('Error checking subscription status:', error);
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      setPortalLoading(true);
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (!session.session) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to manage your subscription.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('customer-portal', {
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Error opening customer portal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to open subscription management. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPortalLoading(false);
+    }
+  };
 
   const onProfileSubmit = async (data: ProfileFormData) => {
     if (!user) return;
@@ -362,6 +436,71 @@ const Profile = () => {
                 <ExternalLink className="mr-2 h-4 w-4" />
                 View Data & Privacy Policy
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Subscription Management Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Subscription Management</CardTitle>
+              <CardDescription>
+                Manage your subscription, billing, and cancel if needed.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {subscriptionLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  <span className="text-sm text-muted-foreground">Checking subscription status...</span>
+                </div>
+              ) : subscriptionStatus ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Status:</span>
+                    <Badge variant={subscriptionStatus.subscribed ? "default" : "secondary"}>
+                      {subscriptionStatus.subscribed ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+                  
+                  {subscriptionStatus.subscription_tier && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Plan:</span>
+                      <span className="text-sm text-muted-foreground">{subscriptionStatus.subscription_tier}</span>
+                    </div>
+                  )}
+                  
+                  {subscriptionStatus.subscription_end && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Next billing:</span>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(subscriptionStatus.subscription_end).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {subscriptionStatus.subscribed && (
+                    <Button 
+                      onClick={handleManageSubscription}
+                      disabled={portalLoading}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      {portalLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                          Opening...
+                        </>
+                      ) : (
+                        "Manage Subscription"
+                      )}
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Unable to load subscription information.
+                </p>
+              )}
             </CardContent>
           </Card>
         </motion.div>

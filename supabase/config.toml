@@ -2,3 +2,6 @@ project_id = "hyiyuhjabjnksjbqfwmn"
 
 [functions.generate-story]
 verify_jwt = true
+
+[functions.customer-portal]
+verify_jwt = true
