@@ -33,7 +33,6 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
 const Profile = () => {
-  console.log("🔍 Profile component mounting");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
