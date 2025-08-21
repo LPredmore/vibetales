@@ -44,28 +44,54 @@ serve(async (req) => {
       userId = user.id;
       console.log('GET request - checking subscription for user:', userEmail);
     } else if (req.method === 'POST') {
-      // Handle POST requests with userId in body (from generate-story function)
-      const body = await req.json();
-      userId = body.userId;
+      // Handle POST requests - check if there's a body or use auth header
+      const contentLength = req.headers.get('content-length');
       
-      if (!userId) {
-        throw new Error('No userId provided in POST request');
-      }
+      if (contentLength && contentLength !== '0') {
+        // POST request with body (from generate-story function)
+        const body = await req.json();
+        userId = body.userId;
+        
+        if (!userId) {
+          throw new Error('No userId provided in POST request');
+        }
 
-      // Get user email from Supabase auth using service role
-      const { data: userData, error: userError } = await supabaseClient.auth.admin.getUserById(userId);
-      
-      if (userError || !userData?.user?.email) {
-        console.log('Error getting user by ID:', userError?.message || 'No user found');
-        return new Response(
-          JSON.stringify({ subscribed: false }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        // Get user email from Supabase auth using service role
+        const { data: userData, error: userError } = await supabaseClient.auth.admin.getUserById(userId);
+        
+        if (userError || !userData?.user?.email) {
+          console.log('Error getting user by ID:', userError?.message || 'No user found');
+          return new Response(
+            JSON.stringify({ subscribed: false }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        userEmail = userData.user.email;
+        userId = userData.user.id;
+        console.log('POST request - checking subscription for user ID:', userId, 'email:', userEmail);
+      } else {
+        // POST request without body (from Profile page) - use auth header like GET
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) {
+          throw new Error('No authorization header');
+        }
+
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+        
+        if (userError || !user?.email) {
+          console.log('Auth error or no user:', userError?.message || 'No user');
+          return new Response(
+            JSON.stringify({ subscribed: false }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        userEmail = user.email;
+        userId = user.id;
+        console.log('POST request (no body) - checking subscription for user:', userEmail);
       }
-      
-      userEmail = userData.user.email;
-      userId = userData.user.id;
-      console.log('POST request - checking subscription for user ID:', userId, 'email:', userEmail);
     } else {
       throw new Error(`Unsupported method: ${req.method}`);
     }
