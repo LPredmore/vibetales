@@ -1,8 +1,8 @@
 
 {
   "id": "/",
-  "name": "StoryBridge - Story Generator",
-  "short_name": "StoryBridge",
+  "name": "VibeTales - Story Generator",
+  "short_name": "VibeTales",
   "description": "Create magical stories for young readers with sight words practice",
   "lang": "en",
   "dir": "ltr",
@@ -48,14 +48,14 @@
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "StoryBridge main interface"
+      "label": "VibeTales main interface"
     },
     {
       "src": "favicon-512x512.png", 
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "StoryBridge mobile view"
+      "label": "VibeTales mobile view"
     }
   ],
   "share_target": {

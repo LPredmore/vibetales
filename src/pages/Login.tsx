@@ -61,7 +61,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <h2 className="text-2xl font-bold text-center">Login to StoryBridge</h2>
+          <h2 className="text-2xl font-bold text-center">Login to VibeTales</h2>
           {isTWA && (
             <p className="text-sm text-muted-foreground text-center">
               🍎 App mode detected - enhanced login experience

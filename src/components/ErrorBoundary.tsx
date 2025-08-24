@@ -84,7 +84,7 @@ const DefaultErrorFallback: React.FC<{ error?: Error; resetError: () => void }> 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `storybridge-debug-logs-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `vibetales-debug-logs-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

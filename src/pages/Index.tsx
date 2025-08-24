@@ -210,7 +210,7 @@ const Index = () => {
             <div className="mb-4">
               <img 
                 src="/lovable-uploads/79708384-34ad-45b6-af27-6fb7e037e385.png" 
-                alt="StoryBridge Logo" 
+                alt="VibeTales Logo" 
                 className="w-48 sm:w-64 h-auto mx-auto"
               />
             </div>

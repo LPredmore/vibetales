@@ -29,7 +29,7 @@ const Register = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <h2 className="text-2xl font-bold text-center">Register for StoryBridge</h2>
+          <h2 className="text-2xl font-bold text-center">Register for VibeTales</h2>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

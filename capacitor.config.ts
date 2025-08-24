@@ -2,11 +2,11 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.bestselfs.storybridge.twa',
-  appName: 'StoryBridge',
+  appId: 'com.bestselfs.vibetales.twa',
+  appName: 'VibeTales',
   webDir: 'dist',
   server: {
-    url: 'https://storybridge.bestselfs.com',
+    url: 'https://vibetales.bestselfs.com',
     cleartext: true
   },
   android: {
@@ -18,7 +18,7 @@ const config: CapacitorConfig = {
     useLegacyBridge: false,
     loggingBehavior: 'debug',
     // Additional Android-specific settings
-    appendUserAgent: 'StoryBridge/1.0',
+    appendUserAgent: 'VibeTales/1.0',
     overrideUserAgent: undefined,
     handleColor: '#8B5CF6',
     // WebView settings

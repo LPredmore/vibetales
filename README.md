@@ -4,13 +4,13 @@
 ## Project info
 
 **URL**: https://lovable.dev/projects/ed2d1878-fc27-429a-8f23-120c2277b4a3
-**Production Host**: https://storybridge.bestselfs.com
+**Production Host**: https://vibetales.bestselfs.com
 
 ## Domain Configuration
 
 This project uses a centralized domain configuration system to ensure consistency across all components:
 
-- **Production/Preview Host**: `storybridge.bestselfs.com`
+- **Production/Preview Host**: `vibetales.bestselfs.com`
 - **Configuration File**: `src/config/hosts.json`
 - **Utility Functions**: `src/utils/domainConfig.ts`
 

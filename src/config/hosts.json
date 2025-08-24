@@ -1,5 +1,5 @@
 
 {
-  "allowedOrigins": ["storybridge.bestselfs.com"],
-  "productionHost": "storybridge.bestselfs.com"
+  "allowedOrigins": ["vibetales.bestselfs.com"],
+  "productionHost": "vibetales.bestselfs.com"
 }

@@ -12,7 +12,7 @@ interface LogEntry {
 class DebugLogger {
   private logs: LogEntry[] = [];
   private maxLogs = 200; // Reduced from 1000
-  private storageKey = 'storybridge-debug-logs';
+  private storageKey = 'vibetales-debug-logs';
   private performanceMarks: Map<string, number> = new Map();
   private isEmergencyMode: boolean = false;
   private initialized = false;
