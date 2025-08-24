@@ -209,7 +209,7 @@ const Index = () => {
           >
             <div className="mb-4">
               <img 
-                src="/lovable-uploads/79708384-34ad-45b6-af27-6fb7e037e385.png" 
+                src="/lovable-uploads/0b63dbe4-125f-4b39-aa21-b812a43df2f5.png" 
                 alt="VibeTales Logo" 
                 className="w-48 sm:w-64 h-auto mx-auto"
               />
