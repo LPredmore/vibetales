@@ -25,6 +25,8 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
+        // Import background sync handlers
+        importScripts: ['/sw-background-sync.js'],
         // Simplified caching strategy to reduce memory usage
         runtimeCaching: [
           {

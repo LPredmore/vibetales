@@ -66,5 +66,9 @@
       "text": "text",
       "url": "url"
     }
-  }
+  },
+  "background_sync": [
+    "background-sync"
+  ],
+  "related_applications": []
 }

@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RefreshCw, Download } from 'lucide-react';
 import { isTWA, forceTWAManifestRefresh, checkTWAUpdate, logTWAInfo } from '@/utils/twaDetection';
 import { ALLOWED_ORIGINS, isAllowedDomain, getCurrentDomain } from '@/utils/domainConfig';
+import { backgroundSync } from '@/services/backgroundSync';
 
 interface PWAUpdateManagerProps {
   onUpdateAvailable?: (updateFunction: () => void) => void;
@@ -19,6 +20,17 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
     const setupUpdateListener = async () => {
       // Log TWA info for debugging
       logTWAInfo();
+      
+      // Initialize background sync service
+      try {
+        const syncRegistered = await backgroundSync.registerPeriodicSync();
+        if (syncRegistered) {
+          await backgroundSync.requestPermissions();
+          console.log('🔄 Background sync initialized successfully');
+        }
+      } catch (error) {
+        console.warn('⚠️ Background sync setup failed:', error);
+      }
       
       // Force TWA manifest refresh on startup
       await forceTWAManifestRefresh();
@@ -59,6 +71,9 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
               
               await existingRegistration.update();
             }
+            // Queue background sync tasks
+            backgroundSync.queueTask('update-check');
+            backgroundSync.queueTask('sync-preferences');
             
             // Additional TWA-specific update check
             if (isTWA()) {
