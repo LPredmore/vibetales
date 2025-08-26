@@ -22,12 +22,16 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   const { user } = useAuth();
   const [limits, setLimits] = useState<UserLimits | null>(null);
   const [hasPremium, setHasPremium] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [limitsLoading, setLimitsLoading] = useState(true);
+  const [premiumLoading, setPremiumLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       fetchUserLimits();
       checkPremiumStatus();
+    } else {
+      setLimitsLoading(false);
+      setPremiumLoading(false);
     }
   }, [user]);
 
@@ -40,7 +44,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
 
   const fetchUserLimits = async () => {
     if (!user?.id) {
-      setLoading(false);
+      setLimitsLoading(false);
       return;
     }
 
@@ -62,7 +66,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     } catch (error) {
       console.error('Error fetching user limits:', error);
     } finally {
-      setLoading(false);
+      setLimitsLoading(false);
     }
   };
 
@@ -77,6 +81,8 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
       }
     } catch (error) {
       console.error('Error checking premium status:', error);
+    } finally {
+      setPremiumLoading(false);
     }
   };
 
@@ -90,7 +96,8 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     window.open('https://buy.stripe.com/fZu5kFamRdfAeW31CSfMA00', '_blank');
   };
 
-  if (loading) {
+  // Show loading until both limits and premium status are loaded
+  if (limitsLoading || premiumLoading) {
     return (
       <Card className="clay-card">
         <CardHeader>
