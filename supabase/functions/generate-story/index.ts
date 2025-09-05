@@ -201,12 +201,12 @@ async function checkUserLimits(supabase: any, userId: string, storyParams: Story
 }
 
 async function generateStory(params: StoryRequest): Promise<StoryResponse> {
-  const apiKey = Deno.env.get('OPEN_API_KEY');
+  const apiKey = Deno.env.get('OPENROUTER_API_KEY');
   if (!apiKey) {
-    throw new Error('OPEN_API_KEY environment variable not set');
+    throw new Error('OPENROUTER_API_KEY environment variable not set');
   }
 
-  console.log('=== GENERATING STORY WITH OPENAI GPT-3.5-TURBO ===');
+  console.log('=== GENERATING STORY WITH OPENROUTER GPT-4O-MINI ===');
   console.log('Parameters:', {
     readingLevel: params.readingLevel,
     interestLevel: params.interestLevel,
@@ -222,7 +222,7 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
   
   // Optimized parameters for creative story generation
   const requestBody = {
-    model: "gpt-3.5-turbo",
+    model: "openai/gpt-4o-mini",
     messages: [
       {
         role: "system",
@@ -241,50 +241,52 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
     stream: false
   };
 
-  console.log(`=== CALLING OPENAI API (max_tokens: ${dynamicTokenLimit}) ===`);
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  console.log(`=== CALLING OPENROUTER API (max_tokens: ${dynamicTokenLimit}) ===`);
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://hyiyuhjabjnksjbqfwmn.supabase.co',
+      'X-Title': 'Story Generator'
     },
     body: JSON.stringify(requestBody)
   });
 
-  console.log('OpenAI response status:', response.status);
+  console.log('OpenRouter response status:', response.status);
   
-  // Log OpenAI rate-limit headers
+  // Log OpenRouter rate-limit headers
   const rateLimitHeaders = {
     limit: response.headers.get('x-ratelimit-limit-requests'),
     remaining: response.headers.get('x-ratelimit-remaining-requests'),
     reset: response.headers.get('x-ratelimit-reset-requests'),
     retryAfter: response.headers.get('retry-after')
   };
-  console.log('OpenAI rate-limit headers:', rateLimitHeaders);
+  console.log('OpenRouter rate-limit headers:', rateLimitHeaders);
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
-    console.error('OpenAI API error:', errorText);
+    console.error('OpenRouter API error:', errorText);
     
     // Enhanced error message with rate-limit info for 429 errors
     if (response.status === 429) {
       const rateLimitInfo = `Rate limit info: ${JSON.stringify(rateLimitHeaders)}`;
-      throw new Error(`OpenAI API rate limit exceeded (${response.status}): ${errorText}. ${rateLimitInfo}`);
+      throw new Error(`OpenRouter API rate limit exceeded (${response.status}): ${errorText}. ${rateLimitInfo}`);
     }
     
-    throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
+    throw new Error(`OpenRouter API error (${response.status}): ${errorText}`);
   }
 
   const data = await response.json();
-  console.log('OpenAI response received:', !!data.choices);
+  console.log('OpenRouter response received:', !!data.choices);
   
   if (!data.choices || data.choices.length === 0) {
-    throw new Error('No response generated from OpenAI');
+    throw new Error('No response generated from OpenRouter');
   }
 
   const content = data.choices[0].message?.content;
   if (!content) {
-    throw new Error('Empty response from OpenAI');
+    throw new Error('Empty response from OpenRouter');
   }
 
   console.log('=== PARSING STORY RESPONSE ===');
@@ -317,7 +319,7 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
     };
   }
 
-  throw new Error('Invalid response format from OpenAI');
+  throw new Error('Invalid response format from OpenRouter');
 }
 
 serve(async (req: Request) => {
