@@ -201,12 +201,12 @@ async function checkUserLimits(supabase: any, userId: string, storyParams: Story
 }
 
 async function generateStory(params: StoryRequest): Promise<StoryResponse> {
-  const apiKey = Deno.env.get('OPENROUTER_API_KEY');
+  const apiKey = Deno.env.get('NEXUSAI_API_KEY');
   if (!apiKey) {
-    throw new Error('OPENROUTER_API_KEY environment variable not set');
+    throw new Error('NEXUSAI_API_KEY environment variable not set');
   }
 
-  console.log('=== GENERATING STORY WITH OPENROUTER GPT-4O-MINI ===');
+  console.log('=== GENERATING STORY WITH NEXUSAI API ===');
   console.log('Parameters:', {
     readingLevel: params.readingLevel,
     interestLevel: params.interestLevel,
@@ -217,109 +217,165 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
     keywordCount: params.keywords.length
   });
 
-  const systemPrompt = buildSystemPrompt(params);
-  const dynamicTokenLimit = getTokenLimit(params.length);
+  // Build comprehensive query for NexusAI
+  const level = READING_LEVELS[params.readingLevel];
+  const wordCountTarget = getWordCountTarget(params.length, level.words);
   
-  // Optimized parameters for creative story generation
-  const requestBody = {
-    model: "openai/gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt
+  const sightWordsText = params.useSightWords && params.keywords.length > 0 
+    ? ` Please naturally incorporate these sight words: ${params.keywords.join(', ')}.` 
+    : '';
+  
+  const drSeussStyle = params.isDrSeussStyle 
+    ? " Write in Dr. Seuss style with rhyming, repetitive patterns, and playful language." 
+    : '';
+
+  const languageInstruction = params.language !== 'english' 
+    ? ` Write the story in ${params.language}.` 
+    : '';
+
+  const themeLesson = params.hasThemeLesson && params.themeLesson 
+    ? ` Focus on the theme/lesson: ${params.themeLesson}.` 
+    : '';
+
+  const query = `Create an engaging, age-appropriate children's story with these specifications: 
+- Reading Level: ${params.readingLevel.toUpperCase()} Grade
+- Target word count: ${wordCountTarget} words (aim for this exact range)
+- Sentence length: ${level.sentenceLength} words per sentence
+- Genre: ${params.theme}
+- Interest level: ${params.interestLevel}
+- Length: ${params.length}${languageInstruction}${themeLesson}${drSeussStyle}${sightWordsText}
+
+The story should include positive messages, engaging characters, descriptive but simple language, clear beginning-middle-end structure, and dialogue. Ensure content is completely safe and appropriate for children with educational value. Provide the response as a JSON object with "title" and "content" fields.`;
+
+  // Define JSON schema for structured response
+  const responseSchema = {
+    type: "object",
+    properties: {
+      title: {
+        type: "string",
+        description: "An engaging title for the children's story"
       },
-      {
-        role: "user", 
-        content: `Create a ${params.length} ${params.theme} story for ${params.readingLevel} grade level${params.hasThemeLesson && params.themeLesson ? ` that focuses on the theme/lesson: ${params.themeLesson}` : ''}.`
+      content: {
+        type: "string", 
+        description: "The complete story content"
       }
-    ],
-    temperature: 0.8,
-    max_tokens: dynamicTokenLimit,
-    top_p: 0.9,
-    frequency_penalty: 0.3,
-    presence_penalty: 0.1,
-    stream: false
+    },
+    required: ["title", "content"]
   };
 
-  console.log(`=== CALLING OPENROUTER API (max_tokens: ${dynamicTokenLimit}) ===`);
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const requestBody = {
+    query: query,
+    search_type: "structured_data",
+    response_schema: responseSchema,
+    include_web_context: false
+  };
+
+  console.log('=== CALLING NEXUSAI API ===');
+  const response = await fetch('https://nexus-ai-f957769a.base44.app/api/v1/search', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://hyiyuhjabjnksjbqfwmn.supabase.co',
-      'X-Title': 'Story Generator'
+      'Authorization': apiKey,
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(requestBody)
   });
 
-  console.log('OpenRouter response status:', response.status);
+  console.log('NexusAI response status:', response.status);
   
-  // Log OpenRouter rate-limit headers
+  // Log NexusAI rate-limit headers
   const rateLimitHeaders = {
-    limit: response.headers.get('x-ratelimit-limit-requests'),
-    remaining: response.headers.get('x-ratelimit-remaining-requests'),
-    reset: response.headers.get('x-ratelimit-reset-requests'),
+    limit: response.headers.get('X-RateLimit-Limit'),
+    remaining: response.headers.get('X-RateLimit-Remaining'),
+    reset: response.headers.get('X-RateLimit-Reset'),
     retryAfter: response.headers.get('retry-after')
   };
-  console.log('OpenRouter rate-limit headers:', rateLimitHeaders);
+  console.log('NexusAI rate-limit headers:', rateLimitHeaders);
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
-    console.error('OpenRouter API error:', errorText);
+    console.error('NexusAI API error:', errorText);
     
-    // Enhanced error message with rate-limit info for 429 errors
-    if (response.status === 429) {
-      const rateLimitInfo = `Rate limit info: ${JSON.stringify(rateLimitHeaders)}`;
-      throw new Error(`OpenRouter API rate limit exceeded (${response.status}): ${errorText}. ${rateLimitInfo}`);
+    // Parse error response if available
+    let errorData;
+    try {
+      errorData = JSON.parse(errorText);
+    } catch {
+      errorData = { message: errorText };
     }
     
-    throw new Error(`OpenRouter API error (${response.status}): ${errorText}`);
+    // Enhanced error message with rate-limit info for 429 errors
+    if (response.status === 429 || errorData.error_code === 'RATE_LIMIT_EXCEEDED') {
+      const rateLimitInfo = `Rate limit info: ${JSON.stringify(rateLimitHeaders)}`;
+      throw new Error(`NexusAI API rate limit exceeded (${response.status}): ${errorData.message || errorText}. ${rateLimitInfo}`);
+    }
+    
+    // Handle other NexusAI error codes
+    if (errorData.error_code === 'INVALID_API_KEY') {
+      throw new Error('Invalid NexusAI API key');
+    }
+    
+    if (errorData.error_code === 'INVALID_SEARCH_TYPE') {
+      throw new Error('Invalid search type for NexusAI API');
+    }
+    
+    if (errorData.error_code === 'INVALID_JSON_SCHEMA') {
+      throw new Error('Invalid JSON schema for NexusAI API');
+    }
+    
+    throw new Error(`NexusAI API error (${response.status}): ${errorData.message || errorText}`);
   }
 
   const data = await response.json();
-  console.log('OpenRouter response received:', !!data.choices);
+  console.log('NexusAI response received:', {
+    status: data.status,
+    processingTime: data.processing_time_ms,
+    requestId: data.request_id,
+    hasData: !!data.data
+  });
   
-  if (!data.choices || data.choices.length === 0) {
-    throw new Error('No response generated from OpenRouter');
+  if (data.status !== 'success') {
+    throw new Error(`NexusAI API returned error status: ${data.status}`);
+  }
+  
+  if (!data.data) {
+    throw new Error('No response data from NexusAI');
   }
 
-  const content = data.choices[0].message?.content;
-  if (!content) {
-    throw new Error('Empty response from OpenRouter');
-  }
-
-  console.log('=== PARSING STORY RESPONSE ===');
+  console.log('=== PARSING NEXUSAI STORY RESPONSE ===');
   
-  // Clean up the content - remove any potential JSON markdown formatting
-  let cleanContent = content.trim();
-  
-  // Remove common markdown formatting that might appear
-  cleanContent = cleanContent.replace(/```json\s*/, '').replace(/```\s*$/, '');
-  
+  let storyData;
   try {
-    // Try to parse as JSON first (in case model still returns JSON despite instructions)
-    const parsed = JSON.parse(cleanContent);
-    if (parsed.title && parsed.content) {
-      console.log('Successfully parsed JSON response');
-      return parsed;
+    // Parse the structured data response
+    if (typeof data.data === 'string') {
+      storyData = JSON.parse(data.data);
+    } else {
+      storyData = data.data;
     }
-  } catch {
-    // Expected path: plain text story content
-    console.log('Processing plain text story response');
     
-    // Generate a meaningful title based on the story parameters
+    if (!storyData.title || !storyData.content) {
+      throw new Error('Invalid story structure - missing title or content');
+    }
+    
+    console.log('Successfully parsed NexusAI structured response');
+    return {
+      title: storyData.title,
+      content: storyData.content
+    };
+    
+  } catch (parseError) {
+    console.error('Error parsing NexusAI response:', parseError);
+    
+    // Fallback: treat data as plain text and generate title
+    const plainContent = typeof data.data === 'string' ? data.data : JSON.stringify(data.data);
     const titlePrefix = params.isDrSeussStyle ? "A Whimsical" : "A";
     const themeCapitalized = params.theme.charAt(0).toUpperCase() + params.theme.slice(1);
     const generatedTitle = `${titlePrefix} ${themeCapitalized} Tale`;
     
     return {
       title: generatedTitle,
-      content: cleanContent
+      content: plainContent
     };
   }
-
-  throw new Error('Invalid response format from OpenRouter');
 }
 
 serve(async (req: Request) => {
