@@ -271,10 +271,16 @@ The story should include positive messages, engaging characters, descriptive but
   };
 
   console.log('=== CALLING NEXUSAI API ===');
+  console.log('Request body (without API key):', { 
+    query: requestBody.query.substring(0, 100) + '...', 
+    search_type: requestBody.search_type,
+    include_web_context: requestBody.include_web_context 
+  });
+  
   const response = await fetch('https://nexus-ai-f957769a.base44.app/api/v1/search', {
     method: 'POST',
     headers: {
-      'Authorization': apiKey,
+      'Authorization': 'Bearer ' + apiKey,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(requestBody)
@@ -326,6 +332,11 @@ The story should include positive messages, engaging characters, descriptive but
   }
 
   const data = await response.json();
+  console.log('Raw NexusAI response data:', {
+    hasData: !!data,
+    dataType: typeof data,
+    dataKeys: data ? Object.keys(data) : null
+  });
   console.log('NexusAI response received:', {
     status: data.status,
     processingTime: data.processing_time_ms,
