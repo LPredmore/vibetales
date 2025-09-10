@@ -48,23 +48,14 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
 
   // Words are now loaded by parent component, so we don't need to load them here
 
-  const handleCheckout = async () => {
-    try {
-      setIsCheckingOut(true);
-      const { data, error } = await supabase.functions.invoke('create-checkout');
-      if (error) throw error;
-      
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL received');
-      }
-    } catch (err) {
-      console.error('Error creating checkout session:', err);
-      toast.error("Failed to start checkout process");
-    } finally {
-      setIsCheckingOut(false);
+  const handleCheckout = () => {
+    if (!user) {
+      toast.error("Please log in to upgrade");
+      return;
     }
+
+    // Open direct Stripe payment link in a new tab
+    window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank');
   };
 
   const saveWords = async (updatedWords: SightWord[]) => {
