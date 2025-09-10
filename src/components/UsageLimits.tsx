@@ -93,7 +93,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     }
 
     // Open direct Stripe payment link in a new tab
-    window.open('https://buy.stripe.com/fZu5kFamRdfAeW31CSfMA00', '_blank');
+    window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank');
   };
 
   // Show loading until both limits and premium status are loaded
