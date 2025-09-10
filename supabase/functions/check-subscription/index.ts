@@ -126,20 +126,41 @@ serve(async (req) => {
     const customer = customers.data[0];
     console.log('Found customer:', customer.id, 'for email:', userEmail);
 
-    // Check for active subscriptions first
+    // Check for all subscriptions (both active and trialing)
     const subscriptions = await stripe.subscriptions.list({
       customer: customer.id,
-      status: 'active',
-      limit: 10, // Check more to be thorough
+      limit: 10,
     });
 
-    console.log('Found active subscriptions:', subscriptions.data.length);
+    console.log('Found total subscriptions:', subscriptions.data.length);
     
-    // If we have active subscriptions, user is subscribed
-    if (subscriptions.data.length > 0) {
-      console.log('User has active subscription');
+    // Log all subscription statuses for debugging
+    subscriptions.data.forEach((sub, index) => {
+      console.log(`Subscription ${index + 1}:`, {
+        id: sub.id,
+        status: sub.status,
+        current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+      });
+    });
+
+    // Check for active or trialing subscriptions (both count as premium)
+    const validSubscriptions = subscriptions.data.filter(sub => 
+      sub.status === 'active' || sub.status === 'trialing'
+    );
+
+    console.log('Found valid subscriptions (active or trialing):', validSubscriptions.length);
+    
+    // If we have valid subscriptions, user is subscribed
+    if (validSubscriptions.length > 0) {
+      const subscription = validSubscriptions[0];
+      console.log('User has valid subscription with status:', subscription.status);
       return new Response(
-        JSON.stringify({ subscribed: true, type: 'subscription' }),
+        JSON.stringify({ 
+          subscribed: true, 
+          type: 'subscription',
+          status: subscription.status,
+          period_end: new Date(subscription.current_period_end * 1000).toISOString()
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
