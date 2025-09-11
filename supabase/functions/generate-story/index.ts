@@ -479,62 +479,59 @@ The story should include positive messages, engaging characters, descriptive but
   console.log('Response data keys:', data ? Object.keys(data) : 'null/undefined');
   console.log('Full response structure:', JSON.stringify(data, null, 2));
   
-  console.log('=== RESPONSE FIELD VALIDATION ===');
-  console.log('Has status field:', 'status' in data);
-  console.log('Status value:', data.status);
-  console.log('Has data field:', 'data' in data);
-  console.log('Data field type:', typeof data.data);
-  console.log('Has processing_time_ms:', 'processing_time_ms' in data);
-  console.log('Processing time:', data.processing_time_ms);
-  console.log('Has request_id:', 'request_id' in data);
-  console.log('Request ID:', data.request_id);
-  
-  if (data.status !== 'success') {
-    console.error('=== UNSUCCESSFUL RESPONSE STATUS ===');
-    console.error('Expected: success, Got:', data.status);
-    console.error('Full response for debugging:', JSON.stringify(data, null, 2));
-    throw new Error(`NexusAI API returned error status: ${data.status}. Full response: ${JSON.stringify(data)}`);
-  }
-  
-  if (!data.data) {
-    throw new Error('No response data from NexusAI');
-  }
-
   console.log('=== PARSING NEXUSAI STORY RESPONSE ===');
   
-  let storyData;
-  try {
-    // Parse the structured data response
-    if (typeof data.data === 'string') {
-      storyData = JSON.parse(data.data);
-    } else {
-      storyData = data.data;
+  // NexusAI API returns the structured data directly as {title: "...", content: "..."}
+  // No status wrapper expected
+  
+  if (!data) {
+    throw new Error('No response data from NexusAI API');
+  }
+  
+  // Validate response has required fields
+  if (!data.title || !data.content) {
+    console.error('=== INVALID RESPONSE STRUCTURE ===');
+    console.error('Expected fields: title, content');
+    console.error('Received fields:', Object.keys(data));
+    console.error('Title present:', !!data.title);
+    console.error('Content present:', !!data.content);
+    
+    // Fallback: try to extract story from response or generate default
+    let title = data.title;
+    let content = data.content;
+    
+    if (!title) {
+      const titlePrefix = params.isDrSeussStyle ? "A Whimsical" : "A";
+      const themeCapitalized = params.theme.charAt(0).toUpperCase() + params.theme.slice(1);
+      title = `${titlePrefix} ${themeCapitalized} Tale`;
+      console.log('Generated fallback title:', title);
     }
     
-    if (!storyData.title || !storyData.content) {
-      throw new Error('Invalid story structure - missing title or content');
+    if (!content) {
+      // Try to use the entire response as content if no content field
+      content = typeof data === 'string' ? data : JSON.stringify(data);
+      console.log('Using entire response as content, length:', content.length);
     }
     
-    console.log('Successfully parsed NexusAI structured response');
-    return {
-      title: storyData.title,
-      content: storyData.content
-    };
-    
-  } catch (parseError) {
-    console.error('Error parsing NexusAI response:', parseError);
-    
-    // Fallback: treat data as plain text and generate title
-    const plainContent = typeof data.data === 'string' ? data.data : JSON.stringify(data.data);
-    const titlePrefix = params.isDrSeussStyle ? "A Whimsical" : "A";
-    const themeCapitalized = params.theme.charAt(0).toUpperCase() + params.theme.slice(1);
-    const generatedTitle = `${titlePrefix} ${themeCapitalized} Tale`;
+    if (!content || content.trim().length < 10) {
+      throw new Error('Invalid story response - missing or insufficient content');
+    }
     
     return {
-      title: generatedTitle,
-      content: plainContent
+      title: title,
+      content: content
     };
   }
+  
+  console.log('=== SUCCESSFUL RESPONSE VALIDATION ===');
+  console.log('Title present:', !!data.title);
+  console.log('Content length:', data.content?.length || 0);
+  console.log('Successfully parsed NexusAI direct response');
+  
+  return {
+    title: data.title,
+    content: data.content
+  };
 }
 
 serve(async (req: Request) => {
