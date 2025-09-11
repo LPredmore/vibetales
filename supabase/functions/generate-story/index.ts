@@ -1,11 +1,36 @@
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+// === STARTUP LOGGING ===
+console.log('=== EDGE FUNCTION STARTING ===');
+console.log('Function initialization beginning...');
+
+try {
+  console.log('Loading imports...');
+  import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+  console.log('Imports loaded successfully');
+} catch (importError) {
+  console.error('=== IMPORT ERROR ===');
+  console.error('Failed to import dependencies:', importError);
+  throw importError;
+}
+
+console.log('Checking environment variables...');
+const nexusApiKey = Deno.env.get('NEXUSAI_API_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+console.log('Environment check:');
+console.log('- NEXUSAI_API_KEY present:', !!nexusApiKey);
+console.log('- NEXUSAI_API_KEY format check:', nexusApiKey ? `${nexusApiKey.substring(0, 10)}...` : 'MISSING');
+console.log('- SUPABASE_URL present:', !!supabaseUrl);
+console.log('- SUPABASE_SERVICE_ROLE_KEY present:', !!supabaseServiceKey);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+
+console.log('CORS headers configured');
 
 interface StoryRequest {
   readingLevel: "k" | "1" | "2" | "3" | "4" | "5" | "teen";
@@ -577,7 +602,10 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error('=== STORY GENERATION ERROR ===');
-    console.error('Error:', error);
+    console.error('Error type:', error?.constructor?.name);
+    console.error('Error message:', error?.message);
+    console.error('Error stack:', error?.stack);
+    console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     
     return new Response(JSON.stringify({ 
       error: error.message || 'Failed to generate story'
@@ -586,4 +614,13 @@ serve(async (req: Request) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
+}).catch((serverError) => {
+  console.error('=== SERVE FUNCTION FATAL ERROR ===');
+  console.error('Server startup failed:', serverError);
+  console.error('Error type:', serverError?.constructor?.name);
+  console.error('Error message:', serverError?.message);
+  console.error('Error stack:', serverError?.stack);
+  throw serverError;
 });
+
+console.log('=== EDGE FUNCTION SETUP COMPLETE ===');
