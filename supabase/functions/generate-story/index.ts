@@ -271,22 +271,61 @@ The story should include positive messages, engaging characters, descriptive but
   };
 
   console.log('=== CALLING NEXUSAI API ===');
-  console.log('Request body (without API key):', { 
-    query: requestBody.query.substring(0, 100) + '...', 
-    search_type: requestBody.search_type,
-    include_web_context: requestBody.include_web_context 
-  });
   
-  const response = await fetch('https://nexus-ai-f957769a.base44.app/ApiSearch', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + apiKey,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(requestBody)
+  // Log API key validation (first 10 chars only for security)
+  console.log(`API Key format check: ${apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING'}`);
+  console.log(`API Key starts with 'ai_': ${apiKey?.startsWith('ai_')}`);
+  console.log(`API Key length: ${apiKey?.length || 0}`);
+  
+  // Log complete request details (without exposing API key)
+  console.log('=== REQUEST DETAILS ===');
+  console.log('URL:', 'https://nexus-ai-f957769a.base44.app/ApiSearch');
+  console.log('Method:', 'POST');
+  console.log('Headers (without auth):', {
+    'Content-Type': 'application/json'
   });
+  console.log('Request body structure:', {
+    query_length: requestBody.query.length,
+    search_type: requestBody.search_type,
+    include_web_context: requestBody.include_web_context,
+    has_response_schema: !!requestBody.response_schema,
+    schema_keys: requestBody.response_schema ? Object.keys(requestBody.response_schema) : null
+  });
+  console.log('Query preview:', requestBody.query.substring(0, 200) + '...');
+  console.log('Full response schema:', JSON.stringify(requestBody.response_schema, null, 2));
+  
+  let response;
+  try {
+    console.log('=== MAKING FETCH REQUEST ===');
+    const startTime = Date.now();
+    
+    response = await fetch('https://nexus-ai-f957769a.base44.app/ApiSearch', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    const endTime = Date.now();
+    console.log(`=== FETCH COMPLETED in ${endTime - startTime}ms ===`);
+    
+  } catch (fetchError) {
+    console.error('=== FETCH FAILED ===');
+    console.error('Fetch error type:', fetchError.constructor.name);
+    console.error('Fetch error message:', fetchError.message);
+    console.error('Fetch error stack:', fetchError.stack);
+    console.error('Fetch error details:', JSON.stringify(fetchError, Object.getOwnPropertyNames(fetchError)));
+    throw new Error(`Network error calling NexusAI API: ${fetchError.message}`);
+  }
 
-  console.log('NexusAI response status:', response.status);
+  console.log('=== RESPONSE RECEIVED ===');
+  console.log('Response status:', response.status);
+  console.log('Response status text:', response.statusText);
+  console.log('Response ok:', response.ok);
+  console.log('Response type:', response.type);
+  console.log('Response url:', response.url);
   
   // Log NexusAI rate-limit headers
   const rateLimitHeaders = {
@@ -297,55 +336,122 @@ The story should include positive messages, engaging characters, descriptive but
   };
   console.log('NexusAI rate-limit headers:', rateLimitHeaders);
 
+  // Log all response headers for debugging
+  console.log('=== ALL RESPONSE HEADERS ===');
+  for (const [key, value] of response.headers.entries()) {
+    console.log(`${key}: ${value}`);
+  }
+
   if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Unknown error');
-    console.error('NexusAI API error:', errorText);
+    console.error('=== RESPONSE NOT OK ===');
+    console.error('Status:', response.status);
+    console.error('Status text:', response.statusText);
+    
+    let errorText;
+    try {
+      errorText = await response.text();
+      console.error('Raw error response body:', errorText);
+    } catch (textError) {
+      console.error('Failed to read error response text:', textError);
+      errorText = 'Failed to read response';
+    }
     
     // Parse error response if available
     let errorData;
     try {
       errorData = JSON.parse(errorText);
-    } catch {
+      console.error('Parsed error data:', JSON.stringify(errorData, null, 2));
+    } catch (parseError) {
+      console.error('Failed to parse error response as JSON:', parseError);
       errorData = { detail: errorText };
     }
+    
+    console.error('=== DETAILED ERROR ANALYSIS ===');
+    console.error('Error data keys:', errorData ? Object.keys(errorData) : 'none');
+    console.error('Error detail field:', errorData?.detail);
+    console.error('Error message field:', errorData?.message);
+    console.error('Full error object:', errorData);
     
     // Enhanced error message with rate-limit info for 429 errors
     if (response.status === 429) {
       const rateLimitInfo = `Rate limit info: ${JSON.stringify(rateLimitHeaders)}`;
+      console.error('=== RATE LIMIT ERROR ===');
+      console.error(rateLimitInfo);
       throw new Error(`NexusAI API rate limit exceeded (${response.status}): ${errorData.detail || errorText}. ${rateLimitInfo}`);
     }
     
     // Handle authentication errors
     if (response.status === 401) {
-      throw new Error('Invalid NexusAI API key');
+      console.error('=== AUTHENTICATION ERROR ===');
+      console.error('This indicates the API key is invalid or malformed');
+      throw new Error(`Invalid NexusAI API key - Status: ${response.status}, Response: ${errorText}`);
     }
     
     if (response.status === 403) {
-      throw new Error('NexusAI API key lacks permission for structured_data search');
+      console.error('=== PERMISSION ERROR ===');
+      console.error('This indicates the API key lacks permission for structured_data search');
+      throw new Error(`NexusAI API key lacks permission for structured_data search - Status: ${response.status}, Response: ${errorText}`);
     }
     
     if (response.status === 405) {
-      throw new Error('NexusAI API endpoint error - Method Not Allowed');
+      console.error('=== METHOD NOT ALLOWED ERROR ===');
+      console.error('This indicates wrong HTTP method or incorrect endpoint');
+      throw new Error(`NexusAI API endpoint error - Method Not Allowed - Status: ${response.status}, Response: ${errorText}`);
     }
     
-    throw new Error(`NexusAI API error (${response.status}): ${errorData.detail || errorText}`);
+    if (response.status === 400) {
+      console.error('=== BAD REQUEST ERROR ===');
+      console.error('This indicates malformed request body or missing parameters');
+      throw new Error(`NexusAI API bad request - Status: ${response.status}, Response: ${errorText}`);
+    }
+    
+    if (response.status >= 500) {
+      console.error('=== SERVER ERROR ===');
+      console.error('This indicates an internal server error on NexusAI side');
+      throw new Error(`NexusAI API server error - Status: ${response.status}, Response: ${errorText}`);
+    }
+    
+    console.error('=== UNKNOWN ERROR STATUS ===');
+    throw new Error(`NexusAI API error - Status: ${response.status}, Response: ${errorText}, Parsed: ${JSON.stringify(errorData)}`);
   }
 
-  const data = await response.json();
-  console.log('Raw NexusAI response data:', {
-    hasData: !!data,
-    dataType: typeof data,
-    dataKeys: data ? Object.keys(data) : null
-  });
-  console.log('NexusAI response received:', {
-    status: data.status,
-    processingTime: data.processing_time_ms,
-    requestId: data.request_id,
-    hasData: !!data.data
-  });
+  console.log('=== PARSING SUCCESSFUL RESPONSE ===');
+  
+  let data;
+  try {
+    const responseText = await response.text();
+    console.log('Raw response text length:', responseText.length);
+    console.log('Raw response text preview:', responseText.substring(0, 500) + '...');
+    
+    data = JSON.parse(responseText);
+    console.log('Successfully parsed JSON response');
+  } catch (parseError) {
+    console.error('=== JSON PARSE ERROR ===');
+    console.error('Failed to parse response as JSON:', parseError);
+    console.error('Parse error message:', parseError.message);
+    throw new Error(`Failed to parse NexusAI response as JSON: ${parseError.message}`);
+  }
+  
+  console.log('=== RESPONSE DATA ANALYSIS ===');
+  console.log('Response data type:', typeof data);
+  console.log('Response data keys:', data ? Object.keys(data) : 'null/undefined');
+  console.log('Full response structure:', JSON.stringify(data, null, 2));
+  
+  console.log('=== RESPONSE FIELD VALIDATION ===');
+  console.log('Has status field:', 'status' in data);
+  console.log('Status value:', data.status);
+  console.log('Has data field:', 'data' in data);
+  console.log('Data field type:', typeof data.data);
+  console.log('Has processing_time_ms:', 'processing_time_ms' in data);
+  console.log('Processing time:', data.processing_time_ms);
+  console.log('Has request_id:', 'request_id' in data);
+  console.log('Request ID:', data.request_id);
   
   if (data.status !== 'success') {
-    throw new Error(`NexusAI API returned error status: ${data.status}`);
+    console.error('=== UNSUCCESSFUL RESPONSE STATUS ===');
+    console.error('Expected: success, Got:', data.status);
+    console.error('Full response for debugging:', JSON.stringify(data, null, 2));
+    throw new Error(`NexusAI API returned error status: ${data.status}. Full response: ${JSON.stringify(data)}`);
   }
   
   if (!data.data) {
