@@ -1,17 +1,10 @@
+import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+
 // === STARTUP LOGGING ===
 console.log('=== EDGE FUNCTION STARTING ===');
 console.log('Function initialization beginning...');
-
-try {
-  console.log('Loading imports...');
-  import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-  import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-  console.log('Imports loaded successfully');
-} catch (importError) {
-  console.error('=== IMPORT ERROR ===');
-  console.error('Failed to import dependencies:', importError);
-  throw importError;
-}
+console.log('Imports loaded successfully');
 
 console.log('Checking environment variables...');
 const nexusApiKey = Deno.env.get('NEXUSAI_API_KEY');
