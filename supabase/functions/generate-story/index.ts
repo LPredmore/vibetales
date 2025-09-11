@@ -1,31 +1,11 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
-// === STARTUP LOGGING ===
-console.log('=== EDGE FUNCTION STARTING ===');
-console.log('Function initialization beginning...');
-console.log('Imports loaded successfully');
-
-console.log('Checking environment variables...');
-const nexusApiKey = Deno.env.get('NEXUSAI_API_KEY');
-const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-console.log('Environment check:');
-console.log('- NEXUSAI_API_KEY present:', !!nexusApiKey);
-console.log('- NEXUSAI_API_KEY format check:', nexusApiKey ? `${nexusApiKey.substring(0, 10)}...` : 'MISSING');
-console.log('- NEXUSAI_API_KEY length:', nexusApiKey ? nexusApiKey.length : 0);
-console.log('- NEXUSAI_API_KEY starts with ai_:', nexusApiKey ? nexusApiKey.startsWith('ai_') : false);
-console.log('- SUPABASE_URL present:', !!supabaseUrl);
-console.log('- SUPABASE_SERVICE_ROLE_KEY present:', !!supabaseServiceKey);
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-
-console.log('CORS headers configured');
 
 interface StoryRequest {
   readingLevel: "k" | "1" | "2" | "3" | "4" | "5" | "teen";
@@ -221,12 +201,12 @@ async function checkUserLimits(supabase: any, userId: string, storyParams: Story
 }
 
 async function generateStory(params: StoryRequest): Promise<StoryResponse> {
-  const apiKey = Deno.env.get('NEXUSAI_API_KEY');
+  const apiKey = Deno.env.get('OPENROUTER_API_KEY');
   if (!apiKey) {
-    throw new Error('NEXUSAI_API_KEY environment variable not set');
+    throw new Error('OPENROUTER_API_KEY environment variable not set');
   }
 
-  console.log('=== GENERATING STORY WITH NEXUSAI API ===');
+  console.log('=== GENERATING STORY WITH OPENROUTER GPT-4O-MINI ===');
   console.log('Parameters:', {
     readingLevel: params.readingLevel,
     interestLevel: params.interestLevel,
@@ -237,301 +217,109 @@ async function generateStory(params: StoryRequest): Promise<StoryResponse> {
     keywordCount: params.keywords.length
   });
 
-  // Build comprehensive query for NexusAI
-  const level = READING_LEVELS[params.readingLevel];
-  const wordCountTarget = getWordCountTarget(params.length, level.words);
+  const systemPrompt = buildSystemPrompt(params);
+  const dynamicTokenLimit = getTokenLimit(params.length);
   
-  const sightWordsText = params.useSightWords && params.keywords.length > 0 
-    ? ` Please naturally incorporate these sight words: ${params.keywords.join(', ')}.` 
-    : '';
-  
-  const drSeussStyle = params.isDrSeussStyle 
-    ? " Write in Dr. Seuss style with rhyming, repetitive patterns, and playful language." 
-    : '';
-
-  const languageInstruction = params.language !== 'english' 
-    ? ` Write the story in ${params.language}.` 
-    : '';
-
-  const themeLesson = params.hasThemeLesson && params.themeLesson 
-    ? ` Focus on the theme/lesson: ${params.themeLesson}.` 
-    : '';
-
-  const query = `Create an engaging, age-appropriate children's story with these specifications: 
-- Reading Level: ${params.readingLevel.toUpperCase()} Grade
-- Target word count: ${wordCountTarget} words (aim for this exact range)
-- Sentence length: ${level.sentenceLength} words per sentence
-- Genre: ${params.theme}
-- Interest level: ${params.interestLevel}
-- Length: ${params.length}${languageInstruction}${themeLesson}${drSeussStyle}${sightWordsText}
-
-The story should include positive messages, engaging characters, descriptive but simple language, clear beginning-middle-end structure, and dialogue. Ensure content is completely safe and appropriate for children with educational value. Provide the response as a JSON object with "title" and "content" fields.`;
-
-  // Define JSON schema for structured response
-  const responseSchema = {
-    type: "object",
-    properties: {
-      title: {
-        type: "string",
-        description: "An engaging title for the children's story"
-      },
-      content: {
-        type: "string", 
-        description: "The complete story content"
-      }
-    },
-    required: ["title", "content"]
-  };
-
+  // Optimized parameters for creative story generation
   const requestBody = {
-    query: query,
-    search_type: "structured_data",
-    response_schema: responseSchema,
-    include_web_context: false
+    model: "openai/gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt
+      },
+      {
+        role: "user", 
+        content: `Create a ${params.length} ${params.theme} story for ${params.readingLevel} grade level${params.hasThemeLesson && params.themeLesson ? ` that focuses on the theme/lesson: ${params.themeLesson}` : ''}.`
+      }
+    ],
+    temperature: 0.8,
+    max_tokens: dynamicTokenLimit,
+    top_p: 0.9,
+    frequency_penalty: 0.3,
+    presence_penalty: 0.1,
+    stream: false
   };
 
-  console.log('=== CALLING NEXUSAI API ===');
-  
-  // Enhanced API key validation
-  console.log('=== API KEY VALIDATION ===');
-  console.log(`API Key format check: ${apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING'}`);
-  console.log(`API Key starts with 'ai_': ${apiKey?.startsWith('ai_')}`);
-  console.log(`API Key length: ${apiKey?.length || 0}`);
-  console.log('Expected length range: 35-50 characters');
-  
-  if (!apiKey.startsWith('ai_')) {
-    throw new Error('Invalid API key format - must start with ai_');
-  }
-  
-  if (apiKey.length < 20 || apiKey.length > 100) {
-    throw new Error(`Invalid API key length: ${apiKey.length}`);
-  }
-  
-  // Log complete request details (without exposing API key)
-  console.log('=== REQUEST DETAILS ===');
-  console.log('URL:', 'https://nexus-ai-f957769a.base44.app/ApiSearch');
-  console.log('Method:', 'POST');
-  console.log('Headers (without auth):', {
-    'Content-Type': 'application/json'
+  console.log(`=== CALLING OPENROUTER API (max_tokens: ${dynamicTokenLimit}) ===`);
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://hyiyuhjabjnksjbqfwmn.supabase.co',
+      'X-Title': 'Story Generator'
+    },
+    body: JSON.stringify(requestBody)
   });
-  console.log('Request body structure:', {
-    query_length: requestBody.query.length,
-    search_type: requestBody.search_type,
-    include_web_context: requestBody.include_web_context,
-    has_response_schema: !!requestBody.response_schema,
-    schema_keys: requestBody.response_schema ? Object.keys(requestBody.response_schema) : null
-  });
-  console.log('Query preview:', requestBody.query.substring(0, 200) + '...');
-  console.log('Full response schema:', JSON.stringify(requestBody.response_schema, null, 2));
-  
-  const requestId = `story-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  const timestamp = new Date().toISOString();
-  
-  console.log('=== MAKING FETCH REQUEST ===');
-  console.log('Request ID:', requestId);
-  console.log('Timestamp:', timestamp);
-  
-  let response;
-  try {
-    const startTime = Date.now();
-    
-    // Add cache-busting and debugging headers
-    response = await fetch('https://nexus-ai-f957769a.base44.app/ApiSearch', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + apiKey,
-        'Content-Type': 'application/json',
-        'X-Request-ID': requestId,
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'X-Timestamp': timestamp,
-        'User-Agent': 'Supabase-Edge-Function/1.0'
-      },
-      body: JSON.stringify(requestBody)
-    });
-    
-    const endTime = Date.now();
-    console.log(`=== FETCH COMPLETED in ${endTime - startTime}ms ===`);
-    
-  } catch (fetchError) {
-    console.error('=== FETCH FAILED ===');
-    console.error('Fetch error type:', fetchError.constructor.name);
-    console.error('Fetch error message:', fetchError.message);
-    console.error('Fetch error stack:', fetchError.stack);
-    console.error('Fetch error details:', JSON.stringify(fetchError, Object.getOwnPropertyNames(fetchError)));
-    throw new Error(`Network error calling NexusAI API: ${fetchError.message}`);
-  }
 
-  console.log('=== RESPONSE RECEIVED ===');
-  console.log('Response status:', response.status);
-  console.log('Response status text:', response.statusText);
-  console.log('Response ok:', response.ok);
-  console.log('Response type:', response.type);
-  console.log('Response url:', response.url);
+  console.log('OpenRouter response status:', response.status);
   
-  // Log NexusAI rate-limit headers
+  // Log OpenRouter rate-limit headers
   const rateLimitHeaders = {
-    limit: response.headers.get('X-RateLimit-Limit'),
-    remaining: response.headers.get('X-RateLimit-Remaining'),
-    reset: response.headers.get('X-RateLimit-Reset'),
+    limit: response.headers.get('x-ratelimit-limit-requests'),
+    remaining: response.headers.get('x-ratelimit-remaining-requests'),
+    reset: response.headers.get('x-ratelimit-reset-requests'),
     retryAfter: response.headers.get('retry-after')
   };
-  console.log('NexusAI rate-limit headers:', rateLimitHeaders);
-
-  // Log all response headers for debugging
-  console.log('=== ALL RESPONSE HEADERS ===');
-  for (const [key, value] of response.headers.entries()) {
-    console.log(`${key}: ${value}`);
-  }
+  console.log('OpenRouter rate-limit headers:', rateLimitHeaders);
 
   if (!response.ok) {
-    console.error('=== RESPONSE NOT OK ===');
-    console.error('Status:', response.status);
-    console.error('Status text:', response.statusText);
-    
-    let errorText;
-    try {
-      errorText = await response.text();
-      console.error('Raw error response body:', errorText);
-    } catch (textError) {
-      console.error('Failed to read error response text:', textError);
-      errorText = 'Failed to read response';
-    }
-    
-    // Parse error response if available
-    let errorData;
-    try {
-      errorData = JSON.parse(errorText);
-      console.error('Parsed error data:', JSON.stringify(errorData, null, 2));
-    } catch (parseError) {
-      console.error('Failed to parse error response as JSON:', parseError);
-      errorData = { detail: errorText };
-    }
-    
-    console.error('=== DETAILED ERROR ANALYSIS ===');
-    console.error('Error data keys:', errorData ? Object.keys(errorData) : 'none');
-    console.error('Error detail field:', errorData?.detail);
-    console.error('Error message field:', errorData?.message);
-    console.error('Full error object:', errorData);
+    const errorText = await response.text().catch(() => 'Unknown error');
+    console.error('OpenRouter API error:', errorText);
     
     // Enhanced error message with rate-limit info for 429 errors
     if (response.status === 429) {
       const rateLimitInfo = `Rate limit info: ${JSON.stringify(rateLimitHeaders)}`;
-      console.error('=== RATE LIMIT ERROR ===');
-      console.error(rateLimitInfo);
-      throw new Error(`NexusAI API rate limit exceeded (${response.status}): ${errorData.detail || errorText}. ${rateLimitInfo}`);
+      throw new Error(`OpenRouter API rate limit exceeded (${response.status}): ${errorText}. ${rateLimitInfo}`);
     }
     
-    // Handle authentication errors
-    if (response.status === 401) {
-      console.error('=== AUTHENTICATION ERROR ===');
-      console.error('This indicates the API key is invalid or malformed');
-      throw new Error(`Invalid NexusAI API key - Status: ${response.status}, Response: ${errorText}`);
-    }
-    
-    if (response.status === 403) {
-      console.error('=== PERMISSION ERROR ===');
-      console.error('This indicates the API key lacks permission for structured_data search');
-      throw new Error(`NexusAI API key lacks permission for structured_data search - Status: ${response.status}, Response: ${errorText}`);
-    }
-    
-    if (response.status === 405) {
-      console.error('=== METHOD NOT ALLOWED ERROR ===');
-      console.error('This indicates wrong HTTP method or incorrect endpoint');
-      throw new Error(`NexusAI API endpoint error - Method Not Allowed - Status: ${response.status}, Response: ${errorText}`);
-    }
-    
-    if (response.status === 400) {
-      console.error('=== BAD REQUEST ERROR ===');
-      console.error('This indicates malformed request body or missing parameters');
-      throw new Error(`NexusAI API bad request - Status: ${response.status}, Response: ${errorText}`);
-    }
-    
-    if (response.status >= 500) {
-      console.error('=== SERVER ERROR ===');
-      console.error('This indicates an internal server error on NexusAI side');
-      throw new Error(`NexusAI API server error - Status: ${response.status}, Response: ${errorText}`);
-    }
-    
-    console.error('=== UNKNOWN ERROR STATUS ===');
-    throw new Error(`NexusAI API error - Status: ${response.status}, Response: ${errorText}, Parsed: ${JSON.stringify(errorData)}`);
+    throw new Error(`OpenRouter API error (${response.status}): ${errorText}`);
   }
 
-  console.log('=== PARSING SUCCESSFUL RESPONSE ===');
+  const data = await response.json();
+  console.log('OpenRouter response received:', !!data.choices);
   
-  let data;
+  if (!data.choices || data.choices.length === 0) {
+    throw new Error('No response generated from OpenRouter');
+  }
+
+  const content = data.choices[0].message?.content;
+  if (!content) {
+    throw new Error('Empty response from OpenRouter');
+  }
+
+  console.log('=== PARSING STORY RESPONSE ===');
+  
+  // Clean up the content - remove any potential JSON markdown formatting
+  let cleanContent = content.trim();
+  
+  // Remove common markdown formatting that might appear
+  cleanContent = cleanContent.replace(/```json\s*/, '').replace(/```\s*$/, '');
+  
   try {
-    const responseText = await response.text();
-    console.log('Raw response text length:', responseText.length);
-    console.log('Raw response text preview:', responseText.substring(0, 500) + '...');
-    
-    data = JSON.parse(responseText);
-    console.log('Successfully parsed JSON response');
-  } catch (parseError) {
-    console.error('=== JSON PARSE ERROR ===');
-    console.error('Failed to parse response as JSON:', parseError);
-    console.error('Parse error message:', parseError.message);
-    throw new Error(`Failed to parse NexusAI response as JSON: ${parseError.message}`);
-  }
-  
-  console.log('=== RESPONSE DATA ANALYSIS ===');
-  console.log('Response data type:', typeof data);
-  console.log('Response data keys:', data ? Object.keys(data) : 'null/undefined');
-  console.log('Full response structure:', JSON.stringify(data, null, 2));
-  
-  console.log('=== PARSING NEXUSAI STORY RESPONSE ===');
-  
-  // NexusAI API returns the structured data directly as {title: "...", content: "..."}
-  // No status wrapper expected
-  
-  if (!data) {
-    throw new Error('No response data from NexusAI API');
-  }
-  
-  // Validate response has required fields
-  if (!data.title || !data.content) {
-    console.error('=== INVALID RESPONSE STRUCTURE ===');
-    console.error('Expected fields: title, content');
-    console.error('Received fields:', Object.keys(data));
-    console.error('Title present:', !!data.title);
-    console.error('Content present:', !!data.content);
-    
-    // Fallback: try to extract story from response or generate default
-    let title = data.title;
-    let content = data.content;
-    
-    if (!title) {
-      const titlePrefix = params.isDrSeussStyle ? "A Whimsical" : "A";
-      const themeCapitalized = params.theme.charAt(0).toUpperCase() + params.theme.slice(1);
-      title = `${titlePrefix} ${themeCapitalized} Tale`;
-      console.log('Generated fallback title:', title);
+    // Try to parse as JSON first (in case model still returns JSON despite instructions)
+    const parsed = JSON.parse(cleanContent);
+    if (parsed.title && parsed.content) {
+      console.log('Successfully parsed JSON response');
+      return parsed;
     }
+  } catch {
+    // Expected path: plain text story content
+    console.log('Processing plain text story response');
     
-    if (!content) {
-      // Try to use the entire response as content if no content field
-      content = typeof data === 'string' ? data : JSON.stringify(data);
-      console.log('Using entire response as content, length:', content.length);
-    }
-    
-    if (!content || content.trim().length < 10) {
-      throw new Error('Invalid story response - missing or insufficient content');
-    }
+    // Generate a meaningful title based on the story parameters
+    const titlePrefix = params.isDrSeussStyle ? "A Whimsical" : "A";
+    const themeCapitalized = params.theme.charAt(0).toUpperCase() + params.theme.slice(1);
+    const generatedTitle = `${titlePrefix} ${themeCapitalized} Tale`;
     
     return {
-      title: title,
-      content: content
+      title: generatedTitle,
+      content: cleanContent
     };
   }
-  
-  console.log('=== SUCCESSFUL RESPONSE VALIDATION ===');
-  console.log('Title present:', !!data.title);
-  console.log('Content length:', data.content?.length || 0);
-  console.log('Successfully parsed NexusAI direct response');
-  
-  return {
-    title: data.title,
-    content: data.content
-  };
+
+  throw new Error('Invalid response format from OpenRouter');
 }
 
 serve(async (req: Request) => {
@@ -616,10 +404,7 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error('=== STORY GENERATION ERROR ===');
-    console.error('Error type:', error?.constructor?.name);
-    console.error('Error message:', error?.message);
-    console.error('Error stack:', error?.stack);
-    console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    console.error('Error:', error);
     
     return new Response(JSON.stringify({ 
       error: error.message || 'Failed to generate story'
@@ -628,13 +413,4 @@ serve(async (req: Request) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
-}).catch((serverError) => {
-  console.error('=== SERVE FUNCTION FATAL ERROR ===');
-  console.error('Server startup failed:', serverError);
-  console.error('Error type:', serverError?.constructor?.name);
-  console.error('Error message:', serverError?.message);
-  console.error('Error stack:', serverError?.stack);
-  throw serverError;
 });
-
-console.log('=== EDGE FUNCTION SETUP COMPLETE ===');

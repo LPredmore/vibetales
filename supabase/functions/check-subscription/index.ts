@@ -123,83 +123,18 @@ serve(async (req) => {
       );
     }
 
-    const customer = customers.data[0];
-    console.log('Found customer:', customer.id, 'for email:', userEmail);
-
-    // Check for all subscriptions (both active and trialing)
+    // Check for active subscription
     const subscriptions = await stripe.subscriptions.list({
-      customer: customer.id,
-      limit: 10,
+      customer: customers.data[0].id,
+      status: 'active',
+      price: 'price_1QgUGtRFHDig2LCdGMsgjexk', // Make sure this matches your Stripe price ID
+      limit: 1,
     });
 
-    console.log('Found total subscriptions:', subscriptions.data.length);
-    
-    // Log all subscription statuses for debugging
-    subscriptions.data.forEach((sub, index) => {
-      console.log(`Subscription ${index + 1}:`, {
-        id: sub.id,
-        status: sub.status,
-        current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-      });
-    });
+    console.log('Found subscription status:', subscriptions.data.length > 0);
 
-    // Check for active or trialing subscriptions (both count as premium)
-    const validSubscriptions = subscriptions.data.filter(sub => 
-      sub.status === 'active' || sub.status === 'trialing'
-    );
-
-    console.log('Found valid subscriptions (active or trialing):', validSubscriptions.length);
-    
-    // If we have valid subscriptions, user is subscribed
-    if (validSubscriptions.length > 0) {
-      const subscription = validSubscriptions[0];
-      console.log('User has valid subscription with status:', subscription.status);
-      return new Response(
-        JSON.stringify({ 
-          subscribed: true, 
-          type: 'subscription',
-          status: subscription.status,
-          period_end: new Date(subscription.current_period_end * 1000).toISOString()
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check for successful one-time payments (charges)
-    const charges = await stripe.charges.list({
-      customer: customer.id,
-      limit: 20, // Check recent charges
-    });
-
-    console.log('Found charges for customer:', charges.data.length);
-
-    // Look for successful premium charges
-    const successfulPremiumCharges = charges.data.filter(charge => 
-      charge.status === 'succeeded' && 
-      charge.paid === true &&
-      charge.amount >= 799 // Minimum premium amount (adjust as needed)
-    );
-
-    console.log('Found successful premium charges:', successfulPremiumCharges.length);
-
-    if (successfulPremiumCharges.length > 0) {
-      const latestCharge = successfulPremiumCharges[0];
-      console.log('Latest premium payment:', latestCharge.id, 'amount:', latestCharge.amount, 'date:', new Date(latestCharge.created * 1000));
-      
-      return new Response(
-        JSON.stringify({ 
-          subscribed: true, 
-          type: 'one_time_payment',
-          payment_date: new Date(latestCharge.created * 1000).toISOString(),
-          amount: latestCharge.amount
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('No active subscription or successful premium payment found');
     return new Response(
-      JSON.stringify({ subscribed: false }),
+      JSON.stringify({ subscribed: subscriptions.data.length > 0 }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
