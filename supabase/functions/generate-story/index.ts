@@ -14,6 +14,8 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 console.log('Environment check:');
 console.log('- NEXUSAI_API_KEY present:', !!nexusApiKey);
 console.log('- NEXUSAI_API_KEY format check:', nexusApiKey ? `${nexusApiKey.substring(0, 10)}...` : 'MISSING');
+console.log('- NEXUSAI_API_KEY length:', nexusApiKey ? nexusApiKey.length : 0);
+console.log('- NEXUSAI_API_KEY starts with ai_:', nexusApiKey ? nexusApiKey.startsWith('ai_') : false);
 console.log('- SUPABASE_URL present:', !!supabaseUrl);
 console.log('- SUPABASE_SERVICE_ROLE_KEY present:', !!supabaseServiceKey);
 
@@ -290,10 +292,20 @@ The story should include positive messages, engaging characters, descriptive but
 
   console.log('=== CALLING NEXUSAI API ===');
   
-  // Log API key validation (first 10 chars only for security)
+  // Enhanced API key validation
+  console.log('=== API KEY VALIDATION ===');
   console.log(`API Key format check: ${apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING'}`);
   console.log(`API Key starts with 'ai_': ${apiKey?.startsWith('ai_')}`);
   console.log(`API Key length: ${apiKey?.length || 0}`);
+  console.log('Expected length range: 35-50 characters');
+  
+  if (!apiKey.startsWith('ai_')) {
+    throw new Error('Invalid API key format - must start with ai_');
+  }
+  
+  if (apiKey.length < 20 || apiKey.length > 100) {
+    throw new Error(`Invalid API key length: ${apiKey.length}`);
+  }
   
   // Log complete request details (without exposing API key)
   console.log('=== REQUEST DETAILS ===');
@@ -312,16 +324,28 @@ The story should include positive messages, engaging characters, descriptive but
   console.log('Query preview:', requestBody.query.substring(0, 200) + '...');
   console.log('Full response schema:', JSON.stringify(requestBody.response_schema, null, 2));
   
+  const requestId = `story-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const timestamp = new Date().toISOString();
+  
+  console.log('=== MAKING FETCH REQUEST ===');
+  console.log('Request ID:', requestId);
+  console.log('Timestamp:', timestamp);
+  
   let response;
   try {
-    console.log('=== MAKING FETCH REQUEST ===');
     const startTime = Date.now();
     
+    // Add cache-busting and debugging headers
     response = await fetch('https://nexus-ai-f957769a.base44.app/ApiSearch', {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + apiKey,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Request-ID': requestId,
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'X-Timestamp': timestamp,
+        'User-Agent': 'Supabase-Edge-Function/1.0'
       },
       body: JSON.stringify(requestBody)
     });
