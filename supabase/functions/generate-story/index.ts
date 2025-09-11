@@ -277,7 +277,7 @@ The story should include positive messages, engaging characters, descriptive but
     include_web_context: requestBody.include_web_context 
   });
   
-  const response = await fetch('https://nexus-ai-f957769a.base44.app/api/v1/search', {
+  const response = await fetch('https://nexus-ai-f957769a.base44.app/ApiSearch', {
     method: 'POST',
     headers: {
       'Authorization': 'Bearer ' + apiKey,
@@ -306,29 +306,29 @@ The story should include positive messages, engaging characters, descriptive but
     try {
       errorData = JSON.parse(errorText);
     } catch {
-      errorData = { message: errorText };
+      errorData = { detail: errorText };
     }
     
     // Enhanced error message with rate-limit info for 429 errors
-    if (response.status === 429 || errorData.error_code === 'RATE_LIMIT_EXCEEDED') {
+    if (response.status === 429) {
       const rateLimitInfo = `Rate limit info: ${JSON.stringify(rateLimitHeaders)}`;
-      throw new Error(`NexusAI API rate limit exceeded (${response.status}): ${errorData.message || errorText}. ${rateLimitInfo}`);
+      throw new Error(`NexusAI API rate limit exceeded (${response.status}): ${errorData.detail || errorText}. ${rateLimitInfo}`);
     }
     
-    // Handle other NexusAI error codes
-    if (errorData.error_code === 'INVALID_API_KEY') {
+    // Handle authentication errors
+    if (response.status === 401) {
       throw new Error('Invalid NexusAI API key');
     }
     
-    if (errorData.error_code === 'INVALID_SEARCH_TYPE') {
-      throw new Error('Invalid search type for NexusAI API');
+    if (response.status === 403) {
+      throw new Error('NexusAI API key lacks permission for structured_data search');
     }
     
-    if (errorData.error_code === 'INVALID_JSON_SCHEMA') {
-      throw new Error('Invalid JSON schema for NexusAI API');
+    if (response.status === 405) {
+      throw new Error('NexusAI API endpoint error - Method Not Allowed');
     }
     
-    throw new Error(`NexusAI API error (${response.status}): ${errorData.message || errorText}`);
+    throw new Error(`NexusAI API error (${response.status}): ${errorData.detail || errorText}`);
   }
 
   const data = await response.json();
