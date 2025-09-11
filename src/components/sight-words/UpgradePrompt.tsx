@@ -11,7 +11,7 @@ interface UpgradePromptProps {
 export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) => {
   const handleDirectUpgrade = () => {
     // Open direct Stripe payment link in a new tab
-    window.open('https://buy.stripe.com/fZu5kFamRdfAeW31CSfMA00', '_blank');
+    window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank');
     // Call the original onUpgrade for any additional handling
     onUpgrade();
   };
