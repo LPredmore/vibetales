@@ -123,18 +123,25 @@ serve(async (req) => {
       );
     }
 
-    // Check for active subscription
+    // Check for active or trialing subscriptions
     const subscriptions = await stripe.subscriptions.list({
       customer: customers.data[0].id,
-      status: 'active',
       price: 'price_1QgUGtRFHDig2LCdGMsgjexk', // Make sure this matches your Stripe price ID
-      limit: 1,
+      limit: 10, // Get more results to check status
     });
 
-    console.log('Found subscription status:', subscriptions.data.length > 0);
+    // Filter for active or trialing subscriptions
+    const validSubscriptions = subscriptions.data.filter(sub => 
+      sub.status === 'active' || sub.status === 'trialing'
+    );
+
+    console.log('Found valid subscriptions (active or trialing):', validSubscriptions.length > 0);
+    if (validSubscriptions.length > 0) {
+      console.log('Subscription status:', validSubscriptions[0].status);
+    }
 
     return new Response(
-      JSON.stringify({ subscribed: subscriptions.data.length > 0 }),
+      JSON.stringify({ subscribed: validSubscriptions.length > 0 }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
