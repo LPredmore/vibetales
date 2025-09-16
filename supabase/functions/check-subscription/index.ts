@@ -123,7 +123,10 @@ serve(async (req) => {
       );
     }
 
-    // Check for active or trialing subscriptions
+    // Check subscription status from multiple sources
+    let isSubscribed = false;
+    
+    // First check Stripe subscriptions
     const subscriptions = await stripe.subscriptions.list({
       customer: customers.data[0].id,
       price: 'price_1QgUGtRFHDig2LCdGMsgjexk', // Make sure this matches your Stripe price ID
@@ -135,13 +138,39 @@ serve(async (req) => {
       sub.status === 'active' || sub.status === 'trialing'
     );
 
-    console.log('Found valid subscriptions (active or trialing):', validSubscriptions.length > 0);
     if (validSubscriptions.length > 0) {
-      console.log('Subscription status:', validSubscriptions[0].status);
+      isSubscribed = true;
+      console.log('Found valid Stripe subscription:', validSubscriptions[0].status);
+    }
+
+    // If no Stripe subscription, check RevenueCat/IAP subscriptions
+    if (!isSubscribed) {
+      const { data: profileData, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('premium_active, premium_source, premium_expires_at')
+        .eq('user_id', userId)
+        .single();
+
+      if (!profileError && profileData?.premium_active) {
+        // Check if subscription is still valid (not expired)
+        if (profileData.premium_expires_at) {
+          const expiresAt = new Date(profileData.premium_expires_at);
+          const now = new Date();
+          isSubscribed = expiresAt > now;
+          
+          console.log('Found IAP subscription:', {
+            source: profileData.premium_source,
+            expires: profileData.premium_expires_at,
+            isValid: isSubscribed
+          });
+        } else {
+          isSubscribed = true; // No expiry date means active
+        }
+      }
     }
 
     return new Response(
-      JSON.stringify({ subscribed: validSubscriptions.length > 0 }),
+      JSON.stringify({ subscribed: isSubscribed }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

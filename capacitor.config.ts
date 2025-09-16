@@ -30,6 +30,9 @@ const config: CapacitorConfig = {
     backgroundColor: '#F3E8FF'
   },
   plugins: {
+    PurchasesPlugin: {
+      // RevenueCat will be initialized programmatically with user-specific settings
+    },
     SplashScreen: {
       launchShowDuration: 2000,
       backgroundColor: '#F3E8FF',
