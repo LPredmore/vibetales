@@ -4,6 +4,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { isPWA, isTWA } from '@/utils/twaDetection';
 import { debugLogger } from '@/utils/debugLogger';
+import { initializePayments } from '@/services/paymentService';
 
 interface AuthContextType {
   user: User | null;
@@ -123,6 +124,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Log session state for debugging
       if (session) {
         debugLogger.logAuth('INFO', 'User authenticated', { email: session.user.email });
+        // Initialize payments when user is authenticated (deferred to avoid blocking auth)
+        setTimeout(() => {
+          initializePayments(session.user.id).catch(error => {
+            console.warn('Payment initialization failed:', error);
+          });
+        }, 0);
       } else {
         debugLogger.logAuth('INFO', 'User not authenticated');
       }

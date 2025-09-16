@@ -16,12 +16,11 @@ export async function initializeIAP(userId: string): Promise<void> {
   try {
     const platform = Capacitor.getPlatform();
     
-    // Use environment-specific API keys
-    // These should be added as Supabase secrets later
+    // Get RevenueCat API keys from environment (these are set as Supabase secrets)
     const apiKey = platform === 'ios' 
-      ? 'appl_' // iOS API key placeholder
+      ? process.env.REVENUECAT_IOS_API_KEY
       : platform === 'android' 
-        ? 'goog_' // Android API key placeholder
+        ? process.env.REVENUECAT_ANDROID_API_KEY
         : '';
 
     if (!apiKey) {
