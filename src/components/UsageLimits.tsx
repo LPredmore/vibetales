@@ -7,6 +7,7 @@ import { Clock, Crown, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { getPaymentPlatform, purchasePremium } from "@/services/paymentService";
 
 interface UsageLimitsProps {
   onRefreshLimits?: (refreshFunction: () => Promise<void>) => void;
@@ -86,14 +87,28 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     }
   };
 
-  const handleUpgrade = () => {
+  const handleUpgrade = async () => {
     if (!user) {
       toast.error("Please log in to upgrade");
       return;
     }
 
-    // Open direct Stripe payment link in a new tab
-    window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank');
+    const platform = getPaymentPlatform();
+    
+    try {
+      if (platform.supportsIAP) {
+        const success = await purchasePremium();
+        if (success) {
+          toast.success("Successfully upgraded to Premium!");
+          await fetchUserLimits();
+        }
+      } else {
+        window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank');
+      }
+    } catch (error) {
+      console.error('Purchase failed:', error);
+      toast.error("Purchase failed. Please try again.");
+    }
   };
 
   // Show loading until both limits and premium status are loaded
@@ -113,6 +128,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
 
   const dailyUsed = limits?.daily_stories_used || 0;
   const dailyLimit = 1;
+  const platform = getPaymentPlatform();
 
   return (
     <Card className="clay-card">
@@ -142,8 +158,8 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
           >
             <Crown className="mr-2 h-4 w-4" />
             <span className="text-center">
-              Upgrade to Premium for<br />
-              Unlimited Stories
+              {platform.supportsIAP ? "Upgrade via App Store" : "Upgrade to Premium for"}<br />
+              {platform.supportsIAP ? "Premium Access" : "Unlimited Stories"}
             </span>
           </Button>
         </div>
