@@ -40,8 +40,8 @@ export async function purchasePremium(planType: 'monthly' | 'annual' = 'monthly'
   } else if (supportsStripe) {
     // Open appropriate Stripe payment link for web based on plan type
     const stripeLink = planType === 'annual' 
-      ? 'https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01' // Replace with actual annual link
-      : 'https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01'; // Replace with actual monthly link
+      ? 'https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01' // Update with actual annual link if different
+      : 'https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01'; // Monthly link
     window.open(stripeLink, '_blank');
     return false; // We can't know if payment succeeded immediately
   } else {
