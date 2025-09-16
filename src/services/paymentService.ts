@@ -32,14 +32,17 @@ export async function initializePayments(userId: string): Promise<void> {
   }
 }
 
-export async function purchasePremium(): Promise<boolean> {
+export async function purchasePremium(planType: 'monthly' | 'annual' = 'monthly'): Promise<boolean> {
   const { supportsIAP, supportsStripe } = getPaymentPlatform();
   
   if (supportsIAP) {
-    return await iapPurchase();
+    return await iapPurchase(planType);
   } else if (supportsStripe) {
-    // Open Stripe payment link for web
-    window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank');
+    // Open appropriate Stripe payment link for web based on plan type
+    const stripeLink = planType === 'annual' 
+      ? 'https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01' // Replace with actual annual link
+      : 'https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01'; // Replace with actual monthly link
+    window.open(stripeLink, '_blank');
     return false; // We can't know if payment succeeded immediately
   } else {
     throw new Error('No payment method available for this platform');

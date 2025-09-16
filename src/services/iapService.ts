@@ -4,7 +4,8 @@ import { Purchases } from '@revenuecat/purchases-capacitor';
 let isInitialized = false;
 
 export interface IAPEntitlements {
-  premiumAccess: boolean;
+  premiumAnnual: boolean;
+  premiumMonthly: boolean;
   expiresAt?: string;
 }
 
@@ -43,25 +44,27 @@ export async function initializeIAP(userId: string): Promise<void> {
 
 export async function getEntitlements(): Promise<IAPEntitlements> {
   if (!Capacitor.isNativePlatform() || !isInitialized) {
-    return { premiumAccess: false };
+    return { premiumAnnual: false, premiumMonthly: false };
   }
 
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     const entitlements = (customerInfo as any).entitlements;
-    const premiumEntitlement = entitlements?.active?.premium_access;
+    const annualEntitlement = entitlements?.active?.premium_annual;
+    const monthlyEntitlement = entitlements?.active?.premium_monthly;
     
     return {
-      premiumAccess: Boolean(premiumEntitlement),
-      expiresAt: premiumEntitlement?.expirationDate,
+      premiumAnnual: Boolean(annualEntitlement),
+      premiumMonthly: Boolean(monthlyEntitlement),
+      expiresAt: annualEntitlement?.expirationDate || monthlyEntitlement?.expirationDate,
     };
   } catch (error) {
     console.error('Failed to get entitlements:', error);
-    return { premiumAccess: false };
+    return { premiumAnnual: false, premiumMonthly: false };
   }
 }
 
-export async function purchasePremium(): Promise<boolean> {
+export async function purchasePremium(planType: 'monthly' | 'annual' = 'monthly'): Promise<boolean> {
   if (!Capacitor.isNativePlatform() || !isInitialized) {
     throw new Error('IAP not available on this platform');
   }
@@ -74,15 +77,22 @@ export async function purchasePremium(): Promise<boolean> {
       throw new Error('No subscription packages available');
     }
 
-    // Get the first package (typically monthly subscription)
-    const packageToPurchase = currentOffering.availablePackages[0];
+    // Find the specific package by Product ID
+    const productId = planType === 'annual' ? 'com.VibeTales.Annual' : 'com.VibeTales.Monthly';
+    const packageToPurchase = currentOffering.availablePackages.find(
+      pkg => pkg.identifier === productId
+    );
+    
+    if (!packageToPurchase) {
+      throw new Error(`Package not found for ${planType} subscription (${productId})`);
+    }
     
     const { customerInfo } = await Purchases.purchasePackage({ 
       aPackage: packageToPurchase 
     });
     
     const entitlements = (customerInfo as any).entitlements;
-    return Boolean(entitlements?.active?.premium_access);
+    return Boolean(entitlements?.active?.premium_annual || entitlements?.active?.premium_monthly);
   } catch (error) {
     console.error('Purchase failed:', error);
     throw error;
@@ -97,7 +107,7 @@ export async function restorePurchases(): Promise<boolean> {
   try {
     const { customerInfo } = await Purchases.restorePurchases();
     const entitlements = (customerInfo as any).entitlements;
-    return Boolean(entitlements?.active?.premium_access);
+    return Boolean(entitlements?.active?.premium_annual || entitlements?.active?.premium_monthly);
   } catch (error) {
     console.error('Restore purchases failed:', error);
     throw error;
