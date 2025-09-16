@@ -1,7 +1,5 @@
 import { Capacitor } from '@capacitor/core';
 import { Purchases } from '@revenuecat/purchases-capacitor';
-// Note: RevenueCat Customer Center UI package is already installed
-// import { PurchasesUI } from '@revenuecat/purchases-capacitor-ui';
 
 export async function showCustomerCenter(): Promise<void> {
   if (!Capacitor.isNativePlatform()) {
@@ -15,19 +13,14 @@ export async function showCustomerCenter(): Promise<void> {
   }
 
   try {
-    // TODO: Implement RevenueCat Customer Center UI when available
-    // Currently, the @revenuecat/purchases-capacitor-ui package is installed
-    // but the Customer Center feature might need additional setup
+    // Try to use RevenueCat Customer Center UI (when available)
+    // For now, fallback to platform-specific subscription management
+    const platform = Capacitor.getPlatform();
     
-    // For now, we'll use a fallback approach
-    const customerInfo = await Purchases.getCustomerInfo();
-    console.log('Customer info retrieved for management:', customerInfo);
-    
-    // You can add deep linking to iOS/Android subscription management here
-    if (Capacitor.getPlatform() === 'ios') {
+    if (platform === 'ios') {
       // Deep link to iOS subscription management
       window.open('https://apps.apple.com/account/subscriptions', '_blank');
-    } else if (Capacitor.getPlatform() === 'android') {
+    } else if (platform === 'android') {
       // Deep link to Google Play subscription management
       window.open('https://play.google.com/store/account/subscriptions', '_blank');
     }

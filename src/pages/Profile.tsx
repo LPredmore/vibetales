@@ -162,6 +162,16 @@ const Profile = () => {
   const handleManageSubscription = async () => {
     try {
       setPortalLoading(true);
+      
+      // Try RevenueCat Customer Center first (for native platforms)
+      const { Capacitor } = await import('@capacitor/core');
+      if (Capacitor.isNativePlatform()) {
+        const { showCustomerCenter } = await import('@/services/customerCenterService');
+        await showCustomerCenter();
+        return;
+      }
+
+      // Fallback to Stripe customer portal for web
       const { data: session } = await supabase.auth.getSession();
       
       if (!session.session) {

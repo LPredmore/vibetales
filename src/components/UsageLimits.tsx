@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Clock, Crown, Zap } from "lucide-react";
+import { Clock, Crown, Infinity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
-import { getPaymentPlatform, purchasePremium } from "@/services/paymentService";
+import { SubscriptionPlans } from "@/components/SubscriptionPlans";
+import { ManageSubscription } from "@/components/ManageSubscription";
+import { getPaymentPlatform } from "@/services/paymentService";
 
 interface UsageLimitsProps {
   onRefreshLimits?: (refreshFunction: () => Promise<void>) => void;
@@ -88,27 +87,8 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   };
 
   const handleUpgrade = async () => {
-    if (!user) {
-      toast.error("Please log in to upgrade");
-      return;
-    }
-
-    const platform = getPaymentPlatform();
-    
-    try {
-      if (platform.supportsIAP) {
-        const success = await purchasePremium();
-        if (success) {
-          toast.success("Successfully upgraded to Premium!");
-          await fetchUserLimits();
-        }
-      } else {
-        window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank');
-      }
-    } catch (error) {
-      console.error('Purchase failed:', error);
-      toast.error("Purchase failed. Please try again.");
-    }
+    await checkPremiumStatus();
+    await fetchUserLimits();
   };
 
   // Show loading until both limits and premium status are loaded
@@ -122,13 +102,40 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     );
   }
 
-  if (hasPremium) {
-    return null; // Don't show anything for premium users
-  }
-
   const dailyUsed = limits?.daily_stories_used || 0;
   const dailyLimit = 1;
   const platform = getPaymentPlatform();
+
+  // Show premium status for premium users
+  if (hasPremium) {
+    return (
+      <Card className="clay-card border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2">
+            <Crown className="h-5 w-5 text-primary" />
+            <span>Premium Active</span>
+          </CardTitle>
+          <CardDescription>
+            You have unlimited story generation and premium features.
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span>Stories used today</span>
+              <div className="flex items-center gap-1">
+                <span>{dailyUsed}</span>
+                <Infinity className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+            <Progress value={0} className="h-2 bg-primary/20" />
+            <ManageSubscription className="w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="clay-card">
@@ -143,7 +150,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
       </CardHeader>
       
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="flex justify-between text-sm">
             <span>Stories used today</span>
             <span>{dailyUsed} / {dailyLimit}</span>
@@ -152,16 +159,11 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
             value={(dailyUsed / dailyLimit) * 100} 
             className="h-2"
           />
-          <Button
-            onClick={handleUpgrade}
-            className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
-          >
-            <Crown className="mr-2 h-4 w-4" />
-            <span className="text-center">
-              {platform.supportsIAP ? "Upgrade via App Store" : "Upgrade to Premium for"}<br />
-              {platform.supportsIAP ? "Premium Access" : "Unlimited Stories"}
-            </span>
-          </Button>
+          <SubscriptionPlans 
+            onUpgrade={handleUpgrade}
+            showRestore={platform.supportsIAP}
+            onRestore={handleUpgrade}
+          />
         </div>
       </CardContent>
     </Card>
