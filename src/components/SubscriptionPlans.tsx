@@ -24,14 +24,21 @@ export const SubscriptionPlans = ({
   const handleUpgrade = async () => {
     setIsProcessing(true);
     try {
+      console.log('🚀 Starting upgrade process for plan:', selectedPlan);
       const success = await purchasePremium(selectedPlan);
+      
       if (success) {
-        toast.success("Successfully upgraded to Premium!");
+        toast.success("Payment window opened! Complete your purchase in the new tab.");
+        console.log('✅ Payment flow initiated successfully');
         onUpgrade?.();
+      } else {
+        toast.error("Unable to open payment page. Please try again.");
+        console.log('❌ Payment flow failed to initiate');
       }
     } catch (error) {
-      console.error('Purchase failed:', error);
-      toast.error("Purchase failed. Please try again.");
+      console.error('💥 Purchase failed:', error);
+      const errorMessage = error instanceof Error ? error.message : "Purchase failed. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }

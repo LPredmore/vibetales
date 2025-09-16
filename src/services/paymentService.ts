@@ -33,19 +33,41 @@ export async function initializePayments(userId: string): Promise<void> {
 }
 
 export async function purchasePremium(planType: 'monthly' | 'annual' = 'monthly'): Promise<boolean> {
-  const { supportsIAP, supportsStripe } = getPaymentPlatform();
+  const platform = getPaymentPlatform();
+  const { supportsIAP, supportsStripe, isNative } = platform;
+  
+  console.log('🔄 Payment flow started:', { planType, platform });
   
   if (supportsIAP) {
+    console.log('📱 Using IAP for native platform');
     return await iapPurchase(planType);
   } else if (supportsStripe) {
-    // Open appropriate Stripe payment link for web based on plan type
-    const stripeLink = planType === 'annual' 
-      ? 'https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01' // Update with actual annual link if different
-      : 'https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01'; // Monthly link
-    window.open(stripeLink, '_blank');
-    return false; // We can't know if payment succeeded immediately
+    console.log('💳 Using Stripe for web platform');
+    
+    // Use the provided Stripe link for both monthly and annual for now
+    const stripeLink = 'https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01';
+    
+    console.log('🔗 Opening Stripe link:', stripeLink);
+    
+    try {
+      // Open link immediately to avoid popup blockers
+      const newWindow = window.open(stripeLink, '_blank', 'noopener,noreferrer');
+      
+      if (!newWindow) {
+        console.error('❌ Popup blocked or failed to open');
+        throw new Error('Payment window blocked. Please allow popups and try again.');
+      }
+      
+      console.log('✅ Stripe payment window opened successfully');
+      return true; // Return true to indicate the payment window opened
+    } catch (error) {
+      console.error('❌ Failed to open Stripe payment:', error);
+      throw new Error('Failed to open payment page. Please try again or allow popups in your browser.');
+    }
   } else {
-    throw new Error('No payment method available for this platform');
+    const errorMsg = `No payment method available for platform: ${platform.platform}`;
+    console.error('❌', errorMsg);
+    throw new Error(errorMsg);
   }
 }
 
