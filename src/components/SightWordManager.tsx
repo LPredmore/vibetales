@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { refreshEntitlements } from "@/services/revenuecat";
+import { purchasePremium } from "@/services/paymentService";
 import { useAuth } from "@/contexts/AuthContext";
 import { SightWord } from "@/types/sightWords";
 import { WordGrid } from "./sight-words/WordGrid";
@@ -26,14 +28,8 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
   useEffect(() => {
     const checkSubscription = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('check-subscription');
-        if (error) {
-          console.error('Subscription check error:', error);
-          // Don't show error toast for subscription checks - just default to unsubscribed
-          setIsSubscribed(false);
-          return;
-        }
-        setIsSubscribed(data?.subscribed || false);
+        const entitlements = await refreshEntitlements();
+        setIsSubscribed(entitlements.active);
       } catch (err) {
         console.error('Error checking subscription:', err);
         // Silently handle subscription check errors and default to unsubscribed
@@ -51,17 +47,19 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
   const handleCheckout = async () => {
     try {
       setIsCheckingOut(true);
-      const { data, error } = await supabase.functions.invoke('create-checkout');
-      if (error) throw error;
+      await purchasePremium('monthly');
       
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL received');
+      // Refresh subscription status after purchase
+      const entitlements = await refreshEntitlements();
+      setIsSubscribed(entitlements.active);
+      
+      if (entitlements.active) {
+        toast.success("Welcome to Premium! You now have unlimited sight words.");
       }
     } catch (err) {
-      console.error('Error creating checkout session:', err);
-      toast.error("Failed to start checkout process");
+      console.error('Error during premium upgrade:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upgrade to premium';
+      toast.error(errorMessage);
     } finally {
       setIsCheckingOut(false);
     }

@@ -77,7 +77,7 @@ const Index = () => {
     loadWords();
   }, [user]);
 
-  // Handle Stripe payment completion
+  // Handle payment completion (no longer using Stripe URLs)
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
@@ -86,28 +86,21 @@ const Index = () => {
     if (success === 'true') {
       toast.success("Payment successful! Your premium subscription is now active.");
       
-      // Refresh subscription status
-      if (user) {
-        supabase.functions.invoke('check-subscription', {
-          body: { userId: user.id }
-        }).then(({ data, error }) => {
-          if (!error && data) {
-            toast.success("Premium features are now available!");
-          }
-        }).catch(() => {
-          toast.info("Your payment was successful. Premium features may take a moment to activate.");
-        });
+      // Clean up URL parameters
+      if (window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
-      
-      // Clean up URL parameters
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (canceled === 'true') {
-      toast.error("Payment was canceled. You can try again anytime.");
-      
-      // Clean up URL parameters
-      window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [user]);
+
+    if (canceled === 'true') {
+      toast.info("Payment was canceled. You can try again anytime.");
+      
+      // Clean up URL parameters
+      if (window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, []);
 
   const handleSubmit = async (data: StoryFormData) => {
     // Check if words are still loading

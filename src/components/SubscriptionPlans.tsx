@@ -4,7 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Check, Crown } from "lucide-react";
 import { SubscriptionPricing } from "./SubscriptionPricing";
 import { LegalFooter } from "./LegalFooter";
-import { purchasePremium } from "@/services/paymentService";
+import { purchasePremium, handleRestorePurchases } from "@/services/paymentService";
+import { refreshEntitlements } from "@/services/revenuecat";
 import { toast } from "sonner";
 
 interface SubscriptionPlansProps {
@@ -28,12 +29,22 @@ export const SubscriptionPlans = ({
       const success = await purchasePremium(selectedPlan);
       
       if (success) {
-        toast.success("Payment window opened! Complete your purchase in the new tab.");
-        console.log('✅ Payment flow initiated successfully');
+        // Refresh entitlements after purchase
+        try {
+          const entitlements = await refreshEntitlements();
+          if (entitlements.active) {
+            toast.success("Welcome to Premium! Your subscription is now active.");
+          } else {
+            toast.success("Purchase completed! It may take a moment to activate.");
+          }
+        } catch {
+          toast.success("Purchase completed successfully!");
+        }
+        console.log('✅ Payment completed successfully');
         onUpgrade?.();
       } else {
-        toast.error("Unable to open payment page. Please try again.");
-        console.log('❌ Payment flow failed to initiate');
+        toast.error("Purchase was not completed. Please try again.");
+        console.log('❌ Payment was not completed');
       }
     } catch (error) {
       console.error('💥 Purchase failed:', error);
@@ -108,7 +119,15 @@ export const SubscriptionPlans = ({
 
         {showRestore && (
           <Button
-            onClick={onRestore}
+            onClick={async () => {
+              try {
+                await handleRestorePurchases();
+                onRestore?.();
+              } catch (error) {
+                console.error('Restore failed:', error);
+                toast.error('Failed to restore purchases. Please try again.');
+              }
+            }}
             variant="ghost"
             size="sm"
             className="w-full text-muted-foreground"

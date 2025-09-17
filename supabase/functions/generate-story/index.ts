@@ -114,32 +114,47 @@ function getCSTDate(): string {
   return cstTime.toISOString().split('T')[0];
 }
 
-// Check if user has premium subscription
-async function checkSubscription(userId: string): Promise<boolean> {
-  const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-  if (!stripeKey) {
-    console.log('No Stripe key found, assuming non-premium');
-    return false;
-  }
-
+// Check if user has premium subscription via profiles table
+async function checkSubscription(supabase: any, userId: string): Promise<boolean> {
   try {
-    const response = await fetch('https://hyiyuhjabjnksjbqfwmn.supabase.co/functions/v1/check-subscription', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-      },
-      body: JSON.stringify({ userId })
-    });
+    // Check RevenueCat/IAP subscription status from profiles
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('premium_active, premium_expires_at, premium_source')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    if (!response.ok) {
-      console.log('Subscription check failed, assuming non-premium');
+    if (error) {
+      console.error('Error checking subscription from profiles:', error);
       return false;
     }
 
-    const data = await response.json();
-    console.log('Subscription check response:', data);
-    return data.subscribed || false;
+    if (!profile) {
+      console.log('No profile found for user, assuming non-premium');
+      return false;
+    }
+
+    // Check if premium is active and not expired
+    if (profile.premium_active) {
+      if (profile.premium_expires_at) {
+        const expiresAt = new Date(profile.premium_expires_at);
+        const now = new Date();
+        const isActive = expiresAt > now;
+        console.log('Premium subscription check:', {
+          source: profile.premium_source,
+          expires: profile.premium_expires_at,
+          isActive
+        });
+        return isActive;
+      } else {
+        // No expiry date means active indefinitely
+        console.log('Premium subscription active (no expiry)');
+        return true;
+      }
+    }
+
+    console.log('No active premium subscription found');
+    return false;
   } catch (error) {
     console.error('Error checking subscription:', error);
     return false;
@@ -163,7 +178,7 @@ async function checkUserLimits(supabase: any, userId: string, storyParams: Story
 
 
   // Check if user has premium subscription
-  const hasPremium = await checkSubscription(userId);
+  const hasPremium = await checkSubscription(supabase, user.id);
   
   if (hasPremium) {
     console.log('User has premium subscription - unlimited regular stories');

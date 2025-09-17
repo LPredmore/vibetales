@@ -4,6 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import { Clock, Crown, Infinity } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { refreshEntitlements } from "@/services/revenuecat";
+import { handleRestorePurchases } from "@/services/paymentService";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
 import { ManageSubscription } from "@/components/ManageSubscription";
 import { getPaymentPlatform } from "@/services/paymentService";
@@ -72,15 +74,11 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
 
   const checkPremiumStatus = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
-        body: { userId: user?.id }
-      });
-
-      if (data && !error) {
-        setHasPremium(data.subscribed || false);
-      }
+      const entitlements = await refreshEntitlements();
+      setHasPremium(entitlements.active);
     } catch (error) {
       console.error('Error checking premium status:', error);
+      setHasPremium(false);
     } finally {
       setPremiumLoading(false);
     }
@@ -162,7 +160,16 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
           <SubscriptionPlans 
             onUpgrade={handleUpgrade}
             showRestore={platform.supportsIAP}
-            onRestore={handleUpgrade}
+            onRestore={async () => {
+              try {
+                const success = await handleRestorePurchases();
+                if (success) {
+                  await handleUpgrade();
+                }
+              } catch (error) {
+                console.error('Restore failed:', error);
+              }
+            }}
           />
         </div>
       </CardContent>

@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core';
-import { initializeIAP, purchasePremium as iapPurchase, restorePurchases, isPlatformSupported } from './iapService';
+import { purchasePackage, restorePurchases as revenueCatRestore, isRevenueCatAvailable } from './revenuecat';
 
 export interface PaymentPlatform {
   isNative: boolean;
@@ -15,7 +15,7 @@ export function getPaymentPlatform(): PaymentPlatform {
   return {
     isNative,
     platform,
-    supportsIAP: isNative && isPlatformSupported(),
+    supportsIAP: isNative && isRevenueCatAvailable(),
     supportsStripe: platform === 'web',
   };
 }
@@ -25,47 +25,35 @@ export async function initializePayments(userId: string): Promise<void> {
   
   if (supportsIAP) {
     try {
-      await initializeIAP(userId);
+      console.log('RevenueCat is available for user:', userId);
+      // RevenueCat initialization is handled by the native bridge
     } catch (error) {
-      console.error('Failed to initialize IAP:', error);
+      console.error('Failed to initialize RevenueCat:', error);
     }
   }
 }
 
 export async function purchasePremium(planType: 'monthly' | 'annual' = 'monthly'): Promise<boolean> {
   const platform = getPaymentPlatform();
-  const { supportsIAP, supportsStripe, isNative } = platform;
+  const { supportsIAP, isNative } = platform;
   
   console.log('🔄 Payment flow started:', { planType, platform });
   
   if (supportsIAP) {
-    console.log('📱 Using IAP for native platform');
-    return await iapPurchase(planType);
-  } else if (supportsStripe) {
-    console.log('💳 Using Stripe for web platform');
+    console.log('📱 Using RevenueCat for native platform');
     
-    // Use the provided Stripe link for both monthly and annual for now
-    const stripeLink = 'https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01';
-    
-    console.log('🔗 Opening Stripe link:', stripeLink);
+    // Map plan types to RevenueCat package identifiers
+    const packageId = planType === 'annual' ? 'com.VibeTales.Annual' : 'com.VibeTales.Monthly';
     
     try {
-      // Open link immediately to avoid popup blockers
-      const newWindow = window.open(stripeLink, '_blank', 'noopener,noreferrer');
-      
-      if (!newWindow) {
-        console.error('❌ Popup blocked or failed to open');
-        throw new Error('Payment window blocked. Please allow popups and try again.');
-      }
-      
-      console.log('✅ Stripe payment window opened successfully');
-      return true; // Return true to indicate the payment window opened
+      return await purchasePackage(packageId);
     } catch (error) {
-      console.error('❌ Failed to open Stripe payment:', error);
-      throw new Error('Failed to open payment page. Please try again or allow popups in your browser.');
+      console.error('❌ RevenueCat purchase failed:', error);
+      throw new Error('Purchase failed. Please try again.');
     }
   } else {
-    const errorMsg = `No payment method available for platform: ${platform.platform}`;
+    // For web platform, show message about mobile app requirement
+    const errorMsg = 'In-app purchases are only available in the mobile app. Please download our app from the App Store or Google Play.';
     console.error('❌', errorMsg);
     throw new Error(errorMsg);
   }
@@ -75,7 +63,7 @@ export async function handleRestorePurchases(): Promise<boolean> {
   const { supportsIAP } = getPaymentPlatform();
   
   if (supportsIAP) {
-    return await restorePurchases();
+    return await revenueCatRestore();
   }
   
   return false;
