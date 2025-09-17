@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { debugLogger, LogEntry } from '@/utils/debugLogger';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { X, Download, Trash2, RefreshCw } from 'lucide-react';
 
 interface DebugDashboardProps {

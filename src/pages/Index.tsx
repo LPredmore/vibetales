@@ -9,12 +9,12 @@ import { LimitReachedPrompt } from "@/components/LimitReachedPrompt";
 
 import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
-import { generateStory } from "@/services/openrouter";
+import { generateStory } from "@/services/storyGeneration";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { UserMenu } from "@/components/UserMenu";
 import { AIContentDisclaimer } from "@/components/AIContentDisclaimer";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";

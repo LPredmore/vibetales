@@ -41,7 +41,7 @@ export const generateStory = async (
   
   // Use the Supabase edge function
   console.log("=== Using Supabase Edge Function with OpenAI ===");
-  const { supabase } = await import("@/integrations/supabase/client");
+  const { supabase } = await import("@/lib/supabase");
   
   // Check auth status before making the request
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
