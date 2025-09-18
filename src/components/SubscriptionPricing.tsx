@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Purchases } from "@revenuecat/purchases-capacitor";
 import { Capacitor } from "@capacitor/core";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RevenueCatProduct } from "@/types/revenuecat";
 
 interface PricingInfo {
   monthly?: {
@@ -64,18 +65,18 @@ export const SubscriptionPricing = ({
         const newPricing: PricingInfo = {};
 
         if (monthlyPackage) {
-          const product = (monthlyPackage as any).storeProduct || monthlyPackage.product;
+          const product = (monthlyPackage as unknown as { storeProduct?: { priceString: string; currencyCode: string }; product: { priceString: string; currencyCode: string } }).storeProduct || monthlyPackage.product;
           newPricing.monthly = {
-            price: product?.priceString || product?.price_string || "$4.99",
-            currency: product?.currencyCode || product?.currency_code || "USD",
+            price: product?.priceString || "$4.99",
+            currency: product?.currencyCode || "USD",
           };
         }
 
         if (annualPackage) {
-          const product = (annualPackage as any).storeProduct || annualPackage.product;
+          const product = (annualPackage as unknown as { storeProduct?: { priceString: string; currencyCode: string }; product: { priceString: string; currencyCode: string } }).storeProduct || annualPackage.product;
           newPricing.annual = {
-            price: product?.priceString || product?.price_string || "$49.99",
-            currency: product?.currencyCode || product?.currency_code || "USD",
+            price: product?.priceString || "$49.99",
+            currency: product?.currencyCode || "USD",
           };
           
           // Calculate savings if both prices available
@@ -127,7 +128,7 @@ export const SubscriptionPricing = ({
               {pricing.annual.price}/year
             </div>
             <div className="text-xs text-muted-foreground">
-              Annual billing • {(pricing.annual as any)?.savings || 'Best value'}
+              Annual billing • {(pricing.annual as { savings?: string })?.savings || 'Best value'}
             </div>
           </div>
         )}
@@ -148,7 +149,7 @@ export const SubscriptionPricing = ({
       </div>
       <div className="text-xs text-muted-foreground">
         {planType === 'annual' ? 'Annual billing' : 'Monthly billing'}
-        {(selectedPricing as any)?.savings && ` • ${(selectedPricing as any).savings}`}
+        {(selectedPricing as { savings?: string })?.savings && ` • ${(selectedPricing as { savings?: string }).savings}`}
       </div>
       {selectedPricing.trialPeriod && (
         <div className="text-xs text-muted-foreground mt-1">

@@ -1,7 +1,7 @@
 interface BackgroundSyncTask {
   id: string;
   type: 'update-check' | 'sync-preferences' | 'prefetch-content' | 'cleanup-cache';
-  data?: any;
+  data?: unknown;
   timestamp: number;
   retries: number;
 }
@@ -54,7 +54,7 @@ class BackgroundSyncService {
     return false;
   }
 
-  queueTask(type: BackgroundSyncTask['type'], data?: any): void {
+  queueTask(type: BackgroundSyncTask['type'], data?: unknown): void {
     const task: BackgroundSyncTask = {
       id: `${type}-${Date.now()}`,
       type,

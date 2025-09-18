@@ -49,7 +49,7 @@ export const useBackgroundSync = () => {
     }
   }, []);
 
-  const queueTask = useCallback((type: 'update-check' | 'sync-preferences' | 'prefetch-content' | 'cleanup-cache', data?: any) => {
+  queueTask(type: 'update-check' | 'sync-preferences' | 'prefetch-content' | 'cleanup-cache', data?: unknown) => {
     backgroundSync.queueTask(type, data);
   }, []);
 

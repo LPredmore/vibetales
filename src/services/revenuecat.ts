@@ -2,11 +2,49 @@ import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/lib/supabase';
 
 // RevenueCat bridge interface (assumes wrapper injects window.revenueCat)
+interface RevenueCatOffering {
+  identifier: string;
+  serverDescription: string;
+  availablePackages: RevenueCatPackage[];
+}
+
+interface RevenueCatPackage {
+  identifier: string;
+  product: RevenueCatProduct;
+  storeProduct?: RevenueCatProduct;
+}
+
+interface RevenueCatProduct {
+  identifier: string;
+  price: string;
+  priceString: string;
+  currency_code?: string;
+  currencyCode?: string;
+  price_string?: string;
+}
+
+interface RevenueCatPurchaseResult {
+  customerInfo: RevenueCatCustomerInfo;
+  productIdentifier: string;
+}
+
+interface RevenueCatCustomerInfo {
+  entitlements: Record<string, RevenueCatEntitlement>;
+  activeSubscriptions: string[];
+  active?: boolean; // Add active property for compatibility
+}
+
+interface RevenueCatEntitlement {
+  identifier: string;
+  isActive: boolean;
+  productIdentifier: string;
+}
+
 interface RevenueCatBridge {
-  getOfferings: () => Promise<any>;
-  purchasePackage: (packageId: string) => Promise<any>;
-  restorePurchases: () => Promise<any>;
-  getCustomerInfo: () => Promise<any>;
+  getOfferings: () => Promise<{ current: RevenueCatOffering }>;
+  purchasePackage: (packageId: string) => Promise<RevenueCatPurchaseResult>;
+  restorePurchases: () => Promise<RevenueCatCustomerInfo>;
+  getCustomerInfo: () => Promise<RevenueCatCustomerInfo>;
 }
 
 // Declare window.revenueCat for native platforms
@@ -30,7 +68,7 @@ export interface RevenueCatOfferings {
 }
 
 export interface RevenueCatEntitlements {
-  entitlements: Record<string, any>;
+  entitlements: Record<string, RevenueCatEntitlement>;
   active: boolean;
 }
 
@@ -133,11 +171,15 @@ export async function refreshEntitlements(): Promise<RevenueCatEntitlements> {
 }
 
 // Get current customer info from RevenueCat
-export async function getCustomerInfo(): Promise<any> {
+export async function getCustomerInfo(): Promise<RevenueCatCustomerInfo> {
   if (!isNativePlatform()) {
     // For web, use entitlements refresh instead
     const entitlements = await refreshEntitlements();
-    return { entitlements: entitlements.entitlements, active: entitlements.active };
+    return { 
+      entitlements: entitlements.entitlements, 
+      activeSubscriptions: [], 
+      active: entitlements.active 
+    } as RevenueCatCustomerInfo;
   }
 
   if (!window.revenueCat) {

@@ -3,7 +3,7 @@ interface LogEntry {
   category: 'AUTH' | 'SESSION' | 'STORAGE' | 'VERSION' | 'TWA' | 'AUTOFILL' | 'LIFECYCLE' | 'NETWORK' | 'PERFORMANCE' | 'ERROR' | 'ANDROID' | 'CACHE' | 'ROUTING' | 'SYSTEM';
   level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' | 'CRITICAL';
   message: string;
-  data?: any;
+  data?: unknown;
   stackTrace?: string;
   userAgent?: string;
   url?: string;
@@ -105,7 +105,7 @@ class DebugLogger {
     return null;
   }
 
-  log(category: LogEntry['category'], level: LogEntry['level'], message: string, data?: any) {
+  log(category: LogEntry['category'], level: LogEntry['level'], message: string, data?: unknown) {
     if (!this.initialized) return;
     
     // Initialize monitoring only when first log is made

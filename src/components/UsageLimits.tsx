@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Clock, Crown, Infinity } from "lucide-react";
@@ -44,7 +44,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     }
   }, [onRefreshLimits]);
 
-  const fetchUserLimits = async () => {
+  const fetchUserLimits = useCallback(async () => {
     if (!user?.id) {
       setLimitsLoading(false);
       return;
@@ -70,7 +70,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     } finally {
       setLimitsLoading(false);
     }
-  };
+  }, [user?.id]);
 
   const checkPremiumStatus = async () => {
     try {

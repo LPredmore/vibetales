@@ -19,7 +19,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
       isLoading,
       currentPath: window.location.pathname
     });
-  }, []);
+  }, [user, session, isLoading]);
 
   useEffect(() => {
     debugLogger.logAuth('INFO', 'AuthGuard auth state changed', {
@@ -40,8 +40,8 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
       navigate('/login');
     };
 
-    window.addEventListener('auth-error' as any, handleAuthError);
-    return () => window.removeEventListener('auth-error' as any, handleAuthError);
+    window.addEventListener('auth-error', handleAuthError);
+    return () => window.removeEventListener('auth-error', handleAuthError);
   }, [navigate]);
 
   useEffect(() => {

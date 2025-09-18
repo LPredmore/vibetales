@@ -61,9 +61,9 @@ export const ReportDialog = ({ open, onOpenChange, storyTitle, storyContent }: R
       onOpenChange(false);
       setReportReason("");
       setReportDetails("");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting report:", error);
-      toast.error(error.message || "Failed to submit report");
+      toast.error((error as Error)?.message || "Failed to submit report");
     } finally {
       setIsSubmitting(false);
     }

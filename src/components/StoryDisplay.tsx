@@ -33,9 +33,9 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
       
       // Reset the saved state after 3 seconds
       setTimeout(() => setIsSaved(false), 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving story:", error);
-      if (error.message?.includes("duplicate key")) {
+      if ((error as Error)?.message?.includes("duplicate key")) {
         toast.error("This story is already in your favorites");
       } else {
         toast.error("Failed to save story to favorites");
