@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { isPWA, isTWA } from '@/utils/twaDetection';
 import { debugLogger } from '@/utils/debugLogger';
 import { initializePayments } from '@/services/paymentService';
+import { AuthError } from '@/types/auth';
 
 interface AuthContextType {
   user: User | null;
