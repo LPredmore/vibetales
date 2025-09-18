@@ -27,22 +27,6 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   const [limitsLoading, setLimitsLoading] = useState(true);
   const [premiumLoading, setPremiumLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchUserLimits();
-      checkPremiumStatus();
-    } else {
-      setLimitsLoading(false);
-      setPremiumLoading(false);
-    }
-  }, [user]);
-
-  // Expose refresh function to parent component
-  useEffect(() => {
-    if (onRefreshLimits) {
-      onRefreshLimits(fetchUserLimits);
-    }
-  }, [onRefreshLimits]);
 
   const fetchUserLimits = useCallback(async () => {
     if (!user?.id) {
@@ -71,6 +55,23 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
       setLimitsLoading(false);
     }
   }, [user?.id]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserLimits();
+      checkPremiumStatus();
+    } else {
+      setLimitsLoading(false);
+      setPremiumLoading(false);
+    }
+  }, [user, fetchUserLimits]);
+
+  // Expose refresh function to parent component
+  useEffect(() => {
+    if (onRefreshLimits) {
+      onRefreshLimits(fetchUserLimits);
+    }
+  }, [onRefreshLimits, fetchUserLimits]);
 
   const checkPremiumStatus = async () => {
     try {

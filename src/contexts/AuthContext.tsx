@@ -226,9 +226,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
       toast.success('Registration successful! Please check your email to confirm your account.');
-    } catch (error: any) {
-      toast.error(error.message || 'Error during registration');
-      throw error;
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+      toast.error(authError.message || 'Error during registration');
+      throw authError;
     }
   };
 
@@ -263,9 +264,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       toast.success('Successfully logged out');
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Even if server logout fails, clear local state
-      debugLogger.logAuth('ERROR', 'Logout error', error);
+      const authError = error as AuthError;
+      debugLogger.logAuth('ERROR', 'Logout error', authError);
       setUser(null);
       setSession(null);
       toast.success('Successfully logged out');

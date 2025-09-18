@@ -51,11 +51,14 @@ const Index = () => {
         if (error) throw error;
         
         if (data && data.words_objects) {
-          // Convert JSONB objects to SightWord objects
-          const sightWords: SightWord[] = data.words_objects.map((obj: any) => ({
-            word: obj.word,
-            active: obj.active
-          }));
+          // Convert JSONB objects to SightWord objects  
+          const sightWords: SightWord[] = data.words_objects.map((obj: unknown) => {
+            const sightWordObj = obj as SightWord;
+            return {
+              word: sightWordObj.word,
+              active: sightWordObj.active
+            };
+          });
           setWords(sightWords);
         } else {
           // Create new record if none exists
