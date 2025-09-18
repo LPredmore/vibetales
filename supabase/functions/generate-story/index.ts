@@ -178,7 +178,7 @@ async function checkUserLimits(supabase: any, userId: string, storyParams: Story
 
 
   // Check if user has premium subscription
-  const hasPremium = await checkSubscription(supabase, user.id);
+  const hasPremium = await checkSubscription(supabase, userId);
   
   if (hasPremium) {
     console.log('User has premium subscription - unlimited regular stories');
