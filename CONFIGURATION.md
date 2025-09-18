@@ -24,8 +24,12 @@ Configure these secrets in your Supabase Dashboard → Settings → Edge Functio
 
 - `OPENAI_API_KEY` or `OPENROUTER_API_KEY` - For AI story generation
 - `REVENUECAT_REST_API_KEY` - For subscription management
+- `REVENUECAT_IOS_API_KEY` - For iOS-specific RevenueCat operations
+- `SUPABASE_SERVICE_ROLE_KEY` - **CRITICAL**: Server-side only, never expose in client code
 - `SUPABASE_URL` - Your Supabase project URL
 - `SUPABASE_ANON_KEY` - Your Supabase anon key
+
+**IMPORTANT**: After rotating any keys in your Supabase dashboard, you must redeploy your Edge Functions for the changes to take effect.
 
 ### RevenueCat Configuration (Mobile App)
 When building the mobile app, ensure:

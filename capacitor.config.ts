@@ -7,10 +7,10 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     url: 'https://vibetales.bestselfs.com',
-    cleartext: true
+    cleartext: false
   },
   android: {
-    allowMixedContent: true,
+    allowMixedContent: false,
     webContentsDebuggingEnabled: false,
     backgroundColor: '#F3E8FF',
     // Enhanced Android WebView settings for better compatibility
@@ -21,7 +21,7 @@ const config: CapacitorConfig = {
     overrideUserAgent: undefined,
     handleColor: '#8B5CF6',
     // WebView settings
-    mixedContentMode: 'compatibility',
+    mixedContentMode: 'never',
     // Performance optimizations
     hardwareAccelerated: true
   },
