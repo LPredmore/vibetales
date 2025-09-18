@@ -1,11 +1,19 @@
 import { supabase } from "@/lib/supabase";
 
+export type ReportReasonType = 
+  | "inappropriate_content" 
+  | "factual_errors" 
+  | "harmful_content" 
+  | "spam_content" 
+  | "copyright_violation" 
+  | "other";
+
 export interface ContentReport {
   id: string;
   user_id: string;
   story_title: string;
   story_content: string;
-  report_reason: string;
+  report_reason: ReportReasonType;
   report_details?: string;
   status: string;
   created_at: string;
@@ -22,7 +30,7 @@ export interface ReportReason {
 export const submitContentReport = async (
   storyTitle: string,
   storyContent: string,
-  reportReason: string,
+  reportReason: ReportReasonType,
   reportDetails?: string
 ): Promise<void> => {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -37,7 +45,7 @@ export const submitContentReport = async (
       user_id: user.id,
       story_title: storyTitle,
       story_content: storyContent,
-      report_reason: reportReason as any,
+      report_reason: reportReason,
       report_details: reportDetails,
       status: 'pending'
     });
