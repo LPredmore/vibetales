@@ -11,12 +11,11 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: true,
-    webContentsDebuggingEnabled: true,
+    webContentsDebuggingEnabled: false,
     backgroundColor: '#F3E8FF',
     // Enhanced Android WebView settings for better compatibility
     webViewRenderMode: 'hardware',
     useLegacyBridge: false,
-    loggingBehavior: 'debug',
     // Additional Android-specific settings
     appendUserAgent: 'VibeTales/1.0',
     overrideUserAgent: undefined,

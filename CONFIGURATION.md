@@ -4,7 +4,8 @@
 **IMPORTANT**: The previously committed `.env` file contained real credentials that have been exposed. You should:
 1. Rotate the Supabase anon key in your dashboard
 2. Rotate any AI provider API keys (OpenAI/OpenRouter) 
-3. Never commit `.env` files to version control
+3. Never commit `.env` files to version control (add `.env` to `.gitignore`)
+4. **CRITICAL**: Rotate the Supabase service role key in your dashboard and ensure it's ONLY stored in Supabase Edge Function secrets, never in client code
 
 ## Required Configuration
 

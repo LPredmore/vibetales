@@ -72,8 +72,8 @@ export default defineConfig(({ mode }) => ({
       ],
       manifest: {
         id: "/",
-        name: "StoryBridge - Story Generator",
-        short_name: "StoryBridge",
+        name: "VibeTales - Story Generator",
+        short_name: "VibeTales",
         description: "Create magical stories for young readers with sight words practice",
         lang: "en",
         dir: "ltr",
