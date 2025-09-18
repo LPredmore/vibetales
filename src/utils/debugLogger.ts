@@ -9,6 +9,8 @@ interface LogEntry {
   url?: string;
 }
 
+type AndroidBridge = { log?: (message: string, payload: string) => void };
+
 class DebugLogger {
   private logs: LogEntry[] = [];
   private maxLogs = 200; // Reduced from 1000
@@ -189,27 +191,28 @@ class DebugLogger {
   }
 
   // Specific logging methods for common scenarios
-  logAuth(level: LogEntry['level'], message: string, data?: any) {
+  logAuth(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('AUTH', level, message, data);
   }
 
-  logSession(level: LogEntry['level'], message: string, data?: any) {
+  logSession(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('SESSION', level, message, data);
   }
 
-  logStorage(level: LogEntry['level'], message: string, data?: any) {
+  logStorage(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('STORAGE', level, message, data);
   }
 
-  logVersion(level: LogEntry['level'], message: string, data?: any) {
+  logVersion(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('VERSION', level, message, data);
   }
 
-  logTWA(level: LogEntry['level'], message: string, data?: any) {
+  logTWA(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('TWA', level, message, data);
     // Also log to Android logcat if available
-    if ((window as any).android?.log) {
-      (window as any).android.log(`TWA: ${message}`, JSON.stringify(data || {}));
+    const androidBridge = (window as Window & { android?: AndroidBridge }).android;
+    if (androidBridge?.log) {
+      androidBridge.log(`TWA: ${message}`, JSON.stringify(data || {}));
     }
   }
 
@@ -225,11 +228,16 @@ class DebugLogger {
     this.logTWA('INFO', 'TWA Object', 'TWA' in window);
     this.logTWA('INFO', 'Viewport', `${window.innerWidth}x${window.innerHeight}`);
     this.logTWA('INFO', 'Screen', `${screen.width}x${screen.height}`);
-    this.logTWA('INFO', 'Connection', (navigator as any).connection?.effectiveType || 'unknown');
+    this.logTWA('INFO', 'Connection', this.getConnectionType());
     this.checkStorageQuota().then(quota => {
       this.logTWA('INFO', 'Storage Quota', quota);
     });
     this.logTWA('INFO', '=== END DIAGNOSTICS ===');
+  }
+
+  private getConnectionType(): string {
+    const nav = navigator as Navigator & { connection?: { effectiveType?: string } };
+    return nav.connection?.effectiveType || 'unknown';
   }
 
   private async checkStorageQuota() {
@@ -248,35 +256,35 @@ class DebugLogger {
     return 'not supported';
   }
 
-  logAutofill(level: LogEntry['level'], message: string, data?: any) {
+  logAutofill(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('AUTOFILL', level, message, data);
   }
 
-  logLifecycle(level: LogEntry['level'], message: string, data?: any) {
+  logLifecycle(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('LIFECYCLE', level, message, data);
   }
 
-  logNetwork(level: LogEntry['level'], message: string, data?: any) {
+  logNetwork(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('NETWORK', level, message, data);
   }
 
-  logPerformance(level: LogEntry['level'], message: string, data?: any) {
+  logPerformance(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('PERFORMANCE', level, message, data);
   }
 
-  logError(level: LogEntry['level'], message: string, data?: any) {
+  logError(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('ERROR', level, message, data);
   }
 
-  logAndroid(level: LogEntry['level'], message: string, data?: any) {
+  logAndroid(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('ANDROID', level, message, data);
   }
 
-  logCache(level: LogEntry['level'], message: string, data?: any) {
+  logCache(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('CACHE', level, message, data);
   }
 
-  logRouting(level: LogEntry['level'], message: string, data?: any) {
+  logRouting(level: LogEntry['level'], message: string, data?: unknown) {
     this.log('ROUTING', level, message, data);
   }
 
@@ -314,9 +322,10 @@ class DebugLogger {
           });
         }
         return response;
-      } catch (error) {
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
         this.logNetwork('ERROR', `Network error: ${url}`, {
-          error: error.message,
+          error: message,
           url
         });
         throw error;

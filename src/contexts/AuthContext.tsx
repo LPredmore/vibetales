@@ -203,10 +203,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.session.user);
     debugLogger.logAuth('INFO', 'Login completed successfully');
     toast.success('Successfully logged in!');
-  } catch (error: any) {
-    debugLogger.logAuth('ERROR', 'Login process failed', error);
-    toast.error(error.message || 'Error logging in');
-    throw error;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error logging in';
+      debugLogger.logAuth('ERROR', 'Login process failed', error);
+      toast.error(message);
+      throw error;
   } finally {
     setIsLoading(false);
   }

@@ -6,6 +6,20 @@ interface BackgroundSyncTask {
   retries: number;
 }
 
+type PeriodicSyncRegistration = ServiceWorkerRegistration & {
+  periodicSync: { register: (tag: string, options: { minInterval: number }) => Promise<void> };
+};
+
+type SyncRegistration = ServiceWorkerRegistration & { 
+  sync: { register: (tag: string) => Promise<void> } 
+};
+
+const supportsPeriodicSync = (registration: ServiceWorkerRegistration): registration is PeriodicSyncRegistration =>
+  typeof (registration as Partial<PeriodicSyncRegistration>).periodicSync?.register === 'function';
+
+const supportsSync = (registration: ServiceWorkerRegistration): registration is SyncRegistration =>
+  typeof (registration as Partial<SyncRegistration>).sync?.register === 'function';
+
 class BackgroundSyncService {
   private static instance: BackgroundSyncService;
   private tasks: Map<string, BackgroundSyncTask> = new Map();
@@ -24,8 +38,8 @@ class BackgroundSyncService {
         const registration = await navigator.serviceWorker.ready;
         
         // Register periodic background sync if supported
-        if ('periodicSync' in registration) {
-          await (registration as any).periodicSync.register('background-sync', {
+        if (supportsPeriodicSync(registration)) {
+          await registration.periodicSync.register('background-sync', {
             minInterval: 24 * 60 * 60 * 1000, // 24 hours
           });
           console.log('Periodic background sync registered');
@@ -33,13 +47,14 @@ class BackgroundSyncService {
         }
         
         // Fallback to regular background sync
-        if ('sync' in registration) {
-          await (registration as any).sync.register('background-sync');
+        if (supportsSync(registration)) {
+          await registration.sync.register('background-sync');
           console.log('Background sync registered');
           return true;
         }
-      } catch (error) {
-        console.error('Background sync registration failed:', error);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('Background sync registration failed:', message);
         return false;
       }
     }

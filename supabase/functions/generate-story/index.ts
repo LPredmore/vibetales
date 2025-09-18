@@ -1,11 +1,14 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+
+type SupabaseServerClient = SupabaseClient<unknown>;
 
 interface StoryRequest {
   readingLevel: "k" | "1" | "2" | "3" | "4" | "5" | "teen";
@@ -115,7 +118,7 @@ function getCSTDate(): string {
 }
 
 // Check if user has premium subscription via profiles table
-async function checkSubscription(supabase: any, userId: string): Promise<boolean> {
+async function checkSubscription(supabase: SupabaseServerClient, userId: string): Promise<boolean> {
   try {
     // Check RevenueCat/IAP subscription status from profiles
     const { data: profile, error } = await supabase
@@ -162,7 +165,7 @@ async function checkSubscription(supabase: any, userId: string): Promise<boolean
 }
 
 // Check and update user limits
-async function checkUserLimits(supabase: any, userId: string, storyParams: StoryRequest): Promise<{ canGenerate: boolean; error?: string }> {
+async function checkUserLimits(supabase: SupabaseServerClient, userId: string, storyParams: StoryRequest): Promise<{ canGenerate: boolean; error?: string }> {
   const currentDate = getCSTDate();
   
   // Get or create user limits

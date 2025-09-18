@@ -7,8 +7,13 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+interface RevenueCatEntitlement {
+  expires_date: string | null;
+  [key: string]: unknown;
+}
+
 interface EntitlementsResponse {
-  entitlements: Record<string, any>;
+  entitlements: Record<string, RevenueCatEntitlement>;
   active: boolean;
 }
 
@@ -93,7 +98,11 @@ serve(async (req) => {
       });
     }
 
-    const revenueCatData = await revenueCatResponse.json();
+    const revenueCatData = await revenueCatResponse.json() as { 
+      subscriber?: { 
+        entitlements?: Record<string, RevenueCatEntitlement> 
+      } 
+    };
     console.log('RevenueCat response received for user:', user.id);
 
     // Extract entitlements and check if premium is active

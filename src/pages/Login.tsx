@@ -49,9 +49,10 @@ const Login = () => {
       await login(email, password, remember);
       toast.success("Successfully logged in!");
       navigate("/");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to login. Please try again.';
       debugLogger.logAuth('ERROR', 'Login form error', error);
-      toast.error(error.message || "Failed to login. Please try again.");
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

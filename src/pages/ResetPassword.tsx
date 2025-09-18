@@ -26,8 +26,9 @@ const ResetPassword = () => {
         "If an account exists with this email, you will receive password reset instructions."
       );
       navigate("/login");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to send reset password email");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to send reset password email';
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
