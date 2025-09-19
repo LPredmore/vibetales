@@ -1,18 +1,19 @@
 // Types for Supabase Edge Functions
+import type { SupabaseClient as SupabaseClientBase } from '@supabase/supabase-js';
+import type { Database } from '@/integrations/supabase/types';
 
 export interface SupabaseRequest {
   method: string;
   url: string;
   headers: Headers;
-  json: () => Promise<any>;
+  json: () => Promise<unknown>;
 }
 
-export interface SupabaseClient {
-  from: (table: string) => any;
-  rpc: (fn: string, params?: any) => any;
-  auth: {
-    getUser: () => Promise<{ data: { user: any }, error: any }>;
-  };
+export type SupabaseClient = SupabaseClientBase<Database>;
+
+interface RevenueCatEntitlement {
+  expires_date: string | null;
+  [key: string]: unknown;
 }
 
 export interface StoryGenerationRequest {
@@ -40,7 +41,7 @@ export interface RefreshEntitlementsRequest {
 
 export interface RefreshEntitlementsResponse {
   success: boolean;
-  entitlements?: Record<string, any>;
+  entitlements?: Record<string, RevenueCatEntitlement>;
   error?: string;
 }
 

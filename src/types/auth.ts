@@ -1,4 +1,5 @@
 // Authentication related types
+import type { Session, User } from '@supabase/supabase-js';
 
 export interface AuthError {
   message: string;
@@ -24,14 +25,14 @@ export interface ResetPasswordCredentials {
 
 export interface AuthEventData {
   error?: AuthError;
-  session?: any;
-  user?: any;
+  session?: Session | null;
+  user?: User | null;
 }
 
 export interface SupabaseAuthResponse {
   data: {
-    user: any;
-    session: any;
+    user: User | null;
+    session: Session | null;
   };
   error: AuthError | null;
 }
