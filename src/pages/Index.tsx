@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
 import { SightWordManager } from "@/components/SightWordManager";
@@ -31,6 +31,11 @@ const Index = () => {
   const [refreshLimits, setRefreshLimits] = useState<(() => Promise<void>) | null>(null);
   const [wordsLoading, setWordsLoading] = useState(true);
   const { user } = useAuth();
+
+  // Memoized helper for setting refresh limits callback
+  const handleRefreshLimitsCallback = useCallback((refreshFn: () => Promise<void>) => {
+    setRefreshLimits(() => refreshFn);
+  }, []);
 
   // Load sight words immediately when component mounts
   useEffect(() => {
@@ -239,7 +244,7 @@ const Index = () => {
               
               <TabsContent value="story">
                 <div className="space-y-6">
-                  <UsageLimits onRefreshLimits={setRefreshLimits} />
+                  <UsageLimits onRefreshLimits={handleRefreshLimitsCallback} />
                   
                   {showLimitPrompt && (
                     <LimitReachedPrompt onClose={() => setShowLimitPrompt(false)} />
