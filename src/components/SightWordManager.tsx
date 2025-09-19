@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { refreshEntitlements } from "@/services/revenuecat";
 import { purchasePremium } from "@/services/paymentService";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { SightWord } from "@/types/sightWords";
 import { WordGrid } from "./sight-words/WordGrid";
 import { AddWordForm } from "./sight-words/AddWordForm";

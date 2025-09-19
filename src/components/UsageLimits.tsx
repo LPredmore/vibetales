@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Clock, Crown, Infinity } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { refreshEntitlements } from "@/services/revenuecat";
 import { handleRestorePurchases } from "@/services/paymentService";
 import { SubscriptionPlans } from "@/components/SubscriptionPlans";
