@@ -14,6 +14,9 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
+import { refreshEntitlements } from '@/services/revenuecat';
+import { Capacitor } from '@capacitor/core';
+import { showCustomerCenter } from '@/services/customerCenterService';
 
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -112,7 +115,6 @@ const Profile = () => {
     try {
       setSubscriptionLoading(true);
       console.log('🔍 Profile: Checking subscription status via RevenueCat');
-      const { refreshEntitlements } = await import('@/services/revenuecat');
       const entitlements = await refreshEntitlements();
       setSubscriptionStatus({ 
         subscribed: entitlements.active, 
@@ -131,9 +133,7 @@ const Profile = () => {
       setPortalLoading(true);
       
       // Try RevenueCat Customer Center first (for native platforms)
-      const { Capacitor } = await import('@capacitor/core');
       if (Capacitor.isNativePlatform()) {
-        const { showCustomerCenter } = await import('@/services/customerCenterService');
         await showCustomerCenter();
         return;
       }
