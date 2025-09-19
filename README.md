@@ -1,7 +1,7 @@
 
 # Welcome to your Lovable project
 
-## Project info
+## Project information
 
 **URL**: https://lovable.dev/projects/ed2d1878-fc27-429a-8f23-120c2277b4a3
 **Production Host**: https://vibetales.bestselfs.com
