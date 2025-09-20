@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
@@ -6,19 +6,7 @@ import { isPWA, isTWA } from '@/utils/twaDetection';
 import { debugLogger } from '@/utils/debugLogger';
 import { initializePayments } from '@/services/paymentService';
 import { AuthError } from '@/types/auth';
-
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  login: (email: string, password: string, remember: boolean) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  isLoading: boolean;
-  isTWA: boolean;
-  isPWA: boolean;
-}
-
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext, AuthContextType } from '@/contexts/auth-context';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
