@@ -1,5 +1,7 @@
 import { Capacitor } from '@capacitor/core';
+import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor';
 import { purchasePackage, restorePurchases as revenueCatRestore, isRevenueCatAvailable } from './revenuecat';
+import { supabase } from '@/lib/supabase';
 
 export interface PaymentPlatform {
   isNative: boolean;
@@ -21,14 +23,35 @@ export function getPaymentPlatform(): PaymentPlatform {
 }
 
 export async function initializePayments(userId: string): Promise<void> {
-  const { supportsIAP } = getPaymentPlatform();
+  const { supportsIAP, platform } = getPaymentPlatform();
   
   if (supportsIAP) {
     try {
-      console.log('RevenueCat is available for user:', userId);
-      // RevenueCat initialization is handled by the native bridge
+      console.log('Initializing RevenueCat for user:', userId);
+      
+      // Configure RevenueCat with platform-specific API key
+      let apiKey: string;
+      if (platform === 'ios') {
+        // For iOS, we need to get the iOS API key from environment
+        apiKey = 'appl_YOUR_IOS_API_KEY'; // This will be set in the native app
+      } else if (platform === 'android') {
+        // For Android, we need to get the Android API key from environment
+        apiKey = 'goog_YOUR_ANDROID_API_KEY'; // This will be set in the native app
+      } else {
+        throw new Error('Unsupported platform for RevenueCat');
+      }
+      
+      // Initialize RevenueCat
+      await Purchases.setLogLevel({ level: LOG_LEVEL.INFO });
+      await Purchases.configure({
+        apiKey,
+        appUserID: userId,
+      });
+      
+      console.log('✅ RevenueCat initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize RevenueCat:', error);
+      console.error('❌ Failed to initialize RevenueCat:', error);
+      throw error;
     }
   }
 }
@@ -51,9 +74,27 @@ export async function purchasePremium(planType: 'monthly' | 'annual' = 'monthly'
       console.error('❌ RevenueCat purchase failed:', error);
       throw new Error('Purchase failed. Please try again.');
     }
+  } else if (platform.supportsStripe) {
+    // For web platform, use Stripe checkout
+    console.log('🌐 Using Stripe for web platform');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { planType }
+      });
+      
+      if (error) throw error;
+      
+      // Redirect to Stripe checkout
+      window.location.href = data.url;
+      return true;
+    } catch (error) {
+      console.error('❌ Stripe checkout failed:', error);
+      throw new Error('Failed to create checkout session. Please try again.');
+    }
   } else {
-    // For web platform, show message about mobile app requirement
-    const errorMsg = 'In-app purchases are only available in the mobile app. Please download our app from the App Store or Google Play.';
+    // Fallback error
+    const errorMsg = 'Payment not supported on this platform.';
     console.error('❌', errorMsg);
     throw new Error(errorMsg);
   }

@@ -66,8 +66,8 @@ serve(async (req) => {
 
 async function syncCustomerEntitlements(appUserId: string) {
   try {
-    // Get RevenueCat API key (we'll use iOS key for backend API calls)
-    const revenueCatApiKey = Deno.env.get('REVENUECAT_IOS_API_KEY');
+    // Get RevenueCat REST API key for backend API calls
+    const revenueCatApiKey = Deno.env.get('REVENUECAT_REST_API_KEY');
     
     if (!revenueCatApiKey) {
       console.error('RevenueCat API key not found');
@@ -90,11 +90,25 @@ async function syncCustomerEntitlements(appUserId: string) {
     const subscriberData = await response.json();
     const { subscriber } = subscriberData;
     
-    // Extract entitlements
+    // Extract entitlements - check for premium, premium_annual, and premium_monthly
     const entitlements = subscriber.entitlements || {};
-    const premiumEntitlement = entitlements.premium_access;
+    const premiumEntitlement = entitlements.premium || 
+                              entitlements.premium_annual || 
+                              entitlements.premium_monthly;
     
-    const premiumActive = Boolean(premiumEntitlement && premiumEntitlement.expires_date);
+    // Check if premium is active - null expires_date means lifetime, otherwise check if not expired
+    let premiumActive = false;
+    if (premiumEntitlement) {
+      if (premiumEntitlement.expires_date === null) {
+        // Lifetime access
+        premiumActive = true;
+      } else {
+        // Check if not expired
+        const expiresDate = new Date(premiumEntitlement.expires_date);
+        premiumActive = expiresDate > new Date();
+      }
+    }
+    
     const expiresAt = premiumEntitlement?.expires_date 
       ? new Date(premiumEntitlement.expires_date).toISOString() 
       : null;

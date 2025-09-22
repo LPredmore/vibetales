@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { Purchases } from '@revenuecat/purchases-capacitor';
 import { supabase } from '@/lib/supabase';
 
 // RevenueCat bridge interface (assumes wrapper injects window.revenueCat)
@@ -87,14 +88,25 @@ export async function getOfferings(): Promise<RevenueCatOfferings> {
     throw new Error('RevenueCat is only available on native platforms');
   }
 
-  if (!window.revenueCat) {
-    throw new Error('RevenueCat bridge not available');
-  }
-
   try {
-    const offerings = await window.revenueCat.getOfferings();
+    const offerings = await Purchases.getOfferings();
     console.log('RevenueCat offerings received:', offerings);
-    return offerings;
+    
+    // Transform Purchases type to our expected type
+    const transformedOfferings: RevenueCatOfferings = {
+      current: offerings.current ? {
+        availablePackages: offerings.current.availablePackages.map(pkg => ({
+          identifier: pkg.identifier,
+          product: {
+            identifier: pkg.product.identifier,
+            price: pkg.product.price.toString(),
+            priceString: pkg.product.priceString
+          }
+        }))
+      } : undefined
+    };
+    
+    return transformedOfferings;
   } catch (error) {
     console.error('Failed to get RevenueCat offerings:', error);
     throw new Error('Failed to load subscription options');
@@ -107,13 +119,18 @@ export async function purchasePackage(packageId: string): Promise<boolean> {
     throw new Error('RevenueCat purchases are only available on native platforms');
   }
 
-  if (!window.revenueCat) {
-    throw new Error('RevenueCat bridge not available');
-  }
-
   try {
     console.log('Purchasing RevenueCat package:', packageId);
-    const result = await window.revenueCat.purchasePackage(packageId);
+    
+    // Get offerings first to find the correct package
+    const offerings = await Purchases.getOfferings();
+    const pkg = offerings.current?.availablePackages.find(p => p.identifier === packageId);
+    
+    if (!pkg) {
+      throw new Error(`Package ${packageId} not found`);
+    }
+    
+    const result = await Purchases.purchasePackage({ aPackage: pkg });
     
     // Refresh entitlements after successful purchase
     await refreshEntitlements();
@@ -132,13 +149,9 @@ export async function restorePurchases(): Promise<boolean> {
     throw new Error('RevenueCat restore is only available on native platforms');
   }
 
-  if (!window.revenueCat) {
-    throw new Error('RevenueCat bridge not available');
-  }
-
   try {
     console.log('Restoring RevenueCat purchases');
-    const result = await window.revenueCat.restorePurchases();
+    const result = await Purchases.restorePurchases();
     
     // Refresh entitlements after restore
     await refreshEntitlements();
@@ -182,13 +195,17 @@ export async function getCustomerInfo(): Promise<RevenueCatCustomerInfo> {
     } as RevenueCatCustomerInfo;
   }
 
-  if (!window.revenueCat) {
-    throw new Error('RevenueCat bridge not available');
-  }
-
   try {
-    const customerInfo = await window.revenueCat.getCustomerInfo();
-    console.log('Customer info received:', customerInfo);
+    const result = await Purchases.getCustomerInfo();
+    console.log('Customer info received:', result);
+    
+    // Transform the result to match our interface
+    const customerInfo: RevenueCatCustomerInfo = {
+      entitlements: (result.customerInfo?.entitlements as unknown as Record<string, RevenueCatEntitlement>) || {},
+      activeSubscriptions: result.customerInfo?.activeSubscriptions || [],
+      active: result.customerInfo?.activeSubscriptions?.length > 0
+    };
+    
     return customerInfo;
   } catch (error) {
     console.error('Failed to get customer info:', error);
@@ -198,7 +215,7 @@ export async function getCustomerInfo(): Promise<RevenueCatCustomerInfo> {
 
 // Check if RevenueCat is available on current platform
 export function isRevenueCatAvailable(): boolean {
-  return isNativePlatform() && !!window.revenueCat;
+  return isNativePlatform();
 }
 
 // Platform information
