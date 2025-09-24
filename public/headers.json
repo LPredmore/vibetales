@@ -6,6 +6,13 @@
     "Expires": "0",
     "ETag": "W/\"manifest-version-change\""
   },
+  "manifest.webmanifest": {
+    "Content-Type": "application/manifest+json",
+    "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+    "ETag": "W/\"manifest-version-change\""
+  },
   "app-version.json": {
     "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
     "Pragma": "no-cache",
