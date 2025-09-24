@@ -17,17 +17,24 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
-    // Minimal VitePWA config for testing - Re-enabled with basic settings
+    // Completely disable VitePWA to prevent manifest interference
     VitePWA({
       registerType: 'autoUpdate',
-      // Disable manifest generation - use our hand-written one
+      // Completely disable manifest generation
       manifest: false,
-      // Minimal workbox config
+      injectManifest: {
+        injectionPoint: undefined
+      },
+      // Disable all manifest-related features
+      useCredentials: false,
+      // Minimal workbox config - only handle caching, no manifest
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
-        cleanupOutdatedCaches: true
+        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/, /\/manifest\.json$/],
+        cleanupOutdatedCaches: true,
+        // Exclude manifest from service worker handling
+        globIgnores: ['**/manifest.json', '**/manifest.webmanifest']
       },
       devOptions: {
         enabled: false
