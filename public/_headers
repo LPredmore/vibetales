@@ -1,0 +1,20 @@
+# Netlify headers file
+/manifest.json
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache, no-store, must-revalidate, max-age=0
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  Access-Control-Allow-Headers: Content-Type
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache, no-store, must-revalidate, max-age=0
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, HEAD, OPTIONS
+  Access-Control-Allow-Headers: Content-Type
+
+# PWA Builder specific headers
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

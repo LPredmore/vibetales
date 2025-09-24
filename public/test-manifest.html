@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manifest Test Page</title>
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+    <h1>Manifest Debug Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testManifest() {
+            const results = document.getElementById('results');
+            
+            try {
+                // Test 1: Fetch the manifest directly
+                console.log('Testing manifest fetch...');
+                const response = await fetch('/manifest.json');
+                
+                results.innerHTML += `<p><strong>Manifest Fetch Test:</strong></p>`;
+                results.innerHTML += `<p>Status: ${response.status}</p>`;
+                results.innerHTML += `<p>Content-Type: ${response.headers.get('content-type')}</p>`;
+                results.innerHTML += `<p>CORS Headers: ${response.headers.get('access-control-allow-origin') || 'None'}</p>`;
+                
+                if (response.ok) {
+                    const manifest = await response.json();
+                    results.innerHTML += `<p>✅ Manifest loaded successfully</p>`;
+                    results.innerHTML += `<p>Name: ${manifest.name}</p>`;
+                    results.innerHTML += `<p>Icons count: ${manifest.icons?.length || 0}</p>`;
+                    console.log('Manifest content:', manifest);
+                } else {
+                    results.innerHTML += `<p>❌ Failed to load manifest</p>`;
+                }
+                
+                // Test 2: Check if browser detects manifest
+                if ('serviceWorker' in navigator) {
+                    results.innerHTML += `<p><strong>Browser PWA Support:</strong> ✅ Available</p>`;
+                } else {
+                    results.innerHTML += `<p><strong>Browser PWA Support:</strong> ❌ Not available</p>`;
+                }
+                
+                // Test 3: Check current URL and protocol
+                results.innerHTML += `<p><strong>Current URL:</strong> ${window.location.href}</p>`;
+                results.innerHTML += `<p><strong>Protocol:</strong> ${window.location.protocol}</p>`;
+                results.innerHTML += `<p><strong>User Agent:</strong> ${navigator.userAgent}</p>`;
+                
+            } catch (error) {
+                results.innerHTML += `<p>❌ Error testing manifest: ${error.message}</p>`;
+                console.error('Manifest test error:', error);
+            }
+        }
+        
+        // Run test when page loads
+        testManifest();
+    </script>
+</body>
+</html>

@@ -17,62 +17,18 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
+    // Minimal VitePWA config for testing - Re-enabled with basic settings
     VitePWA({
       registerType: 'autoUpdate',
+      // Disable manifest generation - use our hand-written one
+      manifest: false,
+      // Minimal workbox config
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,txt}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
-        cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true,
-        // Import background sync handlers
-        importScripts: ['/sw-background-sync.js'],
-        // Simplified caching strategy to reduce memory usage
-        runtimeCaching: [
-          {
-            urlPattern: /\.(?:js|css)$/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: `assets-${buildVersion}`,
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 // 1 day
-              },
-              networkTimeoutSeconds: 5
-            }
-          },
-          {
-            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: `images-${buildVersion}`,
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 3 // 3 days
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
-            handler: 'NetworkOnly'
-          }
-        ]
+        cleanupOutdatedCaches: true
       },
-      includeAssets: [
-        'favicon-16x16.png',
-        'favicon-32x32.png', 
-        'favicon-48x48.png',
-        'favicon-96x96.png',
-        'favicon-192x192.png',
-        'favicon-512x512.png',
-        'apple-touch-icon.png',
-        'placeholder.png',
-        'pwa-192x192-maskable.png',
-        'pwa-512x512-maskable.png'
-      ],
-      manifestFilename: 'manifest.json',
-      manifest: JSON.parse(fs.readFileSync('public/manifest.json', 'utf8')),
       devOptions: {
         enabled: false
       }

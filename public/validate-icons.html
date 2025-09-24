@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon Validation Test</title>
+</head>
+<body>
+    <h1>PWA Icon Validation</h1>
+    <div id="results"></div>
+    
+    <script>
+        const icons = [
+            { src: "favicon-16x16.png", sizes: "16x16" },
+            { src: "favicon-32x32.png", sizes: "32x32" },
+            { src: "favicon-48x48.png", sizes: "48x48" },
+            { src: "favicon-96x96.png", sizes: "96x96" },
+            { src: "favicon-192x192.png", sizes: "192x192" },
+            { src: "favicon-512x512.png", sizes: "512x512" },
+            { src: "pwa-192x192-maskable.png", sizes: "192x192", purpose: "maskable" },
+            { src: "pwa-512x512-maskable.png", sizes: "512x512", purpose: "maskable" },
+            { src: "apple-touch-icon.png", sizes: "180x180" }
+        ];
+        
+        async function validateIcons() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>Testing Icon Files:</h2>';
+            
+            for (const icon of icons) {
+                try {
+                    const response = await fetch(`/${icon.src}`);
+                    const status = response.ok ? '✅' : '❌';
+                    const statusText = response.ok ? 'OK' : `Failed (${response.status})`;
+                    const contentType = response.headers.get('content-type') || 'unknown';
+                    
+                    results.innerHTML += `
+                        <p>${status} <strong>${icon.src}</strong> (${icon.sizes}) - ${statusText} - ${contentType}</p>
+                    `;
+                    
+                    // Create img element to test actual loading
+                    if (response.ok) {
+                        const img = new Image();
+                        img.onload = () => {
+                            console.log(`✅ ${icon.src} loaded successfully: ${img.width}x${img.height}`);
+                        };
+                        img.onerror = () => {
+                            console.error(`❌ ${icon.src} failed to load as image`);
+                            results.innerHTML += `<p style="color: red;">  ⚠️ ${icon.src} exists but not a valid image</p>`;
+                        };
+                        img.src = `/${icon.src}`;
+                    }
+                } catch (error) {
+                    results.innerHTML += `<p>❌ <strong>${icon.src}</strong> - Network Error: ${error.message}</p>`;
+                }
+            }
+        }
+        
+        validateIcons();
+    </script>
+</body>
+</html>

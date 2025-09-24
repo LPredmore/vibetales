@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Debug Dashboard - VibeTales</title>
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            line-height: 1.6;
+        }
+        .test-section { 
+            border: 1px solid #ddd; 
+            margin: 20px 0; 
+            padding: 20px; 
+            border-radius: 8px; 
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        pre { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 4px; 
+            overflow-x: auto; 
+            white-space: pre-wrap;
+        }
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .icon-test {
+            border: 1px solid #eee;
+            padding: 10px;
+            text-align: center;
+            border-radius: 4px;
+        }
+        .icon-test img {
+            max-width: 64px;
+            max-height: 64px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 PWA Debug Dashboard - VibeTales</h1>
+    
+    <div class="test-section">
+        <h2>📋 Test Instructions</h2>
+        <ol>
+            <li><strong>Run all tests</strong> by clicking the button below</li>
+            <li><strong>Check Console</strong> (F12 → Console) for detailed logs</li>
+            <li><strong>Copy the results</strong> and test URL for PWABuilder debugging</li>
+            <li><strong>Test with PWABuilder</strong> using this page's URL</li>
+        </ol>
+        <button onclick="runAllTests()">🚀 Run All Tests</button>
+        <button onclick="copyResults()">📋 Copy Results</button>
+        <button onclick="window.open('https://pwabuilder.com', '_blank')">🔗 Open PWABuilder</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🌐 Environment Info</h2>
+        <div id="env-info"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📄 Manifest Test</h2>
+        <div id="manifest-results"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🖼️ Icons Test</h2>
+        <div id="icons-results"></div>
+        <div id="icons-grid" class="icon-grid"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 PWA Features Test</h2>
+        <div id="pwa-features"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Network Headers Test</h2>
+        <div id="headers-test"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🏆 PWABuilder Simulation Test</h2>
+        <div id="pwabuilder-test"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📝 All Results (Copy This)</h2>
+        <pre id="all-results"></pre>
+    </div>
+
+    <script>
+        let allResults = '';
+
+        function log(message, type = 'info') {
+            console.log(`[PWA-DEBUG] ${message}`);
+            allResults += `[${type.toUpperCase()}] ${message}\n`;
+        }
+
+        function addResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info';
+            element.innerHTML += `<p class="${className}">${content}</p>`;
+        }
+
+        async function testEnvironment() {
+            log('=== ENVIRONMENT TEST ===');
+            const info = {
+                url: window.location.href,
+                protocol: window.location.protocol,
+                host: window.location.host,
+                userAgent: navigator.userAgent,
+                isHTTPS: window.location.protocol === 'https:',
+                serviceWorkerSupport: 'serviceWorker' in navigator,
+                timestamp: new Date().toISOString()
+            };
+
+            document.getElementById('env-info').innerHTML = `
+                <p><strong>URL:</strong> ${info.url}</p>
+                <p><strong>Protocol:</strong> ${info.protocol} ${info.isHTTPS ? '✅' : '❌ (HTTPS required for PWA)'}</p>
+                <p><strong>Host:</strong> ${info.host}</p>
+                <p><strong>Service Worker Support:</strong> ${info.serviceWorkerSupport ? '✅' : '❌'}</p>
+                <p><strong>User Agent:</strong> ${info.userAgent}</p>
+                <p><strong>Test Time:</strong> ${info.timestamp}</p>
+            `;
+
+            log(`URL: ${info.url}`);
+            log(`Protocol: ${info.protocol}`);
+            log(`Service Worker Support: ${info.serviceWorkerSupport}`);
+            return info;
+        }
+
+        async function testManifest() {
+            log('=== MANIFEST TEST ===');
+            try {
+                const response = await fetch('/manifest.json', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/manifest+json,application/json,*/*'
+                    }
+                });
+
+                const status = response.status;
+                const contentType = response.headers.get('content-type');
+                const cacheControl = response.headers.get('cache-control');
+                const cors = response.headers.get('access-control-allow-origin');
+
+                addResult('manifest-results', `Status: ${status} ${response.ok ? '✅' : '❌'}`, response.ok ? 'success' : 'error');
+                addResult('manifest-results', `Content-Type: ${contentType} ${contentType?.includes('application/manifest+json') ? '✅' : contentType?.includes('application/json') ? '⚠️' : '❌'}`, contentType?.includes('manifest+json') ? 'success' : 'warning');
+                addResult('manifest-results', `CORS: ${cors || 'None'}`);
+                addResult('manifest-results', `Cache-Control: ${cacheControl || 'None'}`);
+
+                log(`Manifest Status: ${status}`);
+                log(`Manifest Content-Type: ${contentType}`);
+                log(`Manifest CORS: ${cors}`);
+
+                if (response.ok) {
+                    const manifest = await response.json();
+                    addResult('manifest-results', `✅ Manifest parsed successfully`, 'success');
+                    addResult('manifest-results', `Name: "${manifest.name}"`);
+                    addResult('manifest-results', `Short Name: "${manifest.short_name}"`);
+                    addResult('manifest-results', `Icons: ${manifest.icons?.length || 0} defined`);
+                    addResult('manifest-results', `Start URL: "${manifest.start_url}"`);
+                    addResult('manifest-results', `Display: "${manifest.display}"`);
+                    addResult('manifest-results', `Theme Color: "${manifest.theme_color}"`);
+                    
+                    log(`Manifest name: ${manifest.name}`);
+                    log(`Manifest icons: ${manifest.icons?.length} defined`);
+                    return manifest;
+                } else {
+                    addResult('manifest-results', `❌ Failed to load manifest: ${status}`, 'error');
+                    log(`Manifest failed: ${status}`, 'error');
+                    return null;
+                }
+            } catch (error) {
+                addResult('manifest-results', `❌ Network error: ${error.message}`, 'error');
+                log(`Manifest error: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        async function testIcons() {
+            log('=== ICONS TEST ===');
+            const icons = [
+                { src: "favicon-16x16.png", sizes: "16x16" },
+                { src: "favicon-32x32.png", sizes: "32x32" },
+                { src: "favicon-48x48.png", sizes: "48x48" },
+                { src: "favicon-96x96.png", sizes: "96x96" },
+                { src: "favicon-192x192.png", sizes: "192x192" },
+                { src: "favicon-512x512.png", sizes: "512x512" },
+                { src: "pwa-192x192-maskable.png", sizes: "192x192", purpose: "maskable" },
+                { src: "pwa-512x512-maskable.png", sizes: "512x512", purpose: "maskable" },
+                { src: "apple-touch-icon.png", sizes: "180x180" }
+            ];
+
+            let successCount = 0;
+            const iconGrid = document.getElementById('icons-grid');
+            iconGrid.innerHTML = '';
+
+            for (const icon of icons) {
+                try {
+                    const response = await fetch(`/${icon.src}`);
+                    const success = response.ok;
+                    const contentType = response.headers.get('content-type') || 'unknown';
+                    
+                    if (success) successCount++;
+                    
+                    const status = success ? '✅' : '❌';
+                    const statusText = success ? 'OK' : `Failed (${response.status})`;
+                    
+                    addResult('icons-results', `${status} ${icon.src} (${icon.sizes}) - ${statusText}`, success ? 'success' : 'error');
+                    log(`Icon ${icon.src}: ${statusText} - ${contentType}`);
+
+                    // Create visual test
+                    const iconDiv = document.createElement('div');
+                    iconDiv.className = 'icon-test';
+                    iconDiv.innerHTML = `
+                        <div>${status} ${icon.sizes}</div>
+                        <div style="font-size: 12px;">${icon.src}</div>
+                        ${success ? `<img src="/${icon.src}" alt="${icon.src}" style="margin-top: 5px;">` : '<div style="height: 32px; background: #f0f0f0; margin-top: 5px;"></div>'}
+                    `;
+                    iconGrid.appendChild(iconDiv);
+
+                } catch (error) {
+                    addResult('icons-results', `❌ ${icon.src} - Network Error: ${error.message}`, 'error');
+                    log(`Icon ${icon.src} error: ${error.message}`, 'error');
+                }
+            }
+
+            addResult('icons-results', `Summary: ${successCount}/${icons.length} icons loaded successfully`, successCount === icons.length ? 'success' : 'warning');
+            log(`Icons summary: ${successCount}/${icons.length} successful`);
+        }
+
+        async function testPWAFeatures() {
+            log('=== PWA FEATURES TEST ===');
+            
+            // Test service worker registration
+            if ('serviceWorker' in navigator) {
+                addResult('pwa-features', '✅ Service Worker API supported', 'success');
+                try {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (registration) {
+                        addResult('pwa-features', '✅ Service Worker registered', 'success');
+                        log('Service Worker: registered');
+                    } else {
+                        addResult('pwa-features', '⚠️ Service Worker not registered (expected since PWA plugin disabled)', 'warning');
+                        log('Service Worker: not registered');
+                    }
+                } catch (error) {
+                    addResult('pwa-features', `❌ Service Worker error: ${error.message}`, 'error');
+                    log(`Service Worker error: ${error.message}`, 'error');
+                }
+            }
+
+            // Test other PWA APIs
+            const features = [
+                { name: 'Web App Manifest', supported: 'onbeforeinstallprompt' in window || 'getInstalledRelatedApps' in navigator },
+                { name: 'Background Sync', supported: 'serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype },
+                { name: 'Push Notifications', supported: 'PushManager' in window },
+                { name: 'Web Share API', supported: 'share' in navigator },
+                { name: 'Cache API', supported: 'caches' in window }
+            ];
+
+            features.forEach(feature => {
+                const status = feature.supported ? '✅' : '❌';
+                addResult('pwa-features', `${status} ${feature.name}`, feature.supported ? 'success' : 'info');
+                log(`PWA Feature ${feature.name}: ${feature.supported ? 'supported' : 'not supported'}`);
+            });
+        }
+
+        async function testHeaders() {
+            log('=== HEADERS TEST ===');
+            
+            // Test different manifest endpoints
+            const endpoints = ['/manifest.json', '/manifest.webmanifest'];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint, { method: 'HEAD' });
+                    const headers = {
+                        'content-type': response.headers.get('content-type'),
+                        'cache-control': response.headers.get('cache-control'),
+                        'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+                        'x-content-type-options': response.headers.get('x-content-type-options'),
+                        'x-frame-options': response.headers.get('x-frame-options')
+                    };
+
+                    addResult('headers-test', `<strong>${endpoint}</strong> (${response.status}):`, response.ok ? 'success' : 'error');
+                    Object.entries(headers).forEach(([key, value]) => {
+                        if (value) {
+                            addResult('headers-test', `  ${key}: ${value}`, 'info');
+                        }
+                    });
+                    
+                    log(`Headers for ${endpoint}: ${JSON.stringify(headers)}`);
+                } catch (error) {
+                    addResult('headers-test', `❌ ${endpoint}: ${error.message}`, 'error');
+                    log(`Headers error for ${endpoint}: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function testPWABuilderSimulation() {
+            log('=== PWABUILDER SIMULATION TEST ===');
+            
+            // Simulate PWABuilder's likely behavior
+            addResult('pwabuilder-test', '<strong>Simulating PWABuilder checks...</strong>');
+            
+            // Check if manifest is accessible with different user agents
+            const userAgents = [
+                'Mozilla/5.0 (compatible; PWABuilder/1.0; +https://pwabuilder.com)',
+                'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+                navigator.userAgent
+            ];
+
+            for (const ua of userAgents) {
+                try {
+                    // Note: We can't actually change user agent in fetch, but we can test the endpoint
+                    const response = await fetch('/manifest.json');
+                    addResult('pwabuilder-test', `✅ Manifest accessible (simulated UA test)`, 'success');
+                    log(`PWABuilder simulation: manifest accessible`);
+                    break;
+                } catch (error) {
+                    addResult('pwabuilder-test', `❌ Manifest not accessible: ${error.message}`, 'error');
+                    log(`PWABuilder simulation error: ${error.message}`, 'error');
+                }
+            }
+
+            // Test common PWABuilder requirements
+            const requirements = [
+                { name: 'HTTPS', check: window.location.protocol === 'https:' },
+                { name: 'Valid manifest link in HTML', check: !!document.querySelector('link[rel="manifest"]') },
+                { name: 'Service Worker support', check: 'serviceWorker' in navigator }
+            ];
+
+            requirements.forEach(req => {
+                const status = req.check ? '✅' : '❌';
+                addResult('pwabuilder-test', `${status} ${req.name}`, req.check ? 'success' : 'error');
+                log(`PWABuilder requirement ${req.name}: ${req.check ? 'met' : 'not met'}`);
+            });
+
+            addResult('pwabuilder-test', `<strong>Test this URL in PWABuilder:</strong> <code style="background: #f0f0f0; padding: 2px 4px;">${window.location.origin}</code>`);
+        }
+
+        async function runAllTests() {
+            allResults = '';
+            log('Starting comprehensive PWA debug tests...');
+            
+            document.getElementById('manifest-results').innerHTML = '';
+            document.getElementById('icons-results').innerHTML = '';
+            document.getElementById('pwa-features').innerHTML = '';
+            document.getElementById('headers-test').innerHTML = '';
+            document.getElementById('pwabuilder-test').innerHTML = '';
+
+            await testEnvironment();
+            await testManifest();
+            await testIcons();
+            await testPWAFeatures();
+            await testHeaders();
+            await testPWABuilderSimulation();
+
+            log('All tests completed!');
+            document.getElementById('all-results').textContent = allResults;
+
+            addResult('pwabuilder-test', '<strong>🎯 Next Steps:</strong>');
+            addResult('pwabuilder-test', '1. Copy the results above');
+            addResult('pwabuilder-test', '2. Test your main site URL in PWABuilder');
+            addResult('pwabuilder-test', '3. If it still fails, your hosting provider may be blocking PWABuilder');
+            addResult('pwabuilder-test', '4. Consider adding PWABuilder\'s User-Agent to your firewall whitelist');
+        }
+
+        function copyResults() {
+            const results = document.getElementById('all-results').textContent;
+            navigator.clipboard.writeText(results).then(() => {
+                alert('Results copied to clipboard! You can now paste this into a support ticket or for debugging.');
+            }).catch(() => {
+                alert('Could not copy to clipboard. Please manually select and copy the results.');
+            });
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(runAllTests, 500);
+        });
+    </script>
+</body>
+</html>
