@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
+import fs from 'fs';
 
 // Generate build version for cache busting
 const buildVersion = Date.now().toString();
@@ -70,7 +71,8 @@ export default defineConfig(({ mode }) => ({
         'pwa-192x192-maskable.png',
         'pwa-512x512-maskable.png'
       ],
-      manifest: false,
+      manifestFilename: 'manifest.json',
+      manifest: JSON.parse(fs.readFileSync('public/manifest.json', 'utf8')),
       devOptions: {
         enabled: false
       }
