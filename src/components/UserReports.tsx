@@ -15,9 +15,9 @@ export const UserReports = () => {
       try {
         const userReports = await getUserReports();
         setReports(userReports);
-      } catch (error: unknown) {
+      } catch (error: any) {
         console.error("Error fetching reports:", error);
-        toast.error((error as Error)?.message || "Failed to load reports");
+        toast.error(error.message || "Failed to load reports");
       } finally {
         setLoading(false);
       }

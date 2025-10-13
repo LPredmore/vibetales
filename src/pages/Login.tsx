@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -49,10 +49,9 @@ const Login = () => {
       await login(email, password, remember);
       toast.success("Successfully logged in!");
       navigate("/");
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to login. Please try again.';
+    } catch (error: any) {
       debugLogger.logAuth('ERROR', 'Login form error', error);
-      toast.error(message);
+      toast.error(error.message || "Failed to login. Please try again.");
     } finally {
       setIsLoading(false);
     }

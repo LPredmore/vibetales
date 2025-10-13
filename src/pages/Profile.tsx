@@ -12,11 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/hooks/useAuth";
-import { refreshEntitlements } from '@/services/revenuecat';
-import { Capacitor } from '@capacitor/core';
-import { showCustomerCenter } from '@/services/customerCenterService';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -114,12 +111,46 @@ const Profile = () => {
   const checkSubscriptionStatus = async () => {
     try {
       setSubscriptionLoading(true);
-      console.log('🔍 Profile: Checking subscription status via RevenueCat');
-      const entitlements = await refreshEntitlements();
-      setSubscriptionStatus({ 
-        subscribed: entitlements.active, 
-        error: entitlements.active ? null : 'No active subscription' 
+      console.log('🔍 Profile: Starting subscription check');
+      const { data: session } = await supabase.auth.getSession();
+      
+      console.log('🔍 Profile: Session data:', { 
+        hasSession: !!session.session, 
+        userId: session.session?.user?.id,
+        email: session.session?.user?.email,
+        accessToken: session.session?.access_token ? 'present' : 'missing'
       });
+      
+      if (!session.session) {
+        console.log('⚠️ Profile: No session found, skipping subscription check');
+        setSubscriptionStatus({ subscribed: false, error: 'No active session' });
+        return;
+      }
+
+      console.log('🔍 Profile: Calling check-subscription function with token');
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('❌ Profile: Error checking subscription:', error);
+        setSubscriptionStatus({ subscribed: false, error: error.message || 'Unknown error' });
+        return;
+      }
+
+      console.log('✅ Profile: Subscription status received:', JSON.stringify(data, null, 2));
+      console.log('🔍 Profile: Data type:', typeof data, 'Is object:', typeof data === 'object');
+      
+      // Ensure we have a valid response format
+      if (data && typeof data === 'object') {
+        setSubscriptionStatus(data);
+        console.log('✅ Profile: Subscription status set successfully:', data);
+      } else {
+        console.log('⚠️ Profile: Invalid data format received:', data);
+        setSubscriptionStatus({ subscribed: false, error: 'Invalid response format' });
+      }
     } catch (error) {
       console.error('❌ Profile: Error checking subscription status:', error);
       setSubscriptionStatus({ subscribed: false, error: error instanceof Error ? error.message : 'Unknown error' });
@@ -131,20 +162,32 @@ const Profile = () => {
   const handleManageSubscription = async () => {
     try {
       setPortalLoading(true);
+      const { data: session } = await supabase.auth.getSession();
       
-      // Try RevenueCat Customer Center first (for native platforms)
-      if (Capacitor.isNativePlatform()) {
-        await showCustomerCenter();
+      if (!session.session) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to manage your subscription.",
+          variant: "destructive",
+        });
         return;
       }
 
-      // For web users, show message about mobile app
-      toast({
-        title: "Subscription Management",
-        description: "To manage your subscription, please use our mobile app from the App Store or Google Play Store.",
+      const { data, error } = await supabase.functions.invoke('customer-portal', {
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`,
+        },
       });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
     } catch (error) {
-      console.error('Error managing subscription:', error);
+      console.error('Error opening customer portal:', error);
       toast({
         title: "Error",
         description: "Failed to open subscription management. Please try again.",

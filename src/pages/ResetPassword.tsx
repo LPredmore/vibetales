@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -26,9 +26,8 @@ const ResetPassword = () => {
         "If an account exists with this email, you will receive password reset instructions."
       );
       navigate("/login");
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to send reset password email';
-      toast.error(message);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send reset password email");
     } finally {
       setIsSubmitting(false);
     }

@@ -1,97 +1,137 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import Stripe from 'https://esm.sh/stripe@14.21.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+
+// Helper logging function for debugging
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')!;
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { 
-      status: 405, 
-      headers: corsHeaders 
-    });
-  }
-
   try {
-    // Get authenticated user
-    const authHeader = req.headers.get('Authorization')!;
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
+    logStep("Function started");
+    
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (!stripeKey) {
+      throw new Error('STRIPE_SECRET_KEY is not set');
+    }
+    logStep("Stripe key verified");
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
     );
 
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+    logStep("Authorization header found");
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError || !user?.email) {
+      logStep("Authentication failed", { error: userError?.message });
+      throw new Error('Error getting user');
     }
 
-    const { planType } = await req.json();
-    
-    if (!planType || !['monthly', 'annual'].includes(planType)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid plan type' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    logStep('Creating checkout session for user', { userId: user.id, email: user.email });
+
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: '2023-10-16',
+    });
+
+    // Get customer by email with timeout handling
+    logStep("Looking up customer by email");
+    const customers = await stripe.customers.list({
+      email: user.email,
+      limit: 1,
+    });
+
+    let customerId = undefined;
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
+      logStep("Found existing customer", { customerId });
+      
+      // Check if already subscribed
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customers.data[0].id,
+        status: 'active',
+        price: 'price_1QgUGtRFHDig2LCdGMsgjexk',
+        limit: 1,
+      });
+
+      if (subscriptions.data.length > 0) {
+        logStep("Customer already has active subscription");
+        throw new Error('Customer already has an active subscription');
+      }
+    } else {
+      logStep("No existing customer found, will create new one");
     }
 
-    // Create Stripe checkout session
-    const stripe = await import('https://esm.sh/stripe@14.21.0').then(m => m.default(stripeSecretKey));
-    
-    // Define price IDs based on plan (these should match your Stripe prices)
-    const priceId = planType === 'annual' 
-      ? 'price_annual_premium' // Replace with your actual annual price ID
-      : 'price_monthly_premium'; // Replace with your actual monthly price ID
+    const origin = req.headers.get('origin') || 'http://localhost:5173';
+    logStep('Creating checkout session', { origin });
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      customer: customerId,
+      customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price: priceId,
+          price: 'price_1QgUGtRFHDig2LCdGMsgjexk',
           quantity: 1,
         },
       ],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin')}/?success=true`,
-      cancel_url: `${req.headers.get('origin')}/?canceled=true`,
-      customer_email: user.email,
-      metadata: {
-        user_id: user.id,
-        plan_type: planType,
-      },
-      subscription_data: {
-        metadata: {
-          user_id: user.id,
-          plan_type: planType,
-        },
-      },
+      success_url: `${origin}/?success=true`,
+      cancel_url: `${origin}/?canceled=true`,
+      billing_address_collection: 'auto',
+      payment_method_types: ['card'],
+      // Add explicit locale to prevent missing module errors
+      locale: 'en',
+      // Optimize session creation
+      allow_promotion_codes: true,
+      automatic_tax: { enabled: false },
+    });
+
+    logStep('Checkout session created successfully', { 
+      sessionId: session.id, 
+      url: session.url,
+      executionTime: Date.now() 
     });
 
     return new Response(
       JSON.stringify({ url: session.url }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      }
     );
   } catch (error) {
-    console.error('Error creating checkout session:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep('ERROR in create-checkout', { message: errorMessage, stack: error?.stack });
+    
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: errorMessage,
+        timestamp: new Date().toISOString()
+      }),
       { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
       }
     );
   }

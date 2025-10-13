@@ -1,14 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Clock, Crown, Infinity } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/hooks/useAuth";
-import { refreshEntitlements } from "@/services/revenuecat";
-import { handleRestorePurchases } from "@/services/paymentService";
-import { SubscriptionPlans } from "@/components/SubscriptionPlans";
-import { ManageSubscription } from "@/components/ManageSubscription";
-import { getPaymentPlatform } from "@/services/paymentService";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Clock, Crown, Zap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface UsageLimitsProps {
   onRefreshLimits?: (refreshFunction: () => Promise<void>) => void;
@@ -27,8 +25,24 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   const [limitsLoading, setLimitsLoading] = useState(true);
   const [premiumLoading, setPremiumLoading] = useState(true);
 
+  useEffect(() => {
+    if (user) {
+      fetchUserLimits();
+      checkPremiumStatus();
+    } else {
+      setLimitsLoading(false);
+      setPremiumLoading(false);
+    }
+  }, [user]);
 
-  const fetchUserLimits = useCallback(async () => {
+  // Expose refresh function to parent component
+  useEffect(() => {
+    if (onRefreshLimits) {
+      onRefreshLimits(fetchUserLimits);
+    }
+  }, [onRefreshLimits]);
+
+  const fetchUserLimits = async () => {
     if (!user?.id) {
       setLimitsLoading(false);
       return;
@@ -54,40 +68,32 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     } finally {
       setLimitsLoading(false);
     }
-  }, [user?.id]);
+  };
 
-  const checkPremiumStatus = useCallback(async () => {
+  const checkPremiumStatus = async () => {
     try {
-      const entitlements = await refreshEntitlements();
-      setHasPremium(entitlements.active);
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        body: { userId: user?.id }
+      });
+
+      if (data && !error) {
+        setHasPremium(data.subscribed || false);
+      }
     } catch (error) {
       console.error('Error checking premium status:', error);
-      setHasPremium(false);
     } finally {
       setPremiumLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    if (user) {
-      fetchUserLimits();
-      checkPremiumStatus();
-    } else {
-      setLimitsLoading(false);
-      setPremiumLoading(false);
+  const handleUpgrade = () => {
+    if (!user) {
+      toast.error("Please log in to upgrade");
+      return;
     }
-  }, [user, fetchUserLimits, checkPremiumStatus]);
 
-  // Expose refresh function to parent component
-  useEffect(() => {
-    if (onRefreshLimits) {
-      onRefreshLimits(fetchUserLimits);
-    }
-  }, [onRefreshLimits, fetchUserLimits]);
-
-  const handleUpgrade = async () => {
-    await checkPremiumStatus();
-    await fetchUserLimits();
+    // Open direct Stripe payment link in a new tab
+    window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank');
   };
 
   // Show loading until both limits and premium status are loaded
@@ -101,40 +107,12 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     );
   }
 
+  if (hasPremium) {
+    return null; // Don't show anything for premium users
+  }
+
   const dailyUsed = limits?.daily_stories_used || 0;
   const dailyLimit = 1;
-  const platform = getPaymentPlatform();
-
-  // Show premium status for premium users
-  if (hasPremium) {
-    return (
-      <Card className="clay-card border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            <Crown className="h-5 w-5 text-primary" />
-            <span>Premium Active</span>
-          </CardTitle>
-          <CardDescription>
-            You have unlimited story generation and premium features.
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span>Stories used today</span>
-              <div className="flex items-center gap-1">
-                <span>{dailyUsed}</span>
-                <Infinity className="h-4 w-4 text-primary" />
-              </div>
-            </div>
-            <Progress value={0} className="h-2 bg-primary/20" />
-            <ManageSubscription className="w-full" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card className="clay-card">
@@ -149,7 +127,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
       </CardHeader>
       
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex justify-between text-sm">
             <span>Stories used today</span>
             <span>{dailyUsed} / {dailyLimit}</span>
@@ -158,20 +136,16 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
             value={(dailyUsed / dailyLimit) * 100} 
             className="h-2"
           />
-          <SubscriptionPlans 
-            onUpgrade={handleUpgrade}
-            showRestore={platform.supportsIAP}
-            onRestore={async () => {
-              try {
-                const success = await handleRestorePurchases();
-                if (success) {
-                  await handleUpgrade();
-                }
-              } catch (error) {
-                console.error('Restore failed:', error);
-              }
-            }}
-          />
+          <Button
+            onClick={handleUpgrade}
+            className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
+          >
+            <Crown className="mr-2 h-4 w-4" />
+            <span className="text-center">
+              Upgrade to Premium for<br />
+              Unlimited Stories
+            </span>
+          </Button>
         </div>
       </CardContent>
     </Card>

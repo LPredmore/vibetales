@@ -7,10 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
+  // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "12.2.3 (519615d)"
   }
   public: {
     Tables: {
@@ -87,42 +87,24 @@ export type Database = {
         Row: {
           created_at: string
           email: string | null
-          iap_entitlements: Json | null
-          iap_original_transaction_id: string | null
-          iap_platform: string | null
           id: string
           name: string | null
-          premium_active: boolean | null
-          premium_expires_at: string | null
-          premium_source: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           email?: string | null
-          iap_entitlements?: Json | null
-          iap_original_transaction_id?: string | null
-          iap_platform?: string | null
           id?: string
           name?: string | null
-          premium_active?: boolean | null
-          premium_expires_at?: string | null
-          premium_source?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           email?: string | null
-          iap_entitlements?: Json | null
-          iap_original_transaction_id?: string | null
-          iap_platform?: string | null
           id?: string
           name?: string | null
-          premium_active?: boolean | null
-          premium_expires_at?: string | null
-          premium_source?: string | null
           updated_at?: string
           user_id?: string
         }

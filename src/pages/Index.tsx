@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
 import { SightWordManager } from "@/components/SightWordManager";
@@ -9,12 +9,12 @@ import { LimitReachedPrompt } from "@/components/LimitReachedPrompt";
 
 import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
-import { generateStory } from "@/services/storyGeneration";
+import { generateStory } from "@/services/openrouter";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { UserMenu } from "@/components/UserMenu";
 import { AIContentDisclaimer } from "@/components/AIContentDisclaimer";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -31,11 +31,6 @@ const Index = () => {
   const [refreshLimits, setRefreshLimits] = useState<(() => Promise<void>) | null>(null);
   const [wordsLoading, setWordsLoading] = useState(true);
   const { user } = useAuth();
-
-  // Memoized helper for setting refresh limits callback
-  const handleRefreshLimitsCallback = useCallback((refreshFn: () => Promise<void>) => {
-    setRefreshLimits(() => refreshFn);
-  }, []);
 
   // Load sight words immediately when component mounts
   useEffect(() => {
@@ -56,14 +51,11 @@ const Index = () => {
         if (error) throw error;
         
         if (data && data.words_objects) {
-          // Convert JSONB objects to SightWord objects  
-          const sightWords: SightWord[] = data.words_objects.map((obj: unknown) => {
-            const sightWordObj = obj as SightWord;
-            return {
-              word: sightWordObj.word,
-              active: sightWordObj.active
-            };
-          });
+          // Convert JSONB objects to SightWord objects
+          const sightWords: SightWord[] = data.words_objects.map((obj: any) => ({
+            word: obj.word,
+            active: obj.active
+          }));
           setWords(sightWords);
         } else {
           // Create new record if none exists
@@ -85,7 +77,7 @@ const Index = () => {
     loadWords();
   }, [user]);
 
-  // Handle payment completion (no longer using Stripe URLs)
+  // Handle Stripe payment completion
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const success = urlParams.get('success');
@@ -94,21 +86,28 @@ const Index = () => {
     if (success === 'true') {
       toast.success("Payment successful! Your premium subscription is now active.");
       
-      // Clean up URL parameters
-      if (window.history.replaceState) {
-        window.history.replaceState({}, document.title, window.location.pathname);
+      // Refresh subscription status
+      if (user) {
+        supabase.functions.invoke('check-subscription', {
+          body: { userId: user.id }
+        }).then(({ data, error }) => {
+          if (!error && data) {
+            toast.success("Premium features are now available!");
+          }
+        }).catch(() => {
+          toast.info("Your payment was successful. Premium features may take a moment to activate.");
+        });
       }
-    }
-
-    if (canceled === 'true') {
-      toast.info("Payment was canceled. You can try again anytime.");
       
       // Clean up URL parameters
-      if (window.history.replaceState) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (canceled === 'true') {
+      toast.error("Payment was canceled. You can try again anytime.");
+      
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, []);
+  }, [user]);
 
   const handleSubmit = async (data: StoryFormData) => {
     // Check if words are still loading
@@ -244,7 +243,7 @@ const Index = () => {
               
               <TabsContent value="story">
                 <div className="space-y-6">
-                  <UsageLimits onRefreshLimits={handleRefreshLimitsCallback} />
+                  <UsageLimits onRefreshLimits={setRefreshLimits} />
                   
                   {showLimitPrompt && (
                     <LimitReachedPrompt onClose={() => setShowLimitPrompt(false)} />

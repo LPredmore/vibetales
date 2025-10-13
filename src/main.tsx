@@ -2,7 +2,6 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { debugLogger } from '@/utils/debugLogger';
 
 // Minimal initialization - avoid heavy debug logging on startup
 const isDev = process.env.NODE_ENV === 'development';
@@ -64,14 +63,16 @@ try {
   throw error;
 }
 
-// Enable debug logging when needed
+// Lazy load debug logger only when needed - with TWA diagnostics
 const shouldEnableDebug = isDev || isDebugMode || window.location.search.includes('debug=emergency');
 
 if (shouldEnableDebug) {
-  debugLogger.logLifecycle('INFO', 'Debug logger loaded');
-  
-  // Run comprehensive TWA startup diagnostics
-  setTimeout(() => {
-    debugLogger.logTWAStartup();
-  }, 1000);
+  import('./utils/debugLogger').then(({ debugLogger }) => {
+    debugLogger.logLifecycle('INFO', 'Debug logger loaded');
+    
+    // Run comprehensive TWA startup diagnostics
+    setTimeout(() => {
+      debugLogger.logTWAStartup();
+    }, 1000);
+  });
 }

@@ -7,21 +7,22 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     url: 'https://vibetales.bestselfs.com',
-    cleartext: false
+    cleartext: true
   },
   android: {
-    allowMixedContent: false,
-    webContentsDebuggingEnabled: false,
+    allowMixedContent: true,
+    webContentsDebuggingEnabled: true,
     backgroundColor: '#F3E8FF',
     // Enhanced Android WebView settings for better compatibility
     webViewRenderMode: 'hardware',
     useLegacyBridge: false,
+    loggingBehavior: 'debug',
     // Additional Android-specific settings
     appendUserAgent: 'VibeTales/1.0',
     overrideUserAgent: undefined,
     handleColor: '#8B5CF6',
     // WebView settings
-    mixedContentMode: 'never',
+    mixedContentMode: 'compatibility',
     // Performance optimizations
     hardwareAccelerated: true
   },
@@ -29,9 +30,6 @@ const config: CapacitorConfig = {
     backgroundColor: '#F3E8FF'
   },
   plugins: {
-    PurchasesPlugin: {
-      // RevenueCat will be initialized programmatically with user-specific settings
-    },
     SplashScreen: {
       launchShowDuration: 2000,
       backgroundColor: '#F3E8FF',

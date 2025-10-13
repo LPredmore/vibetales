@@ -1,49 +1,30 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { debugLogger, LogEntry } from '@/utils/debugLogger';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { X, Download, Trash2, RefreshCw } from 'lucide-react';
 
 interface DebugDashboardProps {
   onClose: () => void;
 }
 
-interface SystemInfo {
-  timestamp: string;
-  auth: {
-    hasUser: boolean;
-    hasSession: boolean;
-    userId?: string;
-    sessionExpiry?: string | null;
-  };
-  storage: {
-    localStorage: Record<string, unknown>;
-    sessionStorage: Record<string, unknown>;
-    persistent: Record<string, unknown>;
-  };
-  version: Record<string, unknown>;
-  network: boolean;
-  twa: Record<string, unknown>;
-}
-
 export const DebugDashboard: React.FC<DebugDashboardProps> = ({ onClose }) => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [systemInfo, setSystemInfo] = useState<SystemInfo>({
-    timestamp: '',
-    auth: { hasUser: false, hasSession: false },
-    storage: { localStorage: {}, sessionStorage: {}, persistent: {} },
-    version: {},
-    network: false,
-    twa: {}
-  });
+  const [systemInfo, setSystemInfo] = useState<any>({});
   const { user, session } = useAuth();
 
-  const refreshData = useCallback(async () => {
+  useEffect(() => {
+    refreshData();
+    const interval = setInterval(refreshData, 1000); // Refresh every second
+    return () => clearInterval(interval);
+  }, []);
+
+  const refreshData = async () => {
     setLogs(debugLogger.getLogs());
     
     // Gather system info
@@ -66,19 +47,12 @@ export const DebugDashboard: React.FC<DebugDashboardProps> = ({ onClose }) => {
     };
     
     setSystemInfo(info);
-  }, [user, session]);
-
-  useEffect(() => {
-    refreshData();
-    const interval = setInterval(refreshData, 1000); // Refresh every second
-    return () => clearInterval(interval);
-  }, [refreshData]);
-
+  };
 
   const getLocalStorageInfo = async () => {
     const keys = Object.keys(localStorage);
     const authKeys = keys.filter(key => key.includes('auth') || key.includes('supabase'));
-    const info: Record<string, unknown> = { totalKeys: keys.length, authKeys: authKeys.length, authData: {} };
+    const info: any = { totalKeys: keys.length, authKeys: authKeys.length, authData: {} };
     
     authKeys.forEach(key => {
       try {
@@ -94,7 +68,7 @@ export const DebugDashboard: React.FC<DebugDashboardProps> = ({ onClose }) => {
   const getSessionStorageInfo = async () => {
     const keys = Object.keys(sessionStorage);
     const authKeys = keys.filter(key => key.includes('auth') || key.includes('session') || key.includes('supabase'));
-    const info: Record<string, unknown> = { totalKeys: keys.length, authKeys: authKeys.length, authData: {} };
+    const info: any = { totalKeys: keys.length, authKeys: authKeys.length, authData: {} };
     
     authKeys.forEach(key => {
       try {
@@ -114,7 +88,7 @@ export const DebugDashboard: React.FC<DebugDashboardProps> = ({ onClose }) => {
         const estimate = await navigator.storage.estimate();
         return { persistent, estimate };
       } catch (e) {
-        return { error: (e as Error).message };
+        return { error: e.message };
       }
     }
     return { supported: false };
@@ -225,10 +199,10 @@ export const DebugDashboard: React.FC<DebugDashboardProps> = ({ onClose }) => {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-1 text-xs">
-                          <div>Version: {(systemInfo.version as { version?: string })?.version || 'Unknown'}</div>
-                          <div>Build: {(systemInfo.version as { buildTime?: string })?.buildTime || 'Unknown'}</div>
+                          <div>Version: {systemInfo.version?.version || 'Unknown'}</div>
+                          <div>Build: {systemInfo.version?.buildTime || 'Unknown'}</div>
                           <div>Network: {systemInfo.network ? 'Online' : 'Offline'}</div>
-                          <div>TWA: {(systemInfo.twa as { isTWA?: boolean })?.isTWA ? 'Yes' : 'No'}</div>
+                          <div>TWA: {systemInfo.twa?.isTWA ? 'Yes' : 'No'}</div>
                         </div>
                       </CardContent>
                     </Card>
@@ -239,9 +213,9 @@ export const DebugDashboard: React.FC<DebugDashboardProps> = ({ onClose }) => {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-1 text-xs">
-                          <div>User: {systemInfo.auth.hasUser ? 'Logged in' : 'Not logged in'}</div>
-                          <div>Session: {systemInfo.auth.hasSession ? 'Active' : 'None'}</div>
-                          <div>Expires: {systemInfo.auth.sessionExpiry ? new Date(systemInfo.auth.sessionExpiry).toLocaleString() : 'N/A'}</div>
+                          <div>User: {systemInfo.auth?.hasUser ? 'Logged in' : 'Not logged in'}</div>
+                          <div>Session: {systemInfo.auth?.hasSession ? 'Active' : 'None'}</div>
+                          <div>Expires: {systemInfo.auth?.sessionExpiry ? new Date(systemInfo.auth.sessionExpiry).toLocaleString() : 'N/A'}</div>
                         </div>
                       </CardContent>
                     </Card>
@@ -257,9 +231,9 @@ export const DebugDashboard: React.FC<DebugDashboardProps> = ({ onClose }) => {
                              .slice(-5)
                              .map((log, i) => (
                           <div key={i} className="text-xs flex gap-2">
-                             <Badge variant={formatLogLevel(log.level) as 'default' | 'secondary' | 'destructive' | 'outline'} className="text-xs">
-                               {log.level}
-                             </Badge>
+                            <Badge variant={formatLogLevel(log.level) as any} className="text-xs">
+                              {log.level}
+                            </Badge>
                             <span className="text-muted-foreground">{log.category}</span>
                             <span>{log.message}</span>
                           </div>
@@ -277,7 +251,7 @@ export const DebugDashboard: React.FC<DebugDashboardProps> = ({ onClose }) => {
                   {logs.slice().reverse().map((log, i) => (
                     <div key={i} className="text-xs border-b pb-1 mb-1">
                       <div className="flex gap-2 items-center">
-                        <Badge variant={formatLogLevel(log.level) as 'default' | 'secondary' | 'destructive' | 'outline'} className="text-xs">
+                        <Badge variant={formatLogLevel(log.level) as any} className="text-xs">
                           {log.level}
                         </Badge>
                         <Badge variant="outline" className="text-xs">{log.category}</Badge>
@@ -304,7 +278,7 @@ export const DebugDashboard: React.FC<DebugDashboardProps> = ({ onClose }) => {
                     </CardHeader>
                     <CardContent>
                       <pre className="text-xs overflow-auto">
-                        {JSON.stringify(systemInfo.storage.localStorage, null, 2)}
+                        {JSON.stringify(systemInfo.storage?.localStorage, null, 2)}
                       </pre>
                     </CardContent>
                   </Card>
@@ -315,7 +289,7 @@ export const DebugDashboard: React.FC<DebugDashboardProps> = ({ onClose }) => {
                     </CardHeader>
                     <CardContent>
                       <pre className="text-xs overflow-auto">
-                        {JSON.stringify(systemInfo.storage.sessionStorage, null, 2)}
+                        {JSON.stringify(systemInfo.storage?.sessionStorage, null, 2)}
                       </pre>
                     </CardContent>
                   </Card>
@@ -326,7 +300,7 @@ export const DebugDashboard: React.FC<DebugDashboardProps> = ({ onClose }) => {
                     </CardHeader>
                     <CardContent>
                       <pre className="text-xs overflow-auto">
-                        {JSON.stringify(systemInfo.storage.persistent, null, 2)}
+                        {JSON.stringify(systemInfo.storage?.persistent, null, 2)}
                       </pre>
                     </CardContent>
                   </Card>

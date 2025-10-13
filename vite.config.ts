@@ -4,7 +4,6 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
-import fs from 'fs';
 
 // Generate build version for cache busting
 const buildVersion = Date.now().toString();
@@ -17,24 +16,96 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
-    // Completely disable VitePWA to prevent manifest interference
     VitePWA({
       registerType: 'autoUpdate',
-      // Completely disable manifest generation
-      manifest: false,
-      injectManifest: {
-        injectionPoint: undefined
-      },
-      // Disable all manifest-related features
-      useCredentials: false,
-      // Minimal workbox config - only handle caching, no manifest
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,txt}'],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/, /\/manifest\.json$/],
+        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
         cleanupOutdatedCaches: true,
-        // Exclude manifest from service worker handling
-        globIgnores: ['**/manifest.json', '**/manifest.webmanifest']
+        skipWaiting: true,
+        clientsClaim: true,
+        // Import background sync handlers
+        importScripts: ['/sw-background-sync.js'],
+        // Simplified caching strategy to reduce memory usage
+        runtimeCaching: [
+          {
+            urlPattern: /\.(?:js|css)$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: `assets-${buildVersion}`,
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 // 1 day
+              },
+              networkTimeoutSeconds: 5
+            }
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: `images-${buildVersion}`,
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 3 // 3 days
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
+            handler: 'NetworkOnly'
+          }
+        ]
+      },
+      includeAssets: [
+        'favicon-16x16.png',
+        'favicon-32x32.png', 
+        'favicon-48x48.png',
+        'favicon-96x96.png',
+        'favicon-192x192.png',
+        'favicon-512x512.png',
+        'apple-touch-icon.png',
+        'placeholder.png',
+        'pwa-192x192-maskable.png',
+        'pwa-512x512-maskable.png'
+      ],
+      manifest: {
+        id: "/",
+        name: "StoryBridge - Story Generator",
+        short_name: "StoryBridge",
+        description: "Create magical stories for young readers with sight words practice",
+        lang: "en",
+        dir: "ltr",
+        theme_color: "#8B5CF6",
+        background_color: "#F3E8FF",
+        display: "standalone",
+        display_override: ["window-controls-overlay", "standalone"],
+        orientation: "portrait",
+        scope: "/",
+        start_url: "/",
+        categories: ["education", "books", "kids"],
+        prefer_related_applications: false,
+        icons: [
+          { src: "favicon-16x16.png", sizes: "16x16", type: "image/png", purpose: "any" },
+          { src: "favicon-32x32.png", sizes: "32x32", type: "image/png", purpose: "any" },
+          { src: "favicon-48x48.png", sizes: "48x48", type: "image/png", purpose: "any" },
+          { src: "favicon-96x96.png", sizes: "96x96", type: "image/png", purpose: "any" },
+          { src: "favicon-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "favicon-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "pwa-192x192-maskable.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+          { src: "pwa-512x512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          { src: "apple-touch-icon.png", sizes: "180x180", type: "image/png", purpose: "any" }
+        ],
+        shortcuts: [
+          {
+            name: "Create Story",
+            short_name: "Create",
+            description: "Create a new story",
+            url: "/",
+            icons: [{ src: "favicon-192x192.png", sizes: "192x192", type: "image/png" }]
+          }
+        ]
       },
       devOptions: {
         enabled: false

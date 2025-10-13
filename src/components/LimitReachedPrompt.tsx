@@ -1,44 +1,58 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, X } from "lucide-react";
-import { SubscriptionPlans } from "@/components/SubscriptionPlans";
-import { getPaymentPlatform } from "@/services/paymentService";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Crown, Clock } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface LimitReachedPromptProps {
   onClose: () => void;
 }
 
 export const LimitReachedPrompt = ({ onClose }: LimitReachedPromptProps) => {
-  const platform = getPaymentPlatform();
+  const { user } = useAuth();
+
+  const handleUpgrade = () => {
+    if (!user) {
+      toast.error("Please log in to upgrade");
+      return;
+    }
+
+    // Open direct Stripe payment link in a new tab
+    window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank');
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="clay-card w-full max-w-md">
-        <CardHeader className="text-center pb-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-6 w-6 text-amber-500" />
-              <CardTitle className="text-xl">Daily Limit Reached</CardTitle>
-            </div>
-            <Button onClick={onClose} variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <CardDescription>
-            You've reached your daily limit. Upgrade to Premium for unlimited access!
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SubscriptionPlans 
-            onUpgrade={onClose}
-            showRestore={platform.supportsIAP}
-            onRestore={onClose}
-          />
-          <div className="mt-4 pt-4 border-t">
-            <Button onClick={onClose} variant="ghost" className="w-full">Maybe Later</Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="clay-card border-red-200 bg-gradient-to-r from-red-50 to-pink-50">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-red-800">
+          <Clock className="h-5 w-5" />
+          Daily Limit Reached
+        </CardTitle>
+        <CardDescription className="text-red-700">
+          You've used your daily story for today. Upgrade to premium for unlimited stories or wait until tomorrow (midnight CST) for your limit to reset.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-3">
+          <Button
+            onClick={handleUpgrade}
+            className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
+          >
+            <Crown className="mr-2 h-4 w-4" />
+            <span className="text-center">
+              Upgrade to Premium for<br />
+              Unlimited Stories
+            </span>
+          </Button>
+          <Button
+            onClick={onClose}
+            variant="outline"
+            className="clay-button"
+          >
+            Maybe Later
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };

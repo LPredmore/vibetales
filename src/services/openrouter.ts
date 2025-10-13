@@ -1,7 +1,6 @@
 
 import { getReadingLevelGuidelines } from "@/utils/readingLevelGuidelines";
 import { StoryFormData } from "@/components/StoryForm";
-import { supabase } from "@/lib/supabase";
 
 const getInterestLevelGuidelines = (interestLevel: string) => {
   const guidelines = {
@@ -42,6 +41,7 @@ export const generateStory = async (
   
   // Use the Supabase edge function
   console.log("=== Using Supabase Edge Function with OpenAI ===");
+  const { supabase } = await import("@/integrations/supabase/client");
   
   // Check auth status before making the request
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();

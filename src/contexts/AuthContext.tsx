@@ -1,12 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { isPWA, isTWA } from '@/utils/twaDetection';
 import { debugLogger } from '@/utils/debugLogger';
-import { initializePayments } from '@/services/paymentService';
-import { AuthError } from '@/types/auth';
-import { AuthContext, AuthContextType } from '@/contexts/auth-context';
+
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  login: (email: string, password: string, remember: boolean) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  isLoading: boolean;
+  isTWA: boolean;
+  isPWA: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -113,12 +123,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Log session state for debugging
       if (session) {
         debugLogger.logAuth('INFO', 'User authenticated', { email: session.user.email });
-        // Initialize payments when user is authenticated (deferred to avoid blocking auth)
-        setTimeout(() => {
-          initializePayments(session.user.id).catch(error => {
-            console.warn('Payment initialization failed:', error);
-          });
-        }, 0);
       } else {
         debugLogger.logAuth('INFO', 'User not authenticated');
       }
@@ -191,11 +195,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.session.user);
     debugLogger.logAuth('INFO', 'Login completed successfully');
     toast.success('Successfully logged in!');
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Error logging in';
-      debugLogger.logAuth('ERROR', 'Login process failed', error);
-      toast.error(message);
-      throw error;
+  } catch (error: any) {
+    debugLogger.logAuth('ERROR', 'Login process failed', error);
+    toast.error(error.message || 'Error logging in');
+    throw error;
   } finally {
     setIsLoading(false);
   }
@@ -216,10 +219,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
       toast.success('Registration successful! Please check your email to confirm your account.');
-    } catch (error: unknown) {
-      const authError = error as AuthError;
-      toast.error(authError.message || 'Error during registration');
-      throw authError;
+    } catch (error: any) {
+      toast.error(error.message || 'Error during registration');
+      throw error;
     }
   };
 
@@ -254,10 +256,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       toast.success('Successfully logged out');
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Even if server logout fails, clear local state
-      const authError = error as AuthError;
-      debugLogger.logAuth('ERROR', 'Logout error', authError);
+      debugLogger.logAuth('ERROR', 'Logout error', error);
       setUser(null);
       setSession(null);
       toast.success('Successfully logged out');
@@ -271,3 +272,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

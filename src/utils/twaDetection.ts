@@ -1,10 +1,3 @@
-type AndroidBridge = { onVersionUpdate?: (version: string) => void };
-
-const getAndroidBridge = (): AndroidBridge | undefined => {
-  const win = window as Window & { android?: AndroidBridge };
-  return win.android;
-};
-
 /**
  * TWA (Trusted Web Activity) Detection and Update Utilities
  * Critical for Google Play Store PWA updates
@@ -89,9 +82,8 @@ export const forceTWAManifestRefresh = async (): Promise<void> => {
           }
           
           // Notify TWA container if possible
-          const androidBridge = getAndroidBridge();
-          if (androidBridge?.onVersionUpdate) {
-            androidBridge.onVersionUpdate(manifest.version);
+          if ('android' in window && typeof (window as any).android.onVersionUpdate === 'function') {
+            (window as any).android.onVersionUpdate(manifest.version);
           }
           
           break; // Success, no need to try other URLs

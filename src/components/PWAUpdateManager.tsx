@@ -16,59 +16,6 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
   const [isUpdating, setIsUpdating] = useState(false);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
-  const applyUpdate = React.useCallback(async () => {
-    setIsUpdating(true);
-    try {
-      console.log('🔄 Applying PWA update...');
-      
-      // Enhanced TWA update handling with aggressive cache busting
-      if (isTWA()) {
-        console.log('📱 TWA update detected - applying aggressive update strategy');
-        
-        // Step 1: Force manifest refresh with cache busting
-        await forceTWAManifestRefresh();
-        
-        // Step 2: Clear all browser caches
-        if ('caches' in window) {
-          const cacheNames = await caches.keys();
-          await Promise.all(
-            cacheNames.map(cacheName => {
-              console.log(`🗑️ Clearing cache: ${cacheName}`);
-              return caches.delete(cacheName);
-            })
-          );
-        }
-        
-        // Step 3: Clear local storage version info to force re-check
-        localStorage.removeItem('twa-app-version');
-        localStorage.removeItem('twa-manifest-version');
-        
-        // Step 4: Force service worker update
-        if (registration) {
-          await registration.update();
-          if (registration.waiting) {
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-          }
-        }
-        
-        // Step 5: Add cache-busting parameters and reload
-        const timestamp = Date.now();
-        window.location.href = `${window.location.origin}/?twa_update=${timestamp}&v=${timestamp}`;
-      } else if (registration?.waiting) {
-        // Standard PWA update
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        window.location.reload();
-      }
-    } catch (error) {
-      console.error('❌ Update failed:', error);
-      // Fallback: aggressive reload with cache busting
-      const timestamp = Date.now();
-      window.location.href = `${window.location.origin}/?fallback_update=${timestamp}`;
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [registration]);
-
   useEffect(() => {
     const setupUpdateListener = async () => {
       // Log TWA info for debugging
@@ -194,8 +141,60 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
     return () => {
       if (cleanup) cleanup.then(fn => fn && fn());
     };
-  }, [onUpdateAvailable, applyUpdate]);
+  }, [onUpdateAvailable]);
 
+  const applyUpdate = async () => {
+    setIsUpdating(true);
+    try {
+      console.log('🔄 Applying PWA update...');
+      
+      // Enhanced TWA update handling with aggressive cache busting
+      if (isTWA()) {
+        console.log('📱 TWA update detected - applying aggressive update strategy');
+        
+        // Step 1: Force manifest refresh with cache busting
+        await forceTWAManifestRefresh();
+        
+        // Step 2: Clear all browser caches
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(
+            cacheNames.map(cacheName => {
+              console.log(`🗑️ Clearing cache: ${cacheName}`);
+              return caches.delete(cacheName);
+            })
+          );
+        }
+        
+        // Step 3: Clear local storage version info to force re-check
+        localStorage.removeItem('twa-app-version');
+        localStorage.removeItem('twa-manifest-version');
+        
+        // Step 4: Force service worker update
+        if (registration) {
+          await registration.update();
+          if (registration.waiting) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+        }
+        
+        // Step 5: Add cache-busting parameters and reload
+        const timestamp = Date.now();
+        window.location.href = `${window.location.origin}/?twa_update=${timestamp}&v=${timestamp}`;
+      } else if (registration?.waiting) {
+        // Standard PWA update
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('❌ Update failed:', error);
+      // Fallback: aggressive reload with cache busting
+      const timestamp = Date.now();
+      window.location.href = `${window.location.origin}/?fallback_update=${timestamp}`;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const dismissUpdate = () => {
     setUpdateAvailable(false);

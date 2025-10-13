@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { debugLogger } from '@/utils/debugLogger';
@@ -19,7 +19,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
       isLoading,
       currentPath: window.location.pathname
     });
-  }, [user, session, isLoading]);
+  }, []);
 
   useEffect(() => {
     debugLogger.logAuth('INFO', 'AuthGuard auth state changed', {
@@ -40,8 +40,8 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
       navigate('/login');
     };
 
-    window.addEventListener('auth-error', handleAuthError);
-    return () => window.removeEventListener('auth-error', handleAuthError);
+    window.addEventListener('auth-error' as any, handleAuthError);
+    return () => window.removeEventListener('auth-error' as any, handleAuthError);
   }, [navigate]);
 
   useEffect(() => {

@@ -18,7 +18,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { submitContentReport, getReportReasons, ReportReason, ReportReasonType } from "@/services/contentReports";
+import { submitContentReport, getReportReasons, ReportReason } from "@/services/contentReports";
 
 interface ReportDialogProps {
   open: boolean;
@@ -28,7 +28,7 @@ interface ReportDialogProps {
 }
 
 export const ReportDialog = ({ open, onOpenChange, storyTitle, storyContent }: ReportDialogProps) => {
-  const [reportReason, setReportReason] = useState<ReportReasonType | "">("");
+  const [reportReason, setReportReason] = useState("");
   const [reportDetails, setReportDetails] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reportReasons, setReportReasons] = useState<ReportReason[]>([]);
@@ -56,14 +56,14 @@ export const ReportDialog = ({ open, onOpenChange, storyTitle, storyContent }: R
 
     setIsSubmitting(true);
     try {
-      await submitContentReport(storyTitle, storyContent, reportReason as ReportReasonType, reportDetails);
+      await submitContentReport(storyTitle, storyContent, reportReason, reportDetails);
       toast.success("Content report submitted successfully");
       onOpenChange(false);
       setReportReason("");
       setReportDetails("");
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Error submitting report:", error);
-      toast.error((error as Error)?.message || "Failed to submit report");
+      toast.error(error.message || "Failed to submit report");
     } finally {
       setIsSubmitting(false);
     }
@@ -81,7 +81,7 @@ export const ReportDialog = ({ open, onOpenChange, storyTitle, storyContent }: R
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="reason">Reason for reporting</Label>
-            <Select value={reportReason} onValueChange={(value) => setReportReason(value as ReportReasonType)}>
+            <Select value={reportReason} onValueChange={setReportReason}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a reason" />
               </SelectTrigger>
