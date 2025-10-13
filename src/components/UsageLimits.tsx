@@ -71,6 +71,12 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   };
 
   const checkPremiumStatus = async () => {
+    // TEMPORARY: Treating all users as premium for testing
+    console.log('TEMP: Treating all users as premium');
+    setHasPremium(true); // Always set as premium
+    setPremiumLoading(false);
+    
+    /* ORIGINAL CODE - RESTORE WHEN DONE TESTING
     try {
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         body: { userId: user?.id }
@@ -84,6 +90,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     } finally {
       setPremiumLoading(false);
     }
+    */
   };
 
   const handleUpgrade = () => {

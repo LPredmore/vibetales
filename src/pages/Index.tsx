@@ -181,9 +181,15 @@ const Index = () => {
         toast.dismiss(toastId);
       }
       
+      // TEMPORARY: Disabled limit reached handling for testing
+      /* ORIGINAL CODE - RESTORE WHEN DONE TESTING
       if (error instanceof Error && error.message === 'LIMIT_REACHED') {
         setShowLimitPrompt(true);
         toast.info("You have reached your limit today. Wait until tomorrow or upgrade to premium for unlimited stories.");
+      } else {
+      */
+      if (error instanceof Error && error.message === 'LIMIT_REACHED') {
+        // Do nothing - limits are bypassed for testing
       } else {
         // Only show error if not a domain-related issue
         const isDomainError = error instanceof Error && 
@@ -243,11 +249,14 @@ const Index = () => {
               
               <TabsContent value="story">
                 <div className="space-y-6">
+                  {/* TEMPORARY: Hidden for testing - all users treated as premium */}
+                  {/* ORIGINAL CODE - RESTORE WHEN DONE TESTING
                   <UsageLimits onRefreshLimits={setRefreshLimits} />
                   
                   {showLimitPrompt && (
                     <LimitReachedPrompt onClose={() => setShowLimitPrompt(false)} />
                   )}
+                  */}
                   
                   <StoryForm onSubmit={handleSubmit} />
                   
