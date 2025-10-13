@@ -32,27 +32,6 @@ export const LimitReachedPrompt = ({ onClose }: LimitReachedPromptProps) => {
           You've used your daily story for today. Upgrade to premium for unlimited stories or wait until tomorrow (midnight CST) for your limit to reset.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="flex gap-3">
-          <Button
-            onClick={handleUpgrade}
-            className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
-          >
-            <Crown className="mr-2 h-4 w-4" />
-            <span className="text-center">
-              Upgrade to Premium for<br />
-              Unlimited Stories
-            </span>
-          </Button>
-          <Button
-            onClick={onClose}
-            variant="outline"
-            className="clay-button"
-          >
-            Maybe Later
-          </Button>
-        </div>
-      </CardContent>
     </Card>
   );
 };
