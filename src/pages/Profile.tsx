@@ -109,6 +109,12 @@ const Profile = () => {
   }, [user, profileForm, toast]);
 
   const checkSubscriptionStatus = async () => {
+    // TEMPORARY: Treating all users as premium for testing
+    console.log('TEMP: Treating all users as premium in Profile');
+    setSubscriptionStatus({ subscribed: true, subscription_tier: 'Premium' });
+    setSubscriptionLoading(false);
+    
+    /* ORIGINAL CODE - RESTORE WHEN DONE TESTING
     try {
       setSubscriptionLoading(true);
       console.log('🔍 Profile: Starting subscription check');
@@ -157,6 +163,7 @@ const Profile = () => {
     } finally {
       setSubscriptionLoading(false);
     }
+    */
   };
 
   const handleManageSubscription = async () => {

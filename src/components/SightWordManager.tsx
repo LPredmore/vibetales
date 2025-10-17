@@ -7,7 +7,6 @@ import { SightWord } from "@/types/sightWords";
 import { WordGrid } from "./sight-words/WordGrid";
 import { AddWordForm } from "./sight-words/AddWordForm";
 import { BulkActions } from "./sight-words/BulkActions";
-import { UpgradePrompt } from "./sight-words/UpgradePrompt";
 
 interface SightWordManagerProps {
   words: SightWord[];
@@ -163,17 +162,7 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
           Add words and toggle which ones to focus on in your stories.
         </p>
         
-        {/* TEMPORARY: Hidden upgrade prompt for testing */}
-        {/* ORIGINAL CODE - RESTORE WHEN DONE TESTING
-        {!isSubscribed && words.length >= 3 && (
-          <UpgradePrompt 
-            onUpgrade={handleCheckout}
-            isProcessing={isCheckingOut}
-          />
-        )}
-        */}
-        
-        <AddWordForm 
+        <AddWordForm
           onAddWord={handleAddWord}
           disabled={false /* TEMP: Always enabled for testing */}
         />

@@ -3,10 +3,6 @@ import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
 import { SightWordManager } from "@/components/SightWordManager";
 import { FavoriteStories } from "@/components/FavoriteStories";
-import { UsageLimits } from "@/components/UsageLimits";
-import { LimitReachedPrompt } from "@/components/LimitReachedPrompt";
-
-
 import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
 import { generateStory } from "@/services/openrouter";
@@ -27,8 +23,6 @@ const Index = () => {
     theme?: string;
   } | null>(null);
   const [words, setWords] = useState<SightWord[]>([]);
-  const [showLimitPrompt, setShowLimitPrompt] = useState(false);
-  const [refreshLimits, setRefreshLimits] = useState<(() => Promise<void>) | null>(null);
   const [wordsLoading, setWordsLoading] = useState(true);
   const { user } = useAuth();
 
@@ -145,17 +139,6 @@ const Index = () => {
         readingLevel: data.readingLevel,
         theme: data.theme
       });
-      setShowLimitPrompt(false); // Hide limit prompt if it was showing
-      
-      // Refresh usage limits after successful story generation
-      if (refreshLimits && typeof refreshLimits === 'function') {
-        try {
-          await refreshLimits();
-        } catch (refreshError) {
-          console.warn("Failed to refresh usage limits:", refreshError);
-          // Don't affect the main success flow
-        }
-      }
       
       toast.success("Story generated successfully!");
       
@@ -249,15 +232,6 @@ const Index = () => {
               
               <TabsContent value="story">
                 <div className="space-y-6">
-                  {/* TEMPORARY: Hidden for testing - all users treated as premium */}
-                  {/* ORIGINAL CODE - RESTORE WHEN DONE TESTING
-                  <UsageLimits onRefreshLimits={setRefreshLimits} />
-                  
-                  {showLimitPrompt && (
-                    <LimitReachedPrompt onClose={() => setShowLimitPrompt(false)} />
-                  )}
-                  */}
-                  
                   <StoryForm onSubmit={handleSubmit} />
                   
                   <Dialog>
