@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Save, Eye, EyeOff, ExternalLink, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Eye, EyeOff, ExternalLink, Trash2, Loader2, CheckCircle2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,6 +54,8 @@ const Profile = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'loading' | 'subscribed' | 'not_subscribed'>('loading');
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false);
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -112,6 +114,60 @@ const Profile = () => {
 
     loadProfile();
   }, [user, profileForm, toast]);
+
+  useEffect(() => {
+    checkSubscriptionStatus();
+  }, [user]);
+
+  const checkSubscriptionStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      
+      if (error) throw error;
+      
+      setSubscriptionStatus(data?.subscribed ? 'subscribed' : 'not_subscribed');
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setSubscriptionStatus('not_subscribed');
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setIsLoadingPortal(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("No active session");
+      }
+
+      const { data, error } = await supabase.functions.invoke('customer-portal', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('No portal URL received');
+      }
+    } catch (error: any) {
+      console.error('Error opening customer portal:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to open subscription management",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingPortal(false);
+    }
+  };
 
   const handleDeleteAccount = async () => {
     if (confirmText !== "DELETE") {
@@ -431,6 +487,102 @@ const Profile = () => {
               </Button>
             </CardContent>
           </Card>
+
+          <Separator />
+
+          {/* Subscription Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Subscription Management</CardTitle>
+              <CardDescription>
+                Manage your premium subscription and billing
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {subscriptionStatus === 'loading' ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : subscriptionStatus === 'subscribed' ? (
+                  <>
+                    <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-green-900">Premium Active</p>
+                          <p className="text-sm text-green-700">You have unlimited access to all features</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
+                        Active
+                      </Badge>
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      onClick={handleManageSubscription}
+                      disabled={isLoadingPortal}
+                      className="w-full"
+                    >
+                      {isLoadingPortal ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Opening...
+                        </>
+                      ) : (
+                        <>
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Manage Subscription & Billing
+                        </>
+                      )}
+                    </Button>
+                    
+                    <p className="text-xs text-muted-foreground text-center">
+                      Opens Stripe customer portal to manage your subscription, update payment method, view invoices, or cancel subscription.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-4 border border-border rounded-lg bg-muted">
+                      <p className="text-sm text-foreground mb-2">
+                        <strong>Free Plan</strong>
+                      </p>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• 3 daily stories</li>
+                        <li>• Up to 3 sight words</li>
+                        <li>• Basic features</li>
+                      </ul>
+                    </div>
+                    
+                    <Button
+                      onClick={() => window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank')}
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Upgrade to Premium
+                    </Button>
+                    
+                    <div className="p-4 border border-purple-200 rounded-lg bg-purple-50">
+                      <p className="text-sm font-semibold text-purple-900 mb-2">
+                        Premium Benefits:
+                      </p>
+                      <ul className="text-sm text-purple-800 space-y-1">
+                        <li>✨ Unlimited story generation</li>
+                        <li>✨ Unlimited sight words</li>
+                        <li>✨ Priority support</li>
+                        <li>✨ Advanced features</li>
+                      </ul>
+                    </div>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Separator />
 
           {/* Account Management Section */}
           <Card>
