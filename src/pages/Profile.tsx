@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Save, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { ArrowLeft, Save, Eye, EyeOff, ExternalLink, Trash2, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +14,17 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -35,19 +46,14 @@ type PasswordFormData = z.infer<typeof passwordSchema>;
 const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<{
-    subscribed: boolean;
-    subscription_tier?: string;
-    subscription_end?: string;
-    error?: string;
-  } | null>(null);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
-  const [portalLoading, setPortalLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -105,96 +111,57 @@ const Profile = () => {
     };
 
     loadProfile();
-    checkSubscriptionStatus();
   }, [user, profileForm, toast]);
 
-  const checkSubscriptionStatus = async () => {
-    try {
-      setSubscriptionLoading(true);
-      console.log('🔍 Profile: Starting subscription check');
-      const { data: session } = await supabase.auth.getSession();
-      
-      console.log('🔍 Profile: Session data:', { 
-        hasSession: !!session.session, 
-        userId: session.session?.user?.id,
-        email: session.session?.user?.email,
-        accessToken: session.session?.access_token ? 'present' : 'missing'
+  const handleDeleteAccount = async () => {
+    if (confirmText !== "DELETE") {
+      toast({
+        title: "Confirmation required",
+        description: "Please type DELETE to confirm account deletion.",
+        variant: "destructive",
       });
-      
-      if (!session.session) {
-        console.log('⚠️ Profile: No session found, skipping subscription check');
-        setSubscriptionStatus({ subscribed: false, error: 'No active session' });
-        return;
-      }
-
-      console.log('🔍 Profile: Calling check-subscription function with token');
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
-        headers: {
-          Authorization: `Bearer ${session.session.access_token}`,
-        },
-      });
-
-      if (error) {
-        console.error('❌ Profile: Error checking subscription:', error);
-        setSubscriptionStatus({ subscribed: false, error: error.message || 'Unknown error' });
-        return;
-      }
-
-      console.log('✅ Profile: Subscription status received:', JSON.stringify(data, null, 2));
-      console.log('🔍 Profile: Data type:', typeof data, 'Is object:', typeof data === 'object');
-      
-      // Ensure we have a valid response format
-      if (data && typeof data === 'object') {
-        setSubscriptionStatus(data);
-        console.log('✅ Profile: Subscription status set successfully:', data);
-      } else {
-        console.log('⚠️ Profile: Invalid data format received:', data);
-        setSubscriptionStatus({ subscribed: false, error: 'Invalid response format' });
-      }
-    } catch (error) {
-      console.error('❌ Profile: Error checking subscription status:', error);
-      setSubscriptionStatus({ subscribed: false, error: error instanceof Error ? error.message : 'Unknown error' });
-    } finally {
-      setSubscriptionLoading(false);
+      return;
     }
-  };
 
-  const handleManageSubscription = async () => {
+    setIsDeleting(true);
+    
     try {
-      setPortalLoading(true);
-      const { data: session } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session.session) {
-        toast({
-          title: "Authentication required",
-          description: "Please log in to manage your subscription.",
-          variant: "destructive",
-        });
-        return;
+      if (!session) {
+        throw new Error("No active session");
       }
 
-      const { data, error } = await supabase.functions.invoke('customer-portal', {
+      const { error } = await supabase.functions.invoke('delete-account', {
         headers: {
-          Authorization: `Bearer ${session.session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      console.error('Error opening customer portal:', error);
+      toast({
+        title: "Account deleted",
+        description: "Your account has been permanently deleted.",
+      });
+
+      await logout();
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      navigate("/login");
+      
+    } catch (error: any) {
+      console.error("Account deletion error:", error);
       toast({
         title: "Error",
-        description: "Failed to open subscription management. Please try again.",
+        description: error.message || "Failed to delete account. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setPortalLoading(false);
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+      setConfirmText("");
     }
   };
 
@@ -465,137 +432,94 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* Subscription Management Section */}
+          {/* Account Management Section */}
           <Card>
             <CardHeader>
-              <CardTitle>Subscription Management</CardTitle>
+              <CardTitle className="text-destructive">Account Management</CardTitle>
               <CardDescription>
-                Manage your subscription, billing, and cancel if needed.
+                Permanently delete your account and all associated data
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {/* Force Refresh Button */}
-                <Button 
-                  onClick={checkSubscriptionStatus}
-                  disabled={subscriptionLoading}
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                >
-                  {subscriptionLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                      Checking...
-                    </>
-                  ) : (
-                    'Check Subscription Status'
-                  )}
-                </Button>
+                <div className="p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
+                  <p className="text-sm text-yellow-800 font-medium mb-2">
+                    ⚠️ Warning: This action cannot be undone
+                  </p>
+                  <p className="text-sm text-yellow-700">
+                    Deleting your account will permanently remove:
+                  </p>
+                  <ul className="text-sm text-yellow-700 list-disc list-inside mt-2 space-y-1">
+                    <li>Your profile information</li>
+                    <li>All generated stories</li>
+                    <li>Your favorite stories</li>
+                    <li>Your sight word lists</li>
+                    <li>Usage history and preferences</li>
+                    <li>Account access</li>
+                  </ul>
+                </div>
 
-                {/* Status Display */}
-                {(() => {
-                  console.log('🎨 Profile: Rendering subscription section, status:', subscriptionStatus);
-                  
-                  if (subscriptionLoading) {
-                    return (
-                      <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                        <span className="text-sm text-muted-foreground">Checking subscription status...</span>
+                <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      className="w-full"
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete My Account
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-destructive">
+                        Are you absolutely sure?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your
+                        account and remove all your data from our servers.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm-delete">
+                          Type <span className="font-bold">DELETE</span> to confirm:
+                        </Label>
+                        <Input
+                          id="confirm-delete"
+                          value={confirmText}
+                          onChange={(e) => setConfirmText(e.target.value)}
+                          placeholder="Type DELETE here"
+                          disabled={isDeleting}
+                        />
                       </div>
-                    );
-                  }
-                  
-                  if (!subscriptionStatus) {
-                    console.log('🎨 Profile: No subscription status available');
-                    return (
-                      <div className="p-4 border rounded-lg border-yellow-200 bg-yellow-50">
-                        <p className="text-sm text-yellow-800">
-                          Subscription status not loaded yet. Click "Check Subscription Status" above.
-                        </p>
-                      </div>
-                    );
-                  }
-                  
-                  if (subscriptionStatus.error) {
-                    console.log('🎨 Profile: Showing error state:', subscriptionStatus.error);
-                    return (
-                      <div className="p-4 border rounded-lg border-red-200 bg-red-50">
-                        <p className="text-sm text-red-800">
-                          Error loading subscription: {subscriptionStatus.error}
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  console.log('🎨 Profile: Showing subscription details for subscribed:', subscriptionStatus.subscribed);
-                  return (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <span className="text-sm font-medium">Status:</span>
-                        <Badge variant={subscriptionStatus.subscribed ? "default" : "secondary"}>
-                          {subscriptionStatus.subscribed ? "Active" : "Inactive"}
-                        </Badge>
-                      </div>
-                      
-                      {subscriptionStatus.subscription_tier && (
-                        <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <span className="text-sm font-medium">Plan:</span>
-                          <span className="text-sm text-muted-foreground">{subscriptionStatus.subscription_tier}</span>
-                        </div>
-                      )}
-                      
-                      {subscriptionStatus.subscription_end && (
-                        <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <span className="text-sm font-medium">Next billing:</span>
-                          <span className="text-sm text-muted-foreground">
-                            {new Date(subscriptionStatus.subscription_end).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {subscriptionStatus.subscribed ? (
-                        <Button 
-                          onClick={handleManageSubscription}
-                          disabled={portalLoading}
-                          variant="destructive"
-                          className="w-full"
-                        >
-                          {portalLoading ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                              Opening portal...
-                            </>
-                          ) : (
-                            <>
-                              <ExternalLink className="mr-2 h-4 w-4" />
-                              Manage Subscription & Billing
-                            </>
-                          )}
-                        </Button>
-                      ) : (
-                        <div className="p-4 border rounded-lg border-blue-200 bg-blue-50">
-                          <p className="text-sm text-blue-800">
-                            No active subscription found. You can subscribe to premium features on the main page.
-                          </p>
-                        </div>
-                      )}
                     </div>
-                  );
-                })()}
 
-                {/* Debug Information */}
-                <details className="mt-4">
-                  <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
-                    Debug Information (Click to expand)
-                  </summary>
-                  <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono">
-                    <div><strong>User:</strong> {user?.email || 'Not logged in'}</div>
-                    <div><strong>Loading:</strong> {subscriptionLoading.toString()}</div>
-                    <div><strong>Raw Status:</strong> {JSON.stringify(subscriptionStatus, null, 2)}</div>
-                    <div><strong>Portal Loading:</strong> {portalLoading.toString()}</div>
-                  </div>
-                </details>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isDeleting}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <Button
+                        variant="destructive"
+                        onClick={handleDeleteAccount}
+                        disabled={isDeleting || confirmText !== "DELETE"}
+                      >
+                        {isDeleting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Deleting...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Account
+                          </>
+                        )}
+                      </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </CardContent>
           </Card>
