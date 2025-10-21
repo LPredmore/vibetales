@@ -7,6 +7,7 @@ import { SightWord } from "@/types/sightWords";
 import { WordGrid } from "./sight-words/WordGrid";
 import { AddWordForm } from "./sight-words/AddWordForm";
 import { BulkActions } from "./sight-words/BulkActions";
+import { UpgradePrompt } from "./sight-words/UpgradePrompt";
 
 interface SightWordManagerProps {
   words: SightWord[];
@@ -23,11 +24,6 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
   const totalCount = words.length;
 
   useEffect(() => {
-    // TEMPORARY: Treating all users as premium for testing
-    console.log('TEMP: Treating all users as premium for sight words');
-    setIsSubscribed(true); // Always set as subscribed
-    
-    /* ORIGINAL CODE - RESTORE WHEN DONE TESTING
     const checkSubscription = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('check-subscription');
@@ -48,7 +44,6 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
     if (user) {
       checkSubscription();
     }
-    */
   }, [user]);
 
   // Words are now loaded by parent component, so we don't need to load them here
@@ -104,13 +99,10 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
       return;
     }
 
-    // TEMPORARY: Removed 3-word limit for testing
-    /* ORIGINAL CODE - RESTORE WHEN DONE TESTING
     if (!isSubscribed && words.length >= 3) {
       toast.error("Free accounts are limited to 3 words. Please upgrade to add more words.");
       return;
     }
-    */
     
     const updatedWords = [...words, { word: newWord, active: true }];
     setWords(updatedWords);
@@ -162,9 +154,16 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
           Add words and toggle which ones to focus on in your stories.
         </p>
         
-        <AddWordForm
+        {!isSubscribed && words.length >= 3 && (
+          <UpgradePrompt 
+            onUpgrade={handleCheckout}
+            isProcessing={isCheckingOut}
+          />
+        )}
+        
+        <AddWordForm 
           onAddWord={handleAddWord}
-          disabled={false /* TEMP: Always enabled for testing */}
+          disabled={!isSubscribed && words.length >= 3}
         />
       </div>
 

@@ -115,12 +115,7 @@ function getCSTDate(): string {
 }
 
 // Check if user has premium subscription
-// TEMPORARY: Bypassing subscription check for testing - all users treated as premium
 async function checkSubscription(userId: string): Promise<boolean> {
-  console.log('TEMP: Treating all users as premium for testing');
-  return true; // Always return premium status
-  
-  /* ORIGINAL CODE - RESTORE WHEN DONE TESTING
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
   if (!stripeKey) {
     console.log('No Stripe key found, assuming non-premium');
@@ -149,16 +144,10 @@ async function checkSubscription(userId: string): Promise<boolean> {
     console.error('Error checking subscription:', error);
     return false;
   }
-  */
 }
 
 // Check and update user limits
-// TEMPORARY: Bypassing all limits for testing - unlimited generation for all users
 async function checkUserLimits(supabase: any, userId: string, storyParams: StoryRequest): Promise<{ canGenerate: boolean; error?: string }> {
-  console.log('TEMP: Bypassing all limits for testing - allowing unlimited stories');
-  return { canGenerate: true }; // Always allow generation
-  
-  /* ORIGINAL CODE - RESTORE WHEN DONE TESTING
   const currentDate = getCSTDate();
   
   // Get or create user limits
@@ -209,7 +198,6 @@ async function checkUserLimits(supabase: any, userId: string, storyParams: Story
     .eq('user_id', userId);
 
   return { canGenerate: true };
-  */
 }
 
 async function generateStory(params: StoryRequest): Promise<StoryResponse> {

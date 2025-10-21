@@ -9,10 +9,6 @@ interface UpgradePromptProps {
 }
 
 export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) => {
-  // TEMPORARY: Hidden for testing - all users treated as premium
-  return null;
-  
-  /* ORIGINAL CODE - RESTORE WHEN DONE TESTING
   const handleDirectUpgrade = () => {
     // Open direct Stripe payment link in a new tab
     window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank');
@@ -55,5 +51,4 @@ export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) =
       </CardContent>
     </Card>
   );
-  */
 };
