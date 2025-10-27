@@ -1,11 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Bookmark, BookmarkCheck, Flag } from "lucide-react";
+import { Bookmark, BookmarkCheck, Flag, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { saveFavoriteStory } from "@/services/favoriteStories";
 import { ReportDialog } from "@/components/ReportDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StoryDisplayProps {
   title: string;
@@ -18,6 +19,26 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
+
+  useEffect(() => {
+    const checkSubscriptionStatus = async () => {
+      setIsCheckingSubscription(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('check-subscription');
+        if (error) throw error;
+        setIsSubscribed(data?.subscribed || false);
+      } catch (error) {
+        console.error('Error checking subscription:', error);
+        setIsSubscribed(false);
+      } finally {
+        setIsCheckingSubscription(false);
+      }
+    };
+
+    checkSubscriptionStatus();
+  }, []);
 
   const handleSaveToFavorites = async () => {
     if (!readingLevel || !theme) {
@@ -61,24 +82,37 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
             <div className="w-24 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mx-auto"></div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-            <Button
-              onClick={handleSaveToFavorites}
-              disabled={isSaving || isSaved}
-              variant="outline"
-              className="clay-button w-full sm:w-auto"
-            >
-              {isSaved ? (
-                <>
-                  <BookmarkCheck className="w-4 h-4 mr-2 text-green-600" />
-                  Saved!
-                </>
-              ) : (
-                <>
-                  <Bookmark className="w-4 h-4 mr-2" />
-                  {isSaving ? "Saving..." : "Save to Favorites"}
-                </>
-              )}
-            </Button>
+            {isCheckingSubscription ? (
+              <div className="h-10 w-40 bg-gray-200 animate-pulse rounded-md" />
+            ) : isSubscribed ? (
+              <Button
+                onClick={handleSaveToFavorites}
+                disabled={isSaving || isSaved}
+                variant="outline"
+                className="clay-button w-full sm:w-auto"
+              >
+                {isSaved ? (
+                  <>
+                    <BookmarkCheck className="w-4 h-4 mr-2 text-green-600" />
+                    Saved!
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="w-4 h-4 mr-2" />
+                    {isSaving ? "Saving..." : "Save to Favorites"}
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank')}
+                variant="outline"
+                className="clay-button w-full sm:w-auto bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white border-0"
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                Upgrade to Premium
+              </Button>
+            )}
             <Button
               onClick={() => setShowReportDialog(true)}
               variant="outline"

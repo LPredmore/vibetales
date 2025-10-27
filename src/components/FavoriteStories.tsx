@@ -3,13 +3,16 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Trash2, Calendar, BookOpen, Palette } from "lucide-react";
+import { Trash2, Calendar, BookOpen, Palette, Crown, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { getFavoriteStories, deleteFavoriteStory, FavoriteStory } from "@/services/favoriteStories";
+import { supabase } from "@/integrations/supabase/client";
 
 export const FavoriteStories = () => {
   const [favorites, setFavorites] = useState<FavoriteStory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
 
   const loadFavorites = async () => {
     try {
@@ -24,7 +27,30 @@ export const FavoriteStories = () => {
   };
 
   useEffect(() => {
-    loadFavorites();
+    const checkSubscriptionAndLoad = async () => {
+      setIsCheckingSubscription(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('check-subscription');
+        if (error) throw error;
+        const subscribed = data?.subscribed || false;
+        setIsSubscribed(subscribed);
+        
+        // Only load favorites if user is subscribed
+        if (subscribed) {
+          await loadFavorites();
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error checking subscription:', error);
+        setIsSubscribed(false);
+        setIsLoading(false);
+      } finally {
+        setIsCheckingSubscription(false);
+      }
+    };
+
+    checkSubscriptionAndLoad();
   }, []);
 
   const handleDelete = async (id: string, title: string) => {
@@ -38,11 +64,36 @@ export const FavoriteStories = () => {
     }
   };
 
-  if (isLoading) {
+  if (isCheckingSubscription || isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
       </div>
+    );
+  }
+
+  if (!isSubscribed) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center py-12 px-6"
+      >
+        <div className="max-w-md mx-auto clay-card p-8">
+          <Lock className="w-16 h-16 mx-auto mb-4 text-amber-500" />
+          <h3 className="text-xl font-semibold text-gray-700 mb-3">Premium Feature</h3>
+          <p className="text-gray-600 mb-6">
+            Saving stories is a Premium feature. Upgrade to unlock unlimited story saving and access your favorite stories anytime!
+          </p>
+          <Button
+            onClick={() => window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank')}
+            className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
+          >
+            <Crown className="w-4 h-4 mr-2" />
+            Upgrade to Premium
+          </Button>
+        </div>
+      </motion.div>
     );
   }
 
