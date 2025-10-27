@@ -607,6 +607,7 @@ const Profile = () => {
                     <li>Your favorite stories</li>
                     <li>Your sight word lists</li>
                     <li>Usage history and preferences</li>
+                    <li><strong>Your active subscription will be cancelled immediately</strong></li>
                     <li>Account access</li>
                   </ul>
                 </div>
