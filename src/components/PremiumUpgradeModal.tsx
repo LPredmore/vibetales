@@ -127,7 +127,7 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
         </DialogHeader>
 
         <div className="space-y-6 max-h-[calc(85vh-120px)] overflow-y-auto pr-4">
-          {/* Section 1: Premium Benefits */}
+          {/* Section 1: Unlimited Benefits */}
           <div className="space-y-3 mb-6">
             <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200">
               <Sparkles className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />

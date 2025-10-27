@@ -495,7 +495,7 @@ const Profile = () => {
             <CardHeader>
               <CardTitle>Subscription Management</CardTitle>
               <CardDescription>
-                Manage your premium subscription and billing
+                Manage your unlimited subscription and billing
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -512,7 +512,7 @@ const Profile = () => {
                           <CheckCircle2 className="h-5 w-5 text-green-600" />
                         </div>
                         <div>
-                          <p className="font-semibold text-green-900">Premium Active</p>
+                          <p className="font-semibold text-green-900">Unlimited Active</p>
                           <p className="text-sm text-green-700">You have unlimited access to all features</p>
                         </div>
                       </div>
@@ -562,12 +562,12 @@ const Profile = () => {
                       className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                     >
                       <Sparkles className="mr-2 h-4 w-4" />
-                      Upgrade to Premium
+                      Upgrade to Unlimited
                     </Button>
                     
                     <div className="p-4 border border-purple-200 rounded-lg bg-purple-50">
                       <p className="text-sm font-semibold text-purple-900 mb-2">
-                        Premium Benefits:
+                        Unlimited Benefits:
                       </p>
                       <ul className="text-sm text-purple-800 space-y-1">
                         <li>✨ Unlimited story generation</li>

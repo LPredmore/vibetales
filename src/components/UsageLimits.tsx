@@ -140,7 +140,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
             className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
           >
             <Crown className="mr-2 h-4 w-4" />
-            Upgrade to Premium
+            Upgrade to Unlimited
           </Button>
           
           <PremiumUpgradeModal 
