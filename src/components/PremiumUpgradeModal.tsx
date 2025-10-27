@@ -92,10 +92,6 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
       if (data?.success) {
         setValidationStatus("success");
         setShowCodePricingTable(true);
-        toast({
-          title: "Success!",
-          description: `Welcome ${data.influencerName}! Your promo pricing is now available below.`,
-        });
         
         // Call success callback to refresh subscription status
         if (onSuccess) {
@@ -252,24 +248,28 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
                 <p className="text-sm text-muted-foreground">
                   You get a free week!
                 </p>
-                <stripe-pricing-table 
-                  pricing-table-id="prctbl_1SMrbERFHDig2LCd3awZhYCk"
-                  publishable-key="pk_live_51Q7RAjRFHDig2LCd0VqJDTzZl0PZKDUtJY9CJshGKffP8dg0ompEBRjKAhqrrKw4rtdxw3dQFvqXRgpLfSyJ12mi00Rf52vVsl"
-                  customer-email={user?.email}
-                >
-                </stripe-pricing-table>
+                <div style={{ minHeight: '400px' }}>
+                  <stripe-pricing-table 
+                    pricing-table-id="prctbl_1SMrbERFHDig2LCd3awZhYCk"
+                    publishable-key="pk_live_51Q7RAjRFHDig2LCd0VqJDTzZl0PZKDUtJY9CJshGKffP8dg0ompEBRjKAhqrrKw4rtdxw3dQFvqXRgpLfSyJ12mi00Rf52vVsl"
+                    customer-email={user?.email}
+                  >
+                  </stripe-pricing-table>
+                </div>
               </>
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
                   Choose your plan below. Have a promo code? Enter it above for special pricing!
                 </p>
-                <stripe-pricing-table 
-                  pricing-table-id="prctbl_1SMqbWRFHDig2LCdB0mdlAW5"
-                  publishable-key="pk_live_51Q7RAjRFHDig2LCd0VqJDTzZl0PZKDUtJY9CJshGKffP8dg0ompEBRjKAhqrrKw4rtdxw3dQFvqXRgpLfSyJ12mi00Rf52vVsl"
-                  customer-email={user?.email}
-                >
-                </stripe-pricing-table>
+                <div style={{ minHeight: '400px' }}>
+                  <stripe-pricing-table 
+                    pricing-table-id="prctbl_1SMqbWRFHDig2LCdB0mdlAW5"
+                    publishable-key="pk_live_51Q7RAjRFHDig2LCd0VqJDTzZl0PZKDUtJY9CJshGKffP8dg0ompEBRjKAhqrrKw4rtdxw3dQFvqXRgpLfSyJ12mi00Rf52vVsl"
+                    customer-email={user?.email}
+                  >
+                  </stripe-pricing-table>
+                </div>
               </>
             )}
           </div>
