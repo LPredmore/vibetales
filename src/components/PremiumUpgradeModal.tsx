@@ -126,7 +126,7 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(85vh-120px)] pr-4">
+        <div className="space-y-6 max-h-[calc(85vh-120px)] overflow-y-auto pr-4">
           {/* Section 1: Premium Benefits */}
           <div className="space-y-3 mb-6">
             <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200">
@@ -248,7 +248,7 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
                 <p className="text-sm text-muted-foreground">
                   You get a free week!
                 </p>
-                <div style={{ minHeight: '400px' }}>
+                <div style={{ minHeight: '400px', pointerEvents: 'auto' }}>
                   <stripe-pricing-table 
                     pricing-table-id="prctbl_1SMrbERFHDig2LCd3awZhYCk"
                     publishable-key="pk_live_51Q7RAjRFHDig2LCd0VqJDTzZl0PZKDUtJY9CJshGKffP8dg0ompEBRjKAhqrrKw4rtdxw3dQFvqXRgpLfSyJ12mi00Rf52vVsl"
@@ -262,7 +262,7 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
                 <p className="text-sm text-muted-foreground">
                   Choose your plan below. Have a promo code? Enter it above for special pricing!
                 </p>
-                <div style={{ minHeight: '400px' }}>
+                <div style={{ minHeight: '400px', pointerEvents: 'auto' }}>
                   <stripe-pricing-table 
                     pricing-table-id="prctbl_1SMqbWRFHDig2LCdB0mdlAW5"
                     publishable-key="pk_live_51Q7RAjRFHDig2LCd0VqJDTzZl0PZKDUtJY9CJshGKffP8dg0ompEBRjKAhqrrKw4rtdxw3dQFvqXRgpLfSyJ12mi00Rf52vVsl"
@@ -273,7 +273,7 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
               </>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
