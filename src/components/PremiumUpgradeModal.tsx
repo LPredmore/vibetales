@@ -148,8 +148,16 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
             <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
               <Save className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-semibold text-purple-900">Save Favorite Stories</h4>
+                <h4 className="font-semibold text-purple-900">Saving Stories</h4>
                 <p className="text-sm text-purple-700">Keep your best stories and access them anytime</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
+              <Sparkles className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-green-900">Early Access to New Features</h4>
+                <p className="text-sm text-green-700">Be the first to try new features as they're released</p>
               </div>
             </div>
           </div>
