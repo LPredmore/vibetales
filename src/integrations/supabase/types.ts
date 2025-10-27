@@ -248,6 +248,48 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_webhook_logs: {
+        Row: {
+          customer_email: string | null
+          error: string | null
+          event_id: string
+          event_type: string
+          id: string
+          influencer_code: string | null
+          processed_at: string | null
+          promotion_code: string | null
+          raw_event: Json | null
+          subscription_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          customer_email?: string | null
+          error?: string | null
+          event_id: string
+          event_type: string
+          id?: string
+          influencer_code?: string | null
+          processed_at?: string | null
+          promotion_code?: string | null
+          raw_event?: Json | null
+          subscription_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          customer_email?: string | null
+          error?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          influencer_code?: string | null
+          processed_at?: string | null
+          promotion_code?: string | null
+          raw_event?: Json | null
+          subscription_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_limits: {
         Row: {
           created_at: string
