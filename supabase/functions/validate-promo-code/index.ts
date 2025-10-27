@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
   try {
     console.log('Starting promo code validation');
 
-    // Create Supabase client
+    // Create client for user authentication
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -23,6 +23,12 @@ Deno.serve(async (req) => {
           headers: { Authorization: req.headers.get('Authorization')! },
         },
       }
+    );
+
+    // Create service role client for database operations (bypasses RLS)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     // Get the user from the auth header
@@ -54,8 +60,8 @@ Deno.serve(async (req) => {
 
     console.log('Validating code:', code);
 
-    // Look up the code in premium_codes table
-    const { data: promoCode, error: lookupError } = await supabaseClient
+    // Look up the code in premium_codes table (using admin client to bypass RLS)
+    const { data: promoCode, error: lookupError } = await supabaseAdmin
       .from('premium_codes')
       .select('*')
       .eq('influencer_code', code.trim().toUpperCase())
@@ -78,8 +84,8 @@ Deno.serve(async (req) => {
 
     console.log('Setting trial expiration to:', expiresAt.toISOString());
 
-    // Update user's profile with influencer code and trial expiration
-    const { error: updateError } = await supabaseClient
+    // Update user's profile with influencer code and trial expiration (using admin client to bypass RLS)
+    const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .update({
         influencer_code: promoCode.influencer_code,
