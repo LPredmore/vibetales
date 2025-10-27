@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -7,12 +6,14 @@ import { Trash2, Calendar, BookOpen, Palette, Crown, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { getFavoriteStories, deleteFavoriteStory, FavoriteStory } from "@/services/favoriteStories";
 import { supabase } from "@/integrations/supabase/client";
+import { PremiumUpgradeModal } from "./PremiumUpgradeModal";
 
 export const FavoriteStories = () => {
   const [favorites, setFavorites] = useState<FavoriteStory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const loadFavorites = async () => {
     try {
@@ -26,31 +27,31 @@ export const FavoriteStories = () => {
     }
   };
 
-  useEffect(() => {
-    const checkSubscriptionAndLoad = async () => {
-      setIsCheckingSubscription(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('check-subscription');
-        if (error) throw error;
-        const subscribed = data?.subscribed || false;
-        setIsSubscribed(subscribed);
-        
-        // Only load favorites if user is subscribed
-        if (subscribed) {
-          await loadFavorites();
-        } else {
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error('Error checking subscription:', error);
-        setIsSubscribed(false);
+  const checkSubscription = async () => {
+    setIsCheckingSubscription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      if (error) throw error;
+      const subscribed = data?.subscribed || false;
+      setIsSubscribed(subscribed);
+      
+      // Only load favorites if user is subscribed
+      if (subscribed) {
+        await loadFavorites();
+      } else {
         setIsLoading(false);
-      } finally {
-        setIsCheckingSubscription(false);
       }
-    };
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setIsSubscribed(false);
+      setIsLoading(false);
+    } finally {
+      setIsCheckingSubscription(false);
+    }
+  };
 
-    checkSubscriptionAndLoad();
+  useEffect(() => {
+    checkSubscription();
   }, []);
 
   const handleDelete = async (id: string, title: string) => {
@@ -86,12 +87,18 @@ export const FavoriteStories = () => {
             Saving stories is a Premium feature. Upgrade to unlock unlimited story saving and access your favorite stories anytime!
           </p>
           <Button
-            onClick={() => window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank')}
+            onClick={() => setShowUpgradeModal(true)}
             className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
           >
             <Crown className="w-4 h-4 mr-2" />
             Upgrade to Premium
           </Button>
+          
+          <PremiumUpgradeModal 
+            open={showUpgradeModal}
+            onOpenChange={setShowUpgradeModal}
+            onSuccess={checkSubscription}
+          />
         </div>
       </motion.div>
     );

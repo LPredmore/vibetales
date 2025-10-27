@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { toast } from "sonner";
 import { saveFavoriteStory } from "@/services/favoriteStories";
 import { ReportDialog } from "@/components/ReportDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { PremiumUpgradeModal } from "./PremiumUpgradeModal";
 
 interface StoryDisplayProps {
   title: string;
@@ -21,23 +21,24 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const checkSubscription = async () => {
+    setIsCheckingSubscription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      if (error) throw error;
+      setIsSubscribed(data?.subscribed || false);
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setIsSubscribed(false);
+    } finally {
+      setIsCheckingSubscription(false);
+    }
+  };
 
   useEffect(() => {
-    const checkSubscriptionStatus = async () => {
-      setIsCheckingSubscription(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('check-subscription');
-        if (error) throw error;
-        setIsSubscribed(data?.subscribed || false);
-      } catch (error) {
-        console.error('Error checking subscription:', error);
-        setIsSubscribed(false);
-      } finally {
-        setIsCheckingSubscription(false);
-      }
-    };
-
-    checkSubscriptionStatus();
+    checkSubscription();
   }, []);
 
   const handleSaveToFavorites = async () => {
@@ -105,7 +106,7 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
               </Button>
             ) : (
               <Button
-                onClick={() => window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank')}
+                onClick={() => setShowUpgradeModal(true)}
                 variant="outline"
                 className="clay-button w-full sm:w-auto bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white border-0"
               >
@@ -113,6 +114,12 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
                 Upgrade to Premium
               </Button>
             )}
+            
+            <PremiumUpgradeModal 
+              open={showUpgradeModal}
+              onOpenChange={setShowUpgradeModal}
+              onSuccess={checkSubscription}
+            />
             <Button
               onClick={() => setShowReportDialog(true)}
               variant="outline"

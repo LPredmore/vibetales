@@ -7,6 +7,7 @@ import { Clock, Crown, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { PremiumUpgradeModal } from "./PremiumUpgradeModal";
 
 interface UsageLimitsProps {
   onRefreshLimits?: (refreshFunction: () => Promise<void>) => void;
@@ -24,6 +25,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   const [hasPremium, setHasPremium] = useState(false);
   const [limitsLoading, setLimitsLoading] = useState(true);
   const [premiumLoading, setPremiumLoading] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -86,14 +88,11 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     }
   };
 
-  const handleUpgrade = () => {
-    if (!user) {
-      toast.error("Please log in to upgrade");
-      return;
+  const handleUpgradeSuccess = () => {
+    checkPremiumStatus();
+    if (onRefreshLimits) {
+      onRefreshLimits(fetchUserLimits);
     }
-
-    // Open direct Stripe payment link in a new tab
-    window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank');
   };
 
   // Show loading until both limits and premium status are loaded
@@ -136,13 +135,19 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
             value={(dailyUsed / dailyLimit) * 100} 
             className="h-2"
           />
-          <Button
-            onClick={handleUpgrade}
+          <Button 
+            onClick={() => setShowUpgradeModal(true)}
             className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
           >
             <Crown className="mr-2 h-4 w-4" />
             Upgrade to Premium
           </Button>
+          
+          <PremiumUpgradeModal 
+            open={showUpgradeModal}
+            onOpenChange={setShowUpgradeModal}
+            onSuccess={handleUpgradeSuccess}
+          />
         </div>
       </CardContent>
     </Card>

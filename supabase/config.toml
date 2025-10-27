@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.delete-account]
 verify_jwt = true
+
+[functions.validate-promo-code]
+verify_jwt = true

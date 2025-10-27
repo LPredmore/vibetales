@@ -1,7 +1,8 @@
-
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Crown, Sparkles } from "lucide-react";
+import { PremiumUpgradeModal } from "../PremiumUpgradeModal";
 
 interface UpgradePromptProps {
   onUpgrade: () => void;
@@ -9,10 +10,9 @@ interface UpgradePromptProps {
 }
 
 export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) => {
-  const handleDirectUpgrade = () => {
-    // Open direct Stripe payment link in a new tab
-    window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank');
-    // Call the original onUpgrade for any additional handling
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  const handleUpgradeSuccess = () => {
     onUpgrade();
   };
 
@@ -29,7 +29,7 @@ export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) =
       </CardHeader>
       <CardContent>
         <Button
-          onClick={handleDirectUpgrade}
+          onClick={() => setShowUpgradeModal(true)}
           disabled={isProcessing}
           className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
         >
@@ -45,6 +45,12 @@ export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) =
             </>
           )}
         </Button>
+        
+        <PremiumUpgradeModal 
+          open={showUpgradeModal}
+          onOpenChange={setShowUpgradeModal}
+          onSuccess={handleUpgradeSuccess}
+        />
       </CardContent>
     </Card>
   );

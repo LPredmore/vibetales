@@ -7,10 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
@@ -83,28 +83,85 @@ export type Database = {
         }
         Relationships: []
       }
+      premium_codes: {
+        Row: {
+          created_at: string
+          id: string
+          influencer_code: string
+          influencer_email: string
+          influencer_id: string
+          influencer_name: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          influencer_code: string
+          influencer_email: string
+          influencer_id: string
+          influencer_name: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          influencer_code?: string
+          influencer_email?: string
+          influencer_id?: string
+          influencer_name?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           email: string | null
+          iap_entitlements: Json | null
+          iap_original_transaction_id: string | null
+          iap_platform: string | null
           id: string
+          influencer_code: string | null
           name: string | null
+          premium_active: boolean | null
+          premium_expires_at: string | null
+          premium_source: string | null
+          premium_trial_expires_at: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           email?: string | null
+          iap_entitlements?: Json | null
+          iap_original_transaction_id?: string | null
+          iap_platform?: string | null
           id?: string
+          influencer_code?: string | null
           name?: string | null
+          premium_active?: boolean | null
+          premium_expires_at?: string | null
+          premium_source?: string | null
+          premium_trial_expires_at?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           email?: string | null
+          iap_entitlements?: Json | null
+          iap_original_transaction_id?: string | null
+          iap_platform?: string | null
           id?: string
+          influencer_code?: string | null
           name?: string | null
+          premium_active?: boolean | null
+          premium_expires_at?: string | null
+          premium_source?: string | null
+          premium_trial_expires_at?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -240,6 +297,12 @@ export type Database = {
           trial_used: boolean
           updated_at: string
           user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "user_limits"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
     }

@@ -135,13 +135,37 @@ serve(async (req) => {
       sub.status === 'active' || sub.status === 'trialing'
     );
 
-    console.log('Found valid subscriptions (active or trialing):', validSubscriptions.length > 0);
-    if (validSubscriptions.length > 0) {
-      console.log('Subscription status:', validSubscriptions[0].status);
+    let isSubscribed = validSubscriptions.length > 0;
+    
+    console.log('Stripe subscription status:', isSubscribed);
+    
+    // If not subscribed via Stripe, check for active trial code
+    if (!isSubscribed && userId) {
+      console.log('Checking for trial code access');
+      
+      const { data: profile, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('premium_trial_expires_at')
+        .eq('user_id', userId)
+        .single();
+      
+      if (!profileError && profile?.premium_trial_expires_at) {
+        const expiresAt = new Date(profile.premium_trial_expires_at);
+        const now = new Date();
+        
+        if (expiresAt > now) {
+          console.log('User has active trial code access until:', expiresAt.toISOString());
+          isSubscribed = true;
+        } else {
+          console.log('Trial code expired at:', expiresAt.toISOString());
+        }
+      }
     }
-
+    
+    console.log('Final subscription status:', isSubscribed);
+    
     return new Response(
-      JSON.stringify({ subscribed: validSubscriptions.length > 0 }),
+      JSON.stringify({ subscribed: isSubscribed }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
