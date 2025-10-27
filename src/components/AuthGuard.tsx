@@ -37,7 +37,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
       debugLogger.logAuth('ERROR', 'Auth error event received', event.detail);
       console.warn('Auth error detected:', event.detail);
       toast.error('Session expired. Please log in again.');
-      navigate('/login');
+      navigate('/auth');
     };
 
     window.addEventListener('auth-error' as any, handleAuthError);
@@ -46,12 +46,12 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      debugLogger.logAuth('INFO', 'AuthGuard redirecting to login - no user found', {
+      debugLogger.logAuth('INFO', 'AuthGuard redirecting to auth - no user found', {
         isLoading,
         hasUser: !!user,
         currentPath: window.location.pathname
       });
-      navigate('/login');
+      navigate('/auth');
     }
   }, [user, isLoading, navigate]);
 
@@ -66,7 +66,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 flex items-center justify-center">
-        <div>Redirecting to login...</div>
+        <div>Redirecting to auth...</div>
       </div>
     );
   }
