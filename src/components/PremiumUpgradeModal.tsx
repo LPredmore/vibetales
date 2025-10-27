@@ -37,8 +37,18 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
     setValidationStatus("idle");
 
     try {
+      // Get the current session to pass the auth token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        throw new Error("You must be logged in to redeem a promo code");
+      }
+
       const { data, error } = await supabase.functions.invoke('validate-promo-code', {
         body: { code: promoCode.trim().toUpperCase() },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (error) throw error;
