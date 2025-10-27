@@ -26,16 +26,36 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   const [limitsLoading, setLimitsLoading] = useState(true);
   const [premiumLoading, setPremiumLoading] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (user) {
-      fetchUserLimits();
-      checkPremiumStatus();
+      const initializeComponent = async () => {
+        setIsInitializing(true);
+        await Promise.all([
+          fetchUserLimits(),
+          checkPremiumStatus()
+        ]);
+        setIsInitializing(false);
+      };
+      initializeComponent();
     } else {
       setLimitsLoading(false);
       setPremiumLoading(false);
+      setIsInitializing(false);
     }
   }, [user]);
+
+  // Add debouncing to ensure state has fully settled
+  useEffect(() => {
+    if (!isInitializing) {
+      const timer = setTimeout(() => setIsReady(true), 50);
+      return () => clearTimeout(timer);
+    } else {
+      setIsReady(false);
+    }
+  }, [isInitializing]);
 
   // Expose refresh function to parent component
   useEffect(() => {
@@ -95,8 +115,8 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     }
   };
 
-  // Show loading until both limits and premium status are loaded
-  if (limitsLoading || premiumLoading) {
+  // Show loading until both operations complete and state has settled
+  if (!isReady || isInitializing || limitsLoading || premiumLoading) {
     return (
       <Card className="clay-card">
         <CardHeader>
