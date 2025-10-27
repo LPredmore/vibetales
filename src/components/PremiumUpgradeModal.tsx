@@ -61,7 +61,7 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
         setShowCodePricingTable(true);
         toast({
           title: "Success!",
-          description: `Welcome ${data.influencerName}! Your influencer pricing is now available below.`,
+          description: `Welcome ${data.influencerName}! Your promo pricing is now available below.`,
         });
         
         // Call success callback to refresh subscription status
@@ -90,7 +90,7 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Crown className="h-6 w-6 text-amber-500" />
-            Upgrade to Premium
+            Upgrade to Unlimited
           </DialogTitle>
           <DialogDescription>
             Unlock unlimited access to all features
@@ -100,8 +100,6 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
         <ScrollArea className="max-h-[calc(85vh-120px)] pr-4">
           {/* Section 1: Premium Benefits */}
           <div className="space-y-3 mb-6">
-            <h3 className="font-semibold text-lg">Premium Benefits</h3>
-            
             <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200">
               <Sparkles className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
               <div>
@@ -131,11 +129,11 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
 
           {/* Section 2: Promo Code Input */}
           <div className="space-y-3 mb-6">
-            <h3 className="font-semibold text-lg">Have an Influencer Code?</h3>
+            <h3 className="font-semibold text-lg">Have a Promo Code?</h3>
             
             <div className="p-4 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
               <p className="text-sm text-green-800">
-                Enter your influencer code to unlock <strong>special pricing</strong> on premium access!
+                Enter your promo code to unlock <strong>special pricing</strong> on unlimited access!
               </p>
             </div>
 
@@ -156,7 +154,7 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
               {validationStatus === "success" && (
                 <div className="flex items-center gap-2 text-green-600 text-sm">
                   <CheckCircle2 className="h-4 w-4" />
-                  <span>Code applied! Your influencer pricing is shown below.</span>
+                  <span>Code applied! You will receive a free week before being charged.</span>
                 </div>
               )}
               
@@ -194,13 +192,13 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
           {/* Section 3: Dynamic Pricing Table */}
           <div className="space-y-3">
             <h3 className="font-semibold text-lg">
-              {showCodePricingTable ? "Influencer Pricing" : "Subscribe to Premium"}
+              {showCodePricingTable ? "Special Offer" : "Subscribe to Unlimited"}
             </h3>
             
             {showCodePricingTable ? (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Special pricing for influencer code users. Subscribe below to get started!
+                  You get a free week!
                 </p>
                 <stripe-pricing-table 
                   pricing-table-id="prctbl_1SMrbERFHDig2LCd3awZhYCk"
@@ -212,7 +210,7 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Choose your plan below. Have an influencer code? Enter it above for special pricing!
+                  Choose your plan below. Have a promo code? Enter it above for special pricing!
                 </p>
                 <stripe-pricing-table 
                   pricing-table-id="prctbl_1SMqbWRFHDig2LCdB0mdlAW5"
