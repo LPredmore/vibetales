@@ -350,6 +350,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      increment_daily_stories: {
+        Args: { user_id_param: string }
+        Returns: undefined
+      }
     }
     Enums: {
       report_reason:

@@ -196,12 +196,9 @@ async function checkUserLimits(supabase: any, userId: string, storyParams: Story
 
 // Increment user limit counter after successful story generation
 async function incrementUserLimit(supabase: any, userId: string): Promise<void> {
-  const { error } = await supabase
-    .from('user_limits')
-    .update({ 
-      daily_stories_used: supabase.raw('daily_stories_used + 1')
-    })
-    .eq('user_id', userId);
+  const { error } = await supabase.rpc('increment_daily_stories', { 
+    user_id_param: userId 
+  });
     
   if (error) {
     console.error('Error incrementing user limit:', error);
