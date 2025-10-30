@@ -183,7 +183,11 @@ const Index = () => {
       
       if (error instanceof Error && error.message === 'LIMIT_REACHED') {
         setShowLimitPrompt(true);
-        toast.info("You have reached your limit today. Wait until tomorrow or upgrade to unlimited for unlimited stories.");
+        toast.error("Daily limit reached. Upgrade to unlimited or wait until tomorrow (midnight CST).");
+      } else if (error instanceof Error && error.message.includes('429')) {
+        // Specific handling for rate limit errors from edge function
+        setShowLimitPrompt(true);
+        toast.error("You've reached your daily story limit. Upgrade for unlimited stories!");
       } else {
         // Only show error if not a domain-related issue
         const isDomainError = error instanceof Error && 
