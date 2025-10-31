@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,11 +20,8 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { user } = useAuth();
 
-  // Memoize counts to avoid recalculation on every render
-  const { activeCount, totalCount } = useMemo(() => ({
-    activeCount: words.filter(word => word.active).length,
-    totalCount: words.length
-  }), [words]);
+  const activeCount = words.filter(word => word.active).length;
+  const totalCount = words.length;
 
   useEffect(() => {
     const checkSubscription = async () => {
@@ -70,7 +67,7 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
     }
   };
 
-  const saveWords = useCallback(async (updatedWords: SightWord[]) => {
+  const saveWords = async (updatedWords: SightWord[]) => {
     if (!user) return;
 
     try {
@@ -94,9 +91,9 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
       console.error('Error saving sight words:', err);
       toast.error("Failed to save words");
     }
-  }, [user]);
+  };
 
-  const handleAddWord = useCallback(async (newWord: string) => {
+  const handleAddWord = async (newWord: string) => {
     if (words.some(word => word.word.toLowerCase() === newWord.toLowerCase())) {
       toast.error("This word is already in your list");
       return;
@@ -111,37 +108,37 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
     setWords(updatedWords);
     await saveWords(updatedWords);
     toast.success("Word added successfully!");
-  }, [words, isSubscribed, setWords, saveWords]);
+  };
 
-  const handleToggleWord = useCallback(async (index: number) => {
+  const handleToggleWord = async (index: number) => {
     const updatedWords = words.map((word, i) => 
       i === index ? { ...word, active: !word.active } : word
     );
     setWords(updatedWords);
     await saveWords(updatedWords);
     toast.success(updatedWords[index].active ? "Word activated" : "Word deactivated");
-  }, [words, setWords, saveWords]);
+  };
 
-  const handleDeleteWord = useCallback(async (indexToDelete: number) => {
+  const handleDeleteWord = async (indexToDelete: number) => {
     const updatedWords = words.filter((_, index) => index !== indexToDelete);
     setWords(updatedWords);
     await saveWords(updatedWords);
     toast.success("Word removed successfully!");
-  }, [words, setWords, saveWords]);
+  };
 
-  const handleSelectAll = useCallback(async () => {
+  const handleSelectAll = async () => {
     const updatedWords = words.map(word => ({ ...word, active: true }));
     setWords(updatedWords);
     await saveWords(updatedWords);
     toast.success("All words activated!");
-  }, [words, setWords, saveWords]);
+  };
 
-  const handleDeselectAll = useCallback(async () => {
+  const handleDeselectAll = async () => {
     const updatedWords = words.map(word => ({ ...word, active: false }));
     setWords(updatedWords);
     await saveWords(updatedWords);
     toast.success("All words deactivated!");
-  }, [words, setWords, saveWords]);
+  };
 
   if (isExternalLoading) {
     return <div className="flex justify-center items-center p-8">Loading sight words...</div>;
