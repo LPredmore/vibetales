@@ -1,203 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
 import { SightWordManager } from "@/components/SightWordManager";
 import { FavoriteStories } from "@/components/FavoriteStories";
 import { UsageLimits } from "@/components/UsageLimits";
 import { LimitReachedPrompt } from "@/components/LimitReachedPrompt";
-
-
-import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
-import { generateStory } from "@/services/openrouter";
-import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
 import { UserMenu } from "@/components/UserMenu";
 import { AIContentDisclaimer } from "@/components/AIContentDisclaimer";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { useSightWords } from "@/hooks/useSightWords";
+import { usePaymentHandler } from "@/hooks/usePaymentHandler";
+import { useStoryGeneration } from "@/hooks/useStoryGeneration";
 
 const Index = () => {
-  const [story, setStory] = useState<{
-    title: string;
-    content: string;
-    readingLevel?: string;
-    theme?: string;
-  } | null>(null);
-  const [words, setWords] = useState<SightWord[]>([]);
-  const [showLimitPrompt, setShowLimitPrompt] = useState(false);
   const [refreshLimits, setRefreshLimits] = useState<(() => Promise<void>) | null>(null);
-  const [wordsLoading, setWordsLoading] = useState(true);
-  const { user } = useAuth();
+  
+  // Custom hooks for separation of concerns
+  const { words, setWords, wordsLoading } = useSightWords();
+  usePaymentHandler();
+  const { story, showLimitPrompt, setShowLimitPrompt, handleStoryGeneration } = useStoryGeneration();
 
-  // Load sight words immediately when component mounts
-  useEffect(() => {
-    const loadWords = async () => {
-      if (!user) {
-        setWordsLoading(false);
-        return;
-      }
-
-      try {
-        setWordsLoading(true);
-        const { data, error } = await supabase
-          .from('sight_words')
-          .select('words_objects')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        if (error) throw error;
-        
-        if (data && data.words_objects) {
-          // Convert JSONB objects to SightWord objects
-          const sightWords: SightWord[] = data.words_objects.map((obj: any) => ({
-            word: obj.word,
-            active: obj.active
-          }));
-          setWords(sightWords);
-        } else {
-          // Create new record if none exists
-          const { error: insertError } = await supabase
-            .from('sight_words')
-            .insert({ user_id: user.id, words_objects: [] });
-            
-          if (insertError) throw insertError;
-          setWords([]);
-        }
-      } catch (err) {
-        console.error('Error loading sight words:', err);
-        toast.error("Failed to load sight words");
-      } finally {
-        setWordsLoading(false);
-      }
-    };
-
-    loadWords();
-  }, [user]);
-
-  // Handle Stripe payment completion
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const success = urlParams.get('success');
-    const canceled = urlParams.get('canceled');
-
-    if (success === 'true') {
-      toast.success("Payment successful! Your unlimited subscription is now active.");
-      
-      // Refresh subscription status
-      if (user) {
-        supabase.functions.invoke('check-subscription', {
-          body: { userId: user.id }
-        }).then(({ data, error }) => {
-          if (!error && data) {
-            toast.success("Unlimited features are now available!");
-          }
-        }).catch(() => {
-          toast.info("Your payment was successful. Unlimited features may take a moment to activate.");
-        });
-      }
-      
-      // Clean up URL parameters
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (canceled === 'true') {
-      toast.error("Payment was canceled. You can try again anytime.");
-      
-      // Clean up URL parameters
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, [user]);
-
-  const handleSubmit = async (data: StoryFormData) => {
-    // Check if words are still loading
-    if (wordsLoading) {
-      toast.error("Please wait for sight words to load");
-      return;
-    }
-    
-    const activeWords = words.filter(word => word.active);
-    
-    if (data.useSightWords && activeWords.length === 0) {
-      toast.error("Please add and activate some sight words before generating a story");
-      return;
-    }
-    
-    let toastId: string | number | undefined;
-    
-    try {
-      console.log("=== Starting Story Generation ===");
-      console.log("Form data:", data);
-      console.log("Active sight words:", activeWords.map(w => w.word));
-      
-      toastId = toast.loading("Generating your story...");
-      const activeWordStrings = activeWords.map(word => word.word);
-      
-      const generatedStory = await generateStory({
-        ...data,
-        keywords: data.useSightWords ? activeWordStrings : []
-      });
-      
-      toast.dismiss(toastId);
-      
-      setStory({
-        ...generatedStory,
-        readingLevel: data.readingLevel,
-        theme: data.theme
-      });
-      setShowLimitPrompt(false); // Hide limit prompt if it was showing
-      
-      // Refresh usage limits after successful story generation
-      if (refreshLimits && typeof refreshLimits === 'function') {
-        try {
-          await refreshLimits();
-        } catch (refreshError) {
-          console.warn("Failed to refresh usage limits:", refreshError);
-          // Don't affect the main success flow
-        }
-      }
-      
-      toast.success("Story generated successfully!");
-      
-      // Auto-scroll to story section when generated (subtle, non-blocking)
-      setTimeout(() => {
-        const storySection = document.getElementById('story-section');
-        if (storySection) {
-          storySection.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center',
-            inline: 'nearest'
-          });
-        }
-      }, 200);
-      
-      console.log("=== Story Generation Complete ===");
-    } catch (error) {
-      console.error("=== Story Generation Failed ===");
-      console.error("Error:", error);
-      
-      // Always dismiss the loading toast first
-      if (toastId) {
-        toast.dismiss(toastId);
-      }
-      
-      if (error instanceof Error && error.message === 'LIMIT_REACHED') {
-        setShowLimitPrompt(true);
-        toast.error("Daily limit reached. Upgrade to unlimited or wait until tomorrow (midnight CST).");
-      } else if (error instanceof Error && error.message.includes('429')) {
-        // Specific handling for rate limit errors from edge function
-        setShowLimitPrompt(true);
-        toast.error("You've reached your daily story limit. Upgrade for unlimited stories!");
-      } else {
-        // Only show error if not a domain-related issue
-        const isDomainError = error instanceof Error && 
-          (error.message?.includes('unexpected URL') || error.message?.includes('allowedOrigins'));
-        
-        if (!isDomainError) {
-          toast.error("Failed to generate story. Please try again.");
-        }
-      }
-    }
+  const handleSubmit = (data: StoryFormData) => {
+    handleStoryGeneration(data, words, wordsLoading, refreshLimits);
   };
 
   return (
