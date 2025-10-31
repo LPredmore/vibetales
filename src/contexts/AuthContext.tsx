@@ -131,11 +131,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Simplified session recovery for faster startup
     const startupRecoverSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
         console.log('🔐 Session check:', !!session);
+        
+        if (session) {
+          setSession(session);
+          setUser(session.user);
+        }
+        
+        if (error) {
+          console.error('❌ Session recovery error:', error);
+        }
       } catch (error) {
         console.error('❌ Session recovery error:', error);
       } finally {
+        // Ensure loading state is cleared even on error
         setIsLoading(false);
       }
     };
@@ -206,7 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (name: string, email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -218,6 +228,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) throw error;
+      
+      // If session is immediately available (no email confirmation required)
+      if (data.session) {
+        setSession(data.session);
+        setUser(data.session.user);
+        console.log('✅ Session set immediately after registration');
+      }
+      
       toast.success('Registration successful! Please check your email to confirm your account.');
     } catch (error: any) {
       toast.error(error.message || 'Error during registration');

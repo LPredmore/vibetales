@@ -14,8 +14,10 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useSightWords } from "@/hooks/useSightWords";
 import { usePaymentHandler } from "@/hooks/usePaymentHandler";
 import { useStoryGeneration } from "@/hooks/useStoryGeneration";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
+  const { user } = useAuth();
   const [refreshLimits, setRefreshLimits] = useState<(() => Promise<void>) | null>(null);
   
   // Custom hooks for separation of concerns
@@ -26,6 +28,14 @@ const Index = () => {
   const handleSubmit = (data: StoryFormData) => {
     handleStoryGeneration(data, words, wordsLoading, refreshLimits);
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 flex items-center justify-center">
+        <div>Initializing...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100">

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ interface AuthGuardProps {
 export const AuthGuard = ({ children }: AuthGuardProps) => {
   const { user, session, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [mountTime] = useState(Date.now());
 
   useEffect(() => {
     debugLogger.logLifecycle('INFO', 'AuthGuard mounted', {
@@ -46,14 +47,24 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      debugLogger.logAuth('INFO', 'AuthGuard redirecting to auth - no user found', {
-        isLoading,
-        hasUser: !!user,
-        currentPath: window.location.pathname
-      });
-      navigate('/auth');
+      // Wait at least 500ms after mount before redirecting
+      const timeSinceMount = Date.now() - mountTime;
+      const delay = Math.max(0, 500 - timeSinceMount);
+      
+      const timer = setTimeout(() => {
+        if (!user) {  // Check again after delay
+          debugLogger.logAuth('INFO', 'AuthGuard redirecting to auth - no user found', {
+            isLoading,
+            hasUser: !!user,
+            currentPath: window.location.pathname
+          });
+          navigate('/auth');
+        }
+      }, delay);
+      
+      return () => clearTimeout(timer);
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, navigate, mountTime]);
 
   if (isLoading) {
     return (
