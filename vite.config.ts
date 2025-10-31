@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => ({
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
         cleanupOutdatedCaches: true,
-        skipWaiting: false, // Less aggressive - wait for user to close tabs
-        clientsClaim: false, // Don't force-claim on activation
+        skipWaiting: true, // CRITICAL: Must be true for TWA/Play Store updates to work
+        clientsClaim: true, // CRITICAL: Must be true for immediate service worker control
         // Import background sync handlers
         importScripts: ['/sw-background-sync.js'],
         // Simplified caching strategy to reduce memory usage
