@@ -155,20 +155,29 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
         // Step 1: Force manifest refresh with cache busting
         await forceTWAManifestRefresh();
         
-        // Step 2: Clear all browser caches
+        // Step 2: Selectively clear caches (PRESERVE auth-related storage)
         if ('caches' in window) {
           const cacheNames = await caches.keys();
+          // Only clear asset and image caches, NOT auth or API caches
+          const cachesToClear = cacheNames.filter(name => 
+            name.includes('assets-') || 
+            name.includes('images-') ||
+            name.includes('workbox-') ||
+            name.includes('vite-')
+          );
           await Promise.all(
-            cacheNames.map(cacheName => {
+            cachesToClear.map(cacheName => {
               console.log(`🗑️ Clearing cache: ${cacheName}`);
               return caches.delete(cacheName);
             })
           );
+          console.log(`✅ Preserved ${cacheNames.length - cachesToClear.length} auth/API caches`);
         }
         
-        // Step 3: Clear local storage version info to force re-check
+        // Step 3: Clear ONLY version info (preserve all auth tokens)
         localStorage.removeItem('twa-app-version');
         localStorage.removeItem('twa-manifest-version');
+        // DO NOT clear: 'sb-*' keys (Supabase auth tokens)
         
         // Step 4: Force service worker update
         if (registration) {

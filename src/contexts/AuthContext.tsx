@@ -128,25 +128,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Simplified session recovery for faster startup
+    // Enhanced session recovery with detailed logging
     const startupRecoverSession = async () => {
+      debugLogger.logAuth('INFO', 'AuthContext: Starting session recovery', {
+        timestamp: Date.now(),
+        pathname: window.location.pathname
+      });
+      
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('🔐 Session check:', !!session);
+        
+        debugLogger.logAuth('INFO', 'AuthContext: Session check completed', {
+          hasSession: !!session,
+          hasError: !!error,
+          userId: session?.user?.id
+        });
         
         if (session) {
           setSession(session);
           setUser(session.user);
+          debugLogger.logAuth('INFO', 'AuthContext: Session restored', {
+            userId: session.user.id,
+            expiresAt: session.expires_at
+          });
+        } else {
+          debugLogger.logAuth('INFO', 'AuthContext: No session found', {
+            error: error?.message
+          });
         }
         
         if (error) {
+          debugLogger.logAuth('ERROR', 'AuthContext: Session recovery error', { error });
           console.error('❌ Session recovery error:', error);
         }
       } catch (error) {
+        debugLogger.logAuth('ERROR', 'AuthContext: Session recovery exception', { error });
         console.error('❌ Session recovery error:', error);
       } finally {
         // Ensure loading state is cleared even on error
         setIsLoading(false);
+        debugLogger.logAuth('INFO', 'AuthContext: Initialization complete', {
+          hasUser: !!user,
+          hasSession: !!session
+        });
       }
     };
 

@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => ({
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
         cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true,
+        skipWaiting: false, // Less aggressive - wait for user to close tabs
+        clientsClaim: false, // Don't force-claim on activation
         // Import background sync handlers
         importScripts: ['/sw-background-sync.js'],
         // Simplified caching strategy to reduce memory usage

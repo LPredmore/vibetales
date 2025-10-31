@@ -14,21 +14,23 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
   const [mountTime] = useState(Date.now());
 
   useEffect(() => {
-    debugLogger.logLifecycle('INFO', 'AuthGuard mounted', {
+    debugLogger.logLifecycle('INFO', 'AuthGuard: Component mounted', {
       hasUser: !!user,
       hasSession: !!session,
       isLoading,
-      currentPath: window.location.pathname
+      currentPath: window.location.pathname,
+      timestamp: Date.now()
     });
   }, []);
 
   useEffect(() => {
-    debugLogger.logAuth('INFO', 'AuthGuard auth state changed', {
+    debugLogger.logAuth('INFO', 'AuthGuard: Auth state changed', {
       hasUser: !!user,
       hasSession: !!session,
       isLoading,
       userId: user?.id,
-      sessionExpiry: session?.expires_at
+      sessionExpiry: session?.expires_at,
+      timestamp: Date.now()
     });
   }, [user, session, isLoading]);
 
@@ -53,12 +55,19 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
       
       const timer = setTimeout(() => {
         if (!user) {  // Check again after delay
-          debugLogger.logAuth('INFO', 'AuthGuard redirecting to auth - no user found', {
+          debugLogger.logAuth('WARN', 'AuthGuard: Redirecting to /auth - no user after delay', {
             isLoading,
             hasUser: !!user,
-            currentPath: window.location.pathname
+            hasSession: !!session,
+            currentPath: window.location.pathname,
+            delayMs: delay,
+            timeSinceMount: Date.now() - mountTime
           });
           navigate('/auth');
+        } else {
+          debugLogger.logAuth('INFO', 'AuthGuard: User appeared during delay, redirect cancelled', {
+            userId: user.id
+          });
         }
       }, delay);
       
