@@ -136,43 +136,22 @@ class DebugLogger {
     }
   }
 
-  private emojiCache = new Map<string, string>();
-  
   private getLogEmoji(category: string, level: string): string {
-    const key = `${category}:${level}`;
-    
-    if (this.emojiCache.has(key)) {
-      return this.emojiCache.get(key)!;
-    }
-    
-    let emoji: string;
-    if (level === 'CRITICAL' || level === 'ERROR') emoji = '❌';
-    else if (level === 'WARN') emoji = '⚠️';
-    else if (category === 'NETWORK') emoji = '🌐';
-    else if (category === 'PERFORMANCE') emoji = '⚡';
-    else if (category === 'AUTH') emoji = '🔐';
-    else if (category === 'ANDROID') emoji = '📱';
-    else emoji = 'ℹ️';
-    
-    this.emojiCache.set(key, emoji);
-    return emoji;
+    if (level === 'CRITICAL' || level === 'ERROR') return '❌';
+    if (level === 'WARN') return '⚠️';
+    if (category === 'NETWORK') return '🌐';
+    if (category === 'PERFORMANCE') return '⚡';
+    if (category === 'AUTH') return '🔐';
+    if (category === 'ANDROID') return '📱';
+    return 'ℹ️';
   }
 
-  private persistTimer: NodeJS.Timeout | null = null;
-  
   private persistLogs() {
-    // Debounce persistence to avoid excessive localStorage writes
-    if (this.persistTimer) {
-      clearTimeout(this.persistTimer);
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(this.logs));
+    } catch (error) {
+      console.error('Failed to persist debug logs:', error);
     }
-    
-    this.persistTimer = setTimeout(() => {
-      try {
-        localStorage.setItem(this.storageKey, JSON.stringify(this.logs));
-      } catch (error) {
-        console.error('Failed to persist debug logs:', error);
-      }
-    }, 1000); // Persist after 1 second of inactivity
   }
 
   private loadPersistedLogs() {
