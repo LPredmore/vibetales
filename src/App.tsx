@@ -12,6 +12,8 @@ import { EmergencyDebugActivator } from "@/components/EmergencyDebugActivator";
 import { debugLogger } from "@/utils/debugLogger";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 
@@ -73,6 +75,8 @@ const App = () => {
                   }
                 />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route 
                   path="/profile" 
