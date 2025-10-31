@@ -8,7 +8,7 @@ const isDev = process.env.NODE_ENV === 'development';
 const isDebugMode = localStorage.getItem('enable-debug') === 'true' || 
                    window.location.search.includes('debug=true');
 
-// Clear old caches on version update - coordinated with service worker
+// Clear old caches on version update
 const clearOldCaches = async () => {
   try {
     const currentVersion = '2.0.1';
@@ -18,30 +18,11 @@ const clearOldCaches = async () => {
       console.log('🔄 Version changed, clearing caches...');
       
       if ('serviceWorker' in navigator && 'caches' in window) {
-        // Check if service worker is active before clearing
-        const registration = await navigator.serviceWorker.getRegistration();
-        
-        if (!registration || !registration.active) {
-          // No active SW - safe to clear immediately
-          console.log('⚠️ No active service worker, clearing caches');
-          const cacheNames = await caches.keys();
-          await Promise.all(
-            cacheNames.map(cacheName => caches.delete(cacheName))
-          );
-          console.log('✅ Cache cleared - no active SW');
-        } else {
-          // SW is active - only clear old version caches
-          console.log('✅ Service worker active, selective cache clearing');
-          const cacheNames = await caches.keys();
-          const oldCaches = cacheNames.filter(name => 
-            !name.includes(currentVersion) && 
-            (name.includes('assets-') || name.includes('images-') || name.includes('workbox-'))
-          );
-          await Promise.all(
-            oldCaches.map(cacheName => caches.delete(cacheName))
-          );
-          console.log(`✅ Cleared ${oldCaches.length} old caches`);
-        }
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+        console.log('✅ Cache cleared - old version removed');
       }
     }
     

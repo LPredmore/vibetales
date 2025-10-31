@@ -152,64 +152,38 @@ export const PWAUpdateManager = ({ onUpdateAvailable }: PWAUpdateManagerProps) =
       if (isTWA()) {
         console.log('📱 TWA update detected - applying aggressive update strategy');
         
-        // Step 1: Activate service worker FIRST before clearing anything
-        if (registration) {
-          console.log('⚡ Activating new service worker...');
-          await registration.update();
-          if (registration.waiting) {
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-            // Wait for activation
-            await new Promise((resolve) => {
-              const handleStateChange = () => {
-                if (registration.active) {
-                  resolve(undefined);
-                }
-              };
-              if (registration.waiting) {
-                registration.waiting.addEventListener('statechange', handleStateChange);
-              }
-              // Timeout after 2 seconds
-              setTimeout(resolve, 2000);
-            });
-          }
-        }
+        // Step 1: Force manifest refresh with cache busting
+        await forceTWAManifestRefresh();
         
-        // Step 2: Now safe to clear caches - SW is active
+        // Step 2: Clear all browser caches
         if ('caches' in window) {
           const cacheNames = await caches.keys();
-          // Only clear asset and image caches, NOT auth or API caches
-          const cachesToClear = cacheNames.filter(name => 
-            name.includes('assets-') || 
-            name.includes('images-') ||
-            name.includes('workbox-') ||
-            name.includes('vite-')
-          );
           await Promise.all(
-            cachesToClear.map(cacheName => {
+            cacheNames.map(cacheName => {
               console.log(`🗑️ Clearing cache: ${cacheName}`);
               return caches.delete(cacheName);
             })
           );
-          console.log(`✅ Cleared ${cachesToClear.length} caches, preserved ${cacheNames.length - cachesToClear.length} auth/API caches`);
         }
         
-        // Step 3: Force manifest refresh with cache busting
-        await forceTWAManifestRefresh();
-        
-        // Step 4: Clear ONLY version info (preserve all auth tokens)
+        // Step 3: Clear local storage version info to force re-check
         localStorage.removeItem('twa-app-version');
         localStorage.removeItem('twa-manifest-version');
-        // DO NOT clear: 'sb-*' keys (Supabase auth tokens)
+        
+        // Step 4: Force service worker update
+        if (registration) {
+          await registration.update();
+          if (registration.waiting) {
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+        }
         
         // Step 5: Add cache-busting parameters and reload
         const timestamp = Date.now();
         window.location.href = `${window.location.origin}/?twa_update=${timestamp}&v=${timestamp}`;
       } else if (registration?.waiting) {
-        // Standard PWA update - activate SW first
-        console.log('⚡ Activating PWA service worker...');
+        // Standard PWA update
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        // Wait briefly for activation
-        await new Promise(resolve => setTimeout(resolve, 500));
         window.location.reload();
       }
     } catch (error) {

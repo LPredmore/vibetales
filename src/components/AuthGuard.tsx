@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -11,26 +11,23 @@ interface AuthGuardProps {
 export const AuthGuard = ({ children }: AuthGuardProps) => {
   const { user, session, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [mountTime] = useState(Date.now());
 
   useEffect(() => {
-    debugLogger.logLifecycle('INFO', 'AuthGuard: Component mounted', {
+    debugLogger.logLifecycle('INFO', 'AuthGuard mounted', {
       hasUser: !!user,
       hasSession: !!session,
       isLoading,
-      currentPath: window.location.pathname,
-      timestamp: Date.now()
+      currentPath: window.location.pathname
     });
   }, []);
 
   useEffect(() => {
-    debugLogger.logAuth('INFO', 'AuthGuard: Auth state changed', {
+    debugLogger.logAuth('INFO', 'AuthGuard auth state changed', {
       hasUser: !!user,
       hasSession: !!session,
       isLoading,
       userId: user?.id,
-      sessionExpiry: session?.expires_at,
-      timestamp: Date.now()
+      sessionExpiry: session?.expires_at
     });
   }, [user, session, isLoading]);
 
@@ -49,31 +46,14 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      // Wait at least 500ms after mount before redirecting
-      const timeSinceMount = Date.now() - mountTime;
-      const delay = Math.max(0, 500 - timeSinceMount);
-      
-      const timer = setTimeout(() => {
-        if (!user) {  // Check again after delay
-          debugLogger.logAuth('WARN', 'AuthGuard: Redirecting to /auth - no user after delay', {
-            isLoading,
-            hasUser: !!user,
-            hasSession: !!session,
-            currentPath: window.location.pathname,
-            delayMs: delay,
-            timeSinceMount: Date.now() - mountTime
-          });
-          navigate('/auth');
-        } else {
-          debugLogger.logAuth('INFO', 'AuthGuard: User appeared during delay, redirect cancelled', {
-            userId: user.id
-          });
-        }
-      }, delay);
-      
-      return () => clearTimeout(timer);
+      debugLogger.logAuth('INFO', 'AuthGuard redirecting to auth - no user found', {
+        isLoading,
+        hasUser: !!user,
+        currentPath: window.location.pathname
+      });
+      navigate('/auth');
     }
-  }, [user, isLoading, navigate, mountTime]);
+  }, [user, isLoading, navigate]);
 
   if (isLoading) {
     return (

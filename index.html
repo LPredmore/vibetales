@@ -148,15 +148,10 @@
           return;
         }
         
-        // Check for safe mode or reset mode
+        // Check for safe mode
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('safe') === 'true' || urlParams.get('reset') === 'true') {
-          console.log('🔒 Safe/reset mode enabled, skipping emergency screen');
-          // If reset mode, clear everything and reload
-          if (urlParams.get('reset') === 'true') {
-            console.log('🔄 Reset mode - clearing all caches and storage');
-            clearCachesAndReload();
-          }
+        if (urlParams.get('safe') === 'true') {
+          console.log('🔒 Safe mode enabled, skipping emergency screen');
           return;
         }
         

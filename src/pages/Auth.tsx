@@ -42,10 +42,6 @@ const Auth = () => {
     setIsRegistering(true);
     try {
       await register(registerName, registerEmail, registerPassword);
-      
-      // Wait for session to be established
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       toast.success("Account created! Welcome to VibeTales!");
       navigate("/");
     } catch (error) {

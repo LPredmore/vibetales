@@ -128,49 +128,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    // Enhanced session recovery with detailed logging
+    // Simplified session recovery for faster startup
     const startupRecoverSession = async () => {
-      debugLogger.logAuth('INFO', 'AuthContext: Starting session recovery', {
-        timestamp: Date.now(),
-        pathname: window.location.pathname
-      });
-      
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        debugLogger.logAuth('INFO', 'AuthContext: Session check completed', {
-          hasSession: !!session,
-          hasError: !!error,
-          userId: session?.user?.id
-        });
-        
-        if (session) {
-          setSession(session);
-          setUser(session.user);
-          debugLogger.logAuth('INFO', 'AuthContext: Session restored', {
-            userId: session.user.id,
-            expiresAt: session.expires_at
-          });
-        } else {
-          debugLogger.logAuth('INFO', 'AuthContext: No session found', {
-            error: error?.message
-          });
-        }
-        
-        if (error) {
-          debugLogger.logAuth('ERROR', 'AuthContext: Session recovery error', { error });
-          console.error('❌ Session recovery error:', error);
-        }
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('🔐 Session check:', !!session);
       } catch (error) {
-        debugLogger.logAuth('ERROR', 'AuthContext: Session recovery exception', { error });
         console.error('❌ Session recovery error:', error);
       } finally {
-        // Ensure loading state is cleared even on error
         setIsLoading(false);
-        debugLogger.logAuth('INFO', 'AuthContext: Initialization complete', {
-          hasUser: !!user,
-          hasSession: !!session
-        });
       }
     };
 
@@ -240,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (name: string, email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -252,14 +218,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) throw error;
-      
-      // If session is immediately available (no email confirmation required)
-      if (data.session) {
-        setSession(data.session);
-        setUser(data.session.user);
-        console.log('✅ Session set immediately after registration');
-      }
-      
       toast.success('Registration successful! Please check your email to confirm your account.');
     } catch (error: any) {
       toast.error(error.message || 'Error during registration');
