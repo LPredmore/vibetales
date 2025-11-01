@@ -1,18 +1,12 @@
-import { useState, lazy, Suspense } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Bookmark, BookmarkCheck, Flag, Crown } from "lucide-react";
 import { useToastNotifications } from "@/hooks/useToastNotifications";
+import { ReportDialog } from "./LazyModals";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUpgradeModal } from "@/contexts/UpgradeModalContext";
 import { useFavoriteStories } from "@/hooks/useFavoriteStories";
-
-// Lazy load Report Dialog
-const ReportDialog = lazy(() => 
-  import('./ReportDialog').then(module => ({ 
-    default: module.ReportDialog 
-  }))
-);
 
 interface StoryDisplayProps {
   title: string;
@@ -124,16 +118,12 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
         ))}
       </div>
 
-      {showReportDialog && (
-        <Suspense fallback={null}>
-          <ReportDialog
-            open={showReportDialog}
-            onOpenChange={setShowReportDialog}
-            storyTitle={title}
-            storyContent={content}
-          />
-        </Suspense>
-      )}
+      <ReportDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        storyTitle={title}
+        storyContent={content}
+      />
     </motion.div>
   );
 };

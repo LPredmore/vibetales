@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { useToastNotifications } from '@/hooks/useToastNotifications';
 import { isPWA, isTWA } from '@/utils/twaDetection';
+import { debugLogger } from '@/utils/debugLogger';
 
 interface AuthContextType {
   user: User | null;
@@ -55,50 +56,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
       setIsSubscribed(data?.isSubscribed || false);
     } catch (error) {
-      console.error('[AUTH] Error checking subscription:', error);
+      console.error('Error checking subscription:', error);
       setIsSubscribed(false);
     } finally {
       setIsCheckingSubscription(false);
     }
   }, [user]);
 
-  // Enhanced session recovery function with parallel loading
+  // Enhanced session recovery function
   const recoverSession = useCallback(async () => {
-    console.log('[SESSION] Attempting session recovery');
+    debugLogger.logSession('INFO', 'Attempting session recovery');
     try {
-      // Load session and subscription in parallel
-      const [sessionResult, subscriptionResult] = await Promise.all([
-        supabase.auth.getSession(),
-        user ? supabase.functions.invoke('check-subscription', { 
-          body: { userId: user.id } 
-        }) : Promise.resolve(null)
-      ]);
-      
-      if (sessionResult.error) {
-        console.warn('[SESSION] Recovery error:', sessionResult.error);
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        debugLogger.logSession('WARN', 'Session recovery error', error);
         return false;
       }
       
-      if (sessionResult.data?.session) {
-        setSession(sessionResult.data.session);
-        setUser(sessionResult.data.session.user);
-        
-        // Update subscription if available
-        if (subscriptionResult?.data) {
-          setIsSubscribed(subscriptionResult.data.isSubscribed || false);
-        }
-        
-        console.log('[SESSION] Recovered successfully');
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        debugLogger.logSession('INFO', 'Session recovered successfully', {
+          userId: session.user.id,
+          expiresAt: session.expires_at
+        });
         return true;
       } else {
-        console.warn('[SESSION] No session found to recover');
+        debugLogger.logSession('WARN', 'No session found to recover');
         return false;
       }
     } catch (error) {
-      console.error('[SESSION] Recovery failed:', error);
+      debugLogger.logSession('ERROR', 'Session recovery failed', error);
       return false;
     }
-  }, [user]);
+  }, []);
 
   // Enhanced PWA/TWA session recovery on app resume and startup
   useEffect(() => {
@@ -112,14 +103,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const handleVisibilityChange = () => {
       if (!document.hidden && !session) {
-        console.log('[TWA] App resumed, attempting session recovery');
+        debugLogger.logTWA('INFO', 'PWA/TWA app resumed, attempting session recovery', {
+          hidden: document.hidden,
+          hasSession: !!session,
+          isPWA: pwaEnvironment,
+          isTWA: twaEnvironment
+        });
         recoverSession();
       }
     };
 
     const handleFocus = () => {
       if (!session) {
-        console.log('[TWA] App focused, attempting session recovery');
+        debugLogger.logTWA('INFO', 'PWA/TWA app focused, attempting session recovery');
         recoverSession();
       }
     };
@@ -135,13 +131,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [session, twaEnvironment, pwaEnvironment, recoverSession]);
 
   useEffect(() => {
-    console.log('[AUTH] Setting up auth state management');
+    debugLogger.logAuth('INFO', 'Setting up auth state management');
     
     // Set up auth state listener FIRST
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AUTH] Auth state changed:', {
+      debugLogger.logAuth('INFO', 'Auth state changed', {
         event,
         hasSession: !!session,
         sessionExpiry: session?.expires_at,
@@ -155,9 +151,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Log session state for debugging
       if (session) {
-        console.log('[AUTH] User authenticated:', { email: session.user.email });
+        debugLogger.logAuth('INFO', 'User authenticated', { email: session.user.email });
       } else {
-        console.log('[AUTH] User not authenticated');
+        debugLogger.logAuth('INFO', 'User not authenticated');
         setIsSubscribed(false);
       }
     });
@@ -190,55 +186,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, refreshSubscription]);
 
   const login = async (email: string, password: string, remember: boolean) => {
-    setIsLoading(true);
-    console.log('[AUTH] Login attempt started:', { email, remember, isTWA: twaEnvironment, isPWA: pwaEnvironment });
-    
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        console.error('[AUTH] Login failed:', error);
-        throw error;
-      }
-
-      console.log('[AUTH] Login successful, setting up persistence');
-
-      // 1. Session is already persisted by default in Supabase client config
-
-      // 2. Request persistent storage for PWA
-      if ('storage' in navigator && 'persist' in navigator.storage) {
-        try {
-          const granted = await navigator.storage.persist();
-          console.log('[STORAGE] Persistent storage request:', { granted });
-        } catch (persistErr) {
-          console.warn('[STORAGE] Persistent storage request failed:', persistErr);
-        }
-      }
-
-      // 3. Save session backup in sessionStorage
-      if (data.session) {
-        sessionStorage.setItem('session-backup', JSON.stringify(data.session));
-        console.log('[SESSION] Session backup saved');
-      }
-
-      // Store "remember me" preference
-      if (remember) {
-        localStorage.setItem('auth-remember-preference', 'true');
-      } else {
-        localStorage.removeItem('auth-remember-preference');
-      }
-
-      setSession(data.session);
-      setUser(data.session.user);
-      console.log('[AUTH] Login completed successfully');
-      notifications.loginSuccess();
-    } catch (error: any) {
-      console.error('[AUTH] Login process failed:', error);
-      notifications.loginFailed(error.message);
+  setIsLoading(true);
+  debugLogger.logAuth('INFO', 'Login attempt started', { email, remember, isTWA: twaEnvironment, isPWA: pwaEnvironment });
+  
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      debugLogger.logAuth('ERROR', 'Login failed', error);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
-  };
+
+    debugLogger.logAuth('INFO', 'Login successful, setting up persistence');
+
+    // 1. Session is already persisted by default in Supabase client config
+
+    // 2. Request persistent storage for PWA
+    if ('storage' in navigator && 'persist' in navigator.storage) {
+      try {
+        const granted = await navigator.storage.persist();
+        debugLogger.logStorage('INFO', 'Persistent storage request', { granted });
+      } catch (persistErr) {
+        debugLogger.logStorage('WARN', 'Persistent storage request failed', persistErr);
+      }
+    }
+
+    // 3. Save session backup in sessionStorage
+    if (data.session) {
+      sessionStorage.setItem('session-backup', JSON.stringify(data.session));
+      debugLogger.logSession('INFO', 'Session backup saved', {
+        expiresAt: data.session.expires_at,
+        hasTokens: !!(data.session.access_token && data.session.refresh_token)
+      });
+    }
+
+    // Store "remember me" preference
+    if (remember) {
+      localStorage.setItem('auth-remember-preference', 'true');
+      debugLogger.logStorage('INFO', 'Remember preference saved');
+    } else {
+      localStorage.removeItem('auth-remember-preference');
+      debugLogger.logStorage('INFO', 'Remember preference cleared');
+    }
+
+    setSession(data.session);
+    setUser(data.session.user);
+    debugLogger.logAuth('INFO', 'Login completed successfully');
+    notifications.loginSuccess();
+  } catch (error: any) {
+    debugLogger.logAuth('ERROR', 'Login process failed', error);
+    notifications.loginFailed(error.message);
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const register = async (name: string, email: string, password: string) => {
     try {
@@ -263,7 +264,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      console.log('[AUTH] Logout attempt started');
+      debugLogger.logAuth('INFO', 'Logout attempt started');
       
       // Clear local state immediately
       setUser(null);
@@ -274,25 +275,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       itemsToRemove.forEach(item => {
         if (localStorage.getItem(item)) {
           localStorage.removeItem(item);
+          debugLogger.logStorage('INFO', `Removed localStorage item: ${item}`);
         }
       });
       
       if (sessionStorage.getItem('session-backup')) {
         sessionStorage.removeItem('session-backup');
+        debugLogger.logStorage('INFO', 'Removed session backup');
       }
       
       // Attempt server logout
       const { error } = await supabase.auth.signOut();
       if (error && !error.message.includes('session_not_found')) {
-        console.warn('[AUTH] Server logout error:', error);
+        debugLogger.logAuth('WARN', 'Server logout error', error);
       } else {
-        console.log('[AUTH] Successfully logged out from server');
+        debugLogger.logAuth('INFO', 'Successfully logged out from server');
       }
       
       notifications.logoutSuccess();
     } catch (error: any) {
       // Even if server logout fails, clear local state
-      console.error('[AUTH] Logout error:', error);
+      debugLogger.logAuth('ERROR', 'Logout error', error);
       setUser(null);
       setSession(null);
       notifications.logoutSuccess();
