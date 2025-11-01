@@ -123,43 +123,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [twaEnvironment, pwaEnvironment]);
 
-  // Enhanced PWA/TWA session recovery on app resume and startup
+  // Simplified visibility recovery for PWA/TWA - only on visibility change, not startup
   useEffect(() => {
     if (!pwaEnvironment && !twaEnvironment) return;
 
-    // Immediate session recovery on startup
-    if (!session) {
-      console.log('🚀 PWA/TWA startup session recovery');
-      recoverSession();
-    }
-
     const handleVisibilityChange = () => {
       if (!document.hidden && !session) {
-        debugLogger.logTWA('INFO', 'PWA/TWA app resumed, attempting session recovery', {
-          hidden: document.hidden,
-          hasSession: !!session,
-          isPWA: pwaEnvironment,
-          isTWA: twaEnvironment
-        });
+        console.log('🔄 App resumed, attempting session recovery');
         recoverSession();
       }
     };
 
-    const handleFocus = () => {
-      if (!session) {
-        debugLogger.logTWA('INFO', 'PWA/TWA app focused, attempting session recovery');
-        recoverSession();
-      }
-    };
-
-    // Add multiple event listeners for comprehensive recovery
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-    };
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [session, twaEnvironment, pwaEnvironment, recoverSession]);
 
   // Network connectivity monitoring and sync

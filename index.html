@@ -204,15 +204,15 @@
         updateProgress('Promise rejection detected');
       });
       
-      // Increased timeout for emergency recovery (10 seconds instead of 3)
+      // Emergency recovery timeout (5 seconds)
       emergencyTimeout = setTimeout(() => {
         const rootChildren = document.getElementById('root').children;
         if (!rootChildren.length || (rootChildren.length === 1 && rootChildren[0].id === 'initial-loader')) {
-          console.error('❌ App failed to load within 10 seconds');
+          console.error('❌ App failed to load within 5 seconds');
           updateProgress('Load timeout - activating recovery');
           showEmergencyScreen();
         }
-      }, 10000);
+      }, 5000);
       
       // Hide loader when React loads - with better error handling
       const observer = new MutationObserver((mutations) => {
