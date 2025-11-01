@@ -13,8 +13,6 @@ import { ServiceWorkerRecovery } from "@/components/ServiceWorkerRecovery";
 import { EmergencyRecoveryActivator } from "@/components/EmergencyRecoveryActivator";
 import { SafeModeDetector } from "@/components/SafeModeDetector";
 import { debugLogger } from "@/utils/debugLogger";
-import { startupSystemIntegration } from "@/utils/startupSystemIntegration";
-import { StartupPhase } from "@/utils/startupErrorDetection";
 
 // Import test utilities in development
 if (process.env.NODE_ENV === 'development') {
@@ -54,26 +52,7 @@ const queryClient = new QueryClient({
 
 const App = () => {
   useEffect(() => {
-    debugLogger.logLifecycle('INFO', 'App component mounted');
-    debugLogger.markPerformance('app-component-mount');
-    
-    // Check if integrated startup system is initialized
-    if (startupSystemIntegration.isInitialized()) {
-      debugLogger.logLifecycle('INFO', 'App mounted with integrated startup system ready');
-      
-      // Get system health status
-      const systemHealth = startupSystemIntegration.getSystemHealth();
-      debugLogger.logLifecycle('INFO', 'System health at app mount', systemHealth);
-    } else {
-      debugLogger.logLifecycle('WARN', 'App mounted before integrated startup system completed');
-    }
-    
-    return () => {
-      debugLogger.logLifecycle('INFO', 'App component unmounting');
-      
-      // Cleanup integrated system if needed
-      startupSystemIntegration.cleanup();
-    };
+    console.log('✅ App component mounted');
   }, []);
 
   return (
