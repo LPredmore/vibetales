@@ -324,8 +324,15 @@ class StartupSystemIntegration {
    */
   private prepareRecoverySystem(): void {
     try {
-      // Recovery systems are already initialized on import
-      // No explicit initialization needed
+      // Initialize recovery action system (if initialize method exists)
+      if (recoveryActionSystem && typeof recoveryActionSystem.initialize === 'function') {
+        recoveryActionSystem.initialize();
+      }
+
+      // Setup emergency diagnostic reporter (if initialize method exists)
+      if (emergencyDiagnosticReporter && typeof emergencyDiagnosticReporter.initialize === 'function') {
+        emergencyDiagnosticReporter.initialize();
+      }
 
       // Prepare emergency recovery interface
       this.setupEmergencyRecoveryTriggers();

@@ -55,25 +55,10 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     }
   }, [user, isLoading, navigate]);
 
-  // Timeout fallback - if loading takes more than 5 seconds, redirect to auth
-  useEffect(() => {
-    if (isLoading) {
-      const timeout = setTimeout(() => {
-        console.warn('⚠️ Auth loading timeout - redirecting to auth');
-        navigate('/auth');
-      }, 5000);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [isLoading, navigate]);
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-purple-600 font-semibold">Loading...</div>
-        </div>
+        <div>Loading...</div>
       </div>
     );
   }
@@ -81,7 +66,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 flex items-center justify-center">
-        <div className="text-purple-600">Redirecting to auth...</div>
+        <div>Redirecting to auth...</div>
       </div>
     );
   }
