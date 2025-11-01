@@ -5,15 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Calendar, BookOpen, Palette, Crown, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { getFavoriteStories, deleteFavoriteStory, FavoriteStory } from "@/services/favoriteStories";
-import { supabase } from "@/integrations/supabase/client";
-import { PremiumUpgradeModal } from "./PremiumUpgradeModal";
+import { PremiumUpgradeModal } from "./LazyModals";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const FavoriteStories = () => {
   const [favorites, setFavorites] = useState<FavoriteStory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const { isSubscribed, isCheckingSubscription } = useAuth();
 
   const loadFavorites = async () => {
     try {
@@ -27,32 +26,14 @@ export const FavoriteStories = () => {
     }
   };
 
-  const checkSubscription = async () => {
-    setIsCheckingSubscription(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('check-subscription');
-      if (error) throw error;
-      const subscribed = data?.subscribed || false;
-      setIsSubscribed(subscribed);
-      
-      // Only load favorites if user is subscribed
-      if (subscribed) {
-        await loadFavorites();
-      } else {
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-      setIsSubscribed(false);
-      setIsLoading(false);
-    } finally {
-      setIsCheckingSubscription(false);
-    }
-  };
-
   useEffect(() => {
-    checkSubscription();
-  }, []);
+    // Only load favorites if user is subscribed
+    if (isSubscribed) {
+      loadFavorites();
+    } else if (!isCheckingSubscription) {
+      setIsLoading(false);
+    }
+  }, [isSubscribed, isCheckingSubscription]);
 
   const handleDelete = async (id: string, title: string) => {
     try {
@@ -97,7 +78,7 @@ export const FavoriteStories = () => {
           <PremiumUpgradeModal 
             open={showUpgradeModal}
             onOpenChange={setShowUpgradeModal}
-            onSuccess={checkSubscription}
+            onSuccess={loadFavorites}
           />
         </div>
       </motion.div>

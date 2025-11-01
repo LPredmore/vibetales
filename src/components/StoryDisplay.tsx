@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Bookmark, BookmarkCheck, Flag, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { saveFavoriteStory } from "@/services/favoriteStories";
-import { ReportDialog } from "@/components/ReportDialog";
-import { supabase } from "@/integrations/supabase/client";
-import { PremiumUpgradeModal } from "./PremiumUpgradeModal";
+import { ReportDialog, PremiumUpgradeModal } from "./LazyModals";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface StoryDisplayProps {
   title: string;
@@ -19,27 +18,8 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-
-  const checkSubscription = async () => {
-    setIsCheckingSubscription(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('check-subscription');
-      if (error) throw error;
-      setIsSubscribed(data?.subscribed || false);
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-      setIsSubscribed(false);
-    } finally {
-      setIsCheckingSubscription(false);
-    }
-  };
-
-  useEffect(() => {
-    checkSubscription();
-  }, []);
+  const { isSubscribed, isCheckingSubscription, refreshSubscription } = useAuth();
 
   const handleSaveToFavorites = async () => {
     if (!readingLevel || !theme) {
@@ -118,7 +98,7 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
             <PremiumUpgradeModal 
               open={showUpgradeModal}
               onOpenChange={setShowUpgradeModal}
-              onSuccess={checkSubscription}
+              onSuccess={refreshSubscription}
             />
             <Button
               onClick={() => setShowReportDialog(true)}

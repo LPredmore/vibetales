@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Crown, Sparkles } from "lucide-react";
-import { PremiumUpgradeModal } from "../PremiumUpgradeModal";
+import { PremiumUpgradeModal } from "../LazyModals";
 
 interface UpgradePromptProps {
   onUpgrade: () => void;

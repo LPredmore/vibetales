@@ -14,6 +14,9 @@ interface AuthContextType {
   isLoading: boolean;
   isTWA: boolean;
   isPWA: boolean;
+  isSubscribed: boolean | null;
+  isCheckingSubscription: boolean;
+  refreshSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,6 +27,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [twaEnvironment, setTwaEnvironment] = useState(false);
   const [pwaEnvironment, setPwaEnvironment] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
 
   // Simplified TWA/PWA detection for faster initialization
   useEffect(() => {
@@ -33,6 +38,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setPwaEnvironment(pwaDetected);
     console.log('📱 Auth environment detected:', { twaDetected, pwaDetected });
   }, []);
+
+  // Centralized subscription check function
+  const refreshSubscription = useCallback(async () => {
+    if (!user) {
+      setIsSubscribed(false);
+      return;
+    }
+    
+    setIsCheckingSubscription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        body: { userId: user.id }
+      });
+      
+      if (error) throw error;
+      setIsSubscribed(data?.isSubscribed || false);
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setIsSubscribed(false);
+    } finally {
+      setIsCheckingSubscription(false);
+    }
+  }, [user]);
 
   // Enhanced session recovery function
   const recoverSession = useCallback(async () => {
@@ -125,6 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         debugLogger.logAuth('INFO', 'User authenticated', { email: session.user.email });
       } else {
         debugLogger.logAuth('INFO', 'User not authenticated');
+        setIsSubscribed(false);
       }
     });
 
@@ -147,6 +176,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Check subscription status when user changes
+  useEffect(() => {
+    if (user) {
+      refreshSubscription();
+    }
+  }, [user, refreshSubscription]);
 
   const login = async (email: string, password: string, remember: boolean) => {
   setIsLoading(true);
@@ -266,7 +302,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, login, register, logout, isLoading, isTWA: twaEnvironment, isPWA: pwaEnvironment }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      login, 
+      register, 
+      logout, 
+      isLoading, 
+      isTWA: twaEnvironment, 
+      isPWA: pwaEnvironment,
+      isSubscribed,
+      isCheckingSubscription,
+      refreshSubscription
+    }}>
       {children}
     </AuthContext.Provider>
   );

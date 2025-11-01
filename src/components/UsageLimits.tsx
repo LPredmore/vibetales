@@ -7,7 +7,7 @@ import { Clock, Crown, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { PremiumUpgradeModal } from "./PremiumUpgradeModal";
+import { PremiumUpgradeModal } from "./LazyModals";
 
 interface UsageLimitsProps {
   onRefreshLimits?: (refreshFunction: () => Promise<void>) => void;
@@ -20,42 +20,18 @@ interface UserLimits {
 }
 
 export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
-  const { user } = useAuth();
+  const { user, isSubscribed, isCheckingSubscription, refreshSubscription } = useAuth();
   const [limits, setLimits] = useState<UserLimits | null>(null);
-  const [hasPremium, setHasPremium] = useState(false);
   const [limitsLoading, setLimitsLoading] = useState(true);
-  const [premiumLoading, setPremiumLoading] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (user) {
-      const initializeComponent = async () => {
-        setIsInitializing(true);
-        await Promise.all([
-          fetchUserLimits(),
-          checkPremiumStatus()
-        ]);
-        setIsInitializing(false);
-      };
-      initializeComponent();
+      fetchUserLimits();
     } else {
       setLimitsLoading(false);
-      setPremiumLoading(false);
-      setIsInitializing(false);
     }
   }, [user]);
-
-  // Add debouncing to ensure state has fully settled
-  useEffect(() => {
-    if (!isInitializing) {
-      const timer = setTimeout(() => setIsReady(true), 50);
-      return () => clearTimeout(timer);
-    } else {
-      setIsReady(false);
-    }
-  }, [isInitializing]);
 
   // Expose refresh function to parent component
   useEffect(() => {
@@ -92,31 +68,15 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     }
   };
 
-  const checkPremiumStatus = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
-        body: { userId: user?.id }
-      });
-
-      if (data && !error) {
-        setHasPremium(data.subscribed || false);
-      }
-    } catch (error) {
-      console.error('Error checking premium status:', error);
-    } finally {
-      setPremiumLoading(false);
-    }
-  };
-
   const handleUpgradeSuccess = () => {
-    checkPremiumStatus();
+    refreshSubscription();
     if (onRefreshLimits) {
       onRefreshLimits(fetchUserLimits);
     }
   };
 
-  // Show loading until both operations complete and state has settled
-  if (!isReady || isInitializing || limitsLoading || premiumLoading) {
+  // Show loading until both operations complete
+  if (limitsLoading || isCheckingSubscription) {
     return (
       <Card className="clay-card">
         <CardHeader>
@@ -126,7 +86,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     );
   }
 
-  if (hasPremium) {
+  if (isSubscribed) {
     return null; // Don't show anything for premium users
   }
 

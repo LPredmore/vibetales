@@ -15,6 +15,7 @@ import { ThemeSelector } from "./ThemeSelector";
 import { LanguageSelector } from "./LanguageSelector";
 import { ThemeLessonSelector } from "./ThemeLessonSelector";
 import { StorySettings } from "./StorySettings";
+import { useLocalStorageBatch } from "@/hooks/useLocalStorageBatch";
 
 interface StoryFormProps {
   onSubmit: (data: StoryFormData) => void;
@@ -42,6 +43,9 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
   const [length, setLength] = useState("");
   const [isDrSeussStyle, setIsDrSeussStyle] = useState(false);
   const [useSightWords, setUseSightWords] = useState(true);
+  
+  // Use batched localStorage for better performance
+  const { setItem: setLocalStorage } = useLocalStorageBatch();
 
   // Load saved values from localStorage on component mount
   useEffect(() => {
@@ -66,56 +70,56 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
     if (savedUseSightWords) setUseSightWords(savedUseSightWords === 'true');
   }, []);
 
-  // Save values to localStorage when they change
+  // Save values to localStorage when they change (batched for performance)
   const handleReadingLevelChange = (value: string) => {
     setReadingLevel(value);
-    localStorage.setItem('storyForm_readingLevel', value);
+    setLocalStorage('storyForm_readingLevel', value);
   };
 
   const handleInterestLevelChange = (value: string) => {
     setInterestLevel(value);
-    localStorage.setItem('storyForm_interestLevel', value);
+    setLocalStorage('storyForm_interestLevel', value);
   };
 
   const handleThemeChange = (value: string) => {
     setTheme(value);
-    localStorage.setItem('storyForm_theme', value);
+    setLocalStorage('storyForm_theme', value);
   };
 
   const handleLanguageChange = (value: string) => {
     setLanguage(value);
-    localStorage.setItem('storyForm_language', value);
+    setLocalStorage('storyForm_language', value);
     
     // Reset Dr. Seuss style if changing away from English
     if (value !== 'english' && isDrSeussStyle) {
       setIsDrSeussStyle(false);
-      localStorage.setItem('storyForm_isDrSeussStyle', 'false');
+      setLocalStorage('storyForm_isDrSeussStyle', 'false');
     }
   };
 
   const handleThemeLessonChange = (value: string) => {
     setThemeLesson(value);
-    localStorage.setItem('storyForm_themeLesson', value);
+    setLocalStorage('storyForm_themeLesson', value);
   };
 
   const handleHasThemeLessonChange = (enabled: boolean) => {
     setHasThemeLesson(enabled);
-    localStorage.setItem('storyForm_hasThemeLesson', enabled.toString());
+    setLocalStorage('storyForm_hasThemeLesson', enabled.toString());
   };
 
   const handleLengthChange = (value: string) => {
     setLength(value);
-    localStorage.setItem('storyForm_length', value);
+    setLocalStorage('storyForm_length', value);
   };
 
   const handleDrSeussStyleChange = (value: boolean) => {
     setIsDrSeussStyle(value);
-    localStorage.setItem('storyForm_isDrSeussStyle', value.toString());
+    setLocalStorage('storyForm_isDrSeussStyle', value.toString());
   };
 
   const handleUseSightWordsChange = (value: boolean) => {
     setUseSightWords(value);
-    localStorage.setItem('storyForm_useSightWords', value.toString());
+    setLocalStorage('storyForm_useSightWords', value.toString());
   };
 
   const handleSubmit = (e: React.FormEvent) => {
