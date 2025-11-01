@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import { startupSystemIntegration } from './utils/startupSystemIntegration'
-import { StartupPhase } from './utils/startupErrorDetection'
 import { debugLogger } from './utils/debugLogger'
 
 // Integrated startup system initialization
@@ -46,8 +45,6 @@ const isDebugMode = localStorage.getItem('enable-debug') === 'true' ||
 // Clear old caches on version update
 const clearOldCaches = async () => {
   try {
-    startupOrchestrator.updatePhase(StartupPhase.INITIAL_LOAD);
-    
     const currentVersion = '2.0.1';
     const storedVersion = localStorage.getItem('app-version');
     
@@ -73,14 +70,11 @@ const clearOldCaches = async () => {
 clearOldCaches();
 
 try {
-  startupOrchestrator.updatePhase(StartupPhase.SCRIPT_LOADING);
-  
   const rootElement = document.getElementById("root");
   if (!rootElement) {
     throw new Error('Root element not found');
   }
 
-  startupOrchestrator.updatePhase(StartupPhase.REACT_MOUNT);
   const root = createRoot(rootElement);
   root.render(<App />);
   
@@ -93,7 +87,6 @@ try {
       if (loader) {
         loader.style.display = 'none';
       }
-      startupOrchestrator.updatePhase(StartupPhase.APP_READY);
     }
   }, 100);
   
