@@ -36,7 +36,7 @@ const Index = () => {
   const { user, refreshSubscription } = useAuth();
   const notifications = useToastNotifications();
 
-  // Parallel loading: Load all initial data at once
+  // Load sight words (user limits and favorites handled by React Query hooks)
   useEffect(() => {
     const loadInitialData = async () => {
       if (!user) {
@@ -47,21 +47,20 @@ const Index = () => {
       try {
         setWordsLoading(true);
         
-        // Load sight words, user limits, and favorites in parallel
-        const [wordsResult, limitsResult, favoritesResult] = await Promise.all([
-          supabase.from('sight_words').select('words_objects').eq('user_id', user.id).maybeSingle(),
-          supabase.rpc('get_or_create_user_limits', { p_user_id: user.id }),
-          supabase.from('favorite_stories').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20)
-        ]);
+        // Load ONLY sight words (not using React Query)
+        const { data, error } = await supabase
+          .from('sight_words')
+          .select('words_objects')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-        // Process sight words
-        if (wordsResult.error && wordsResult.error.code !== 'PGRST116') {
-          console.error('❌ Error loading sight words:', wordsResult.error);
-          throw wordsResult.error;
+        if (error && error.code !== 'PGRST116') {
+          console.error('❌ Error loading sight words:', error);
+          throw error;
         }
         
-        if (wordsResult.data?.words_objects) {
-          const sightWords: SightWord[] = wordsResult.data.words_objects.map((obj: any) => ({
+        if (data?.words_objects) {
+          const sightWords: SightWord[] = data.words_objects.map((obj: any) => ({
             word: obj.word,
             active: obj.active
           }));
@@ -76,10 +75,9 @@ const Index = () => {
           setWords([]);
         }
 
-        // Results are cached in React Query, child components get instant data
-        console.log('✅ Initial data loaded in parallel');
+        console.log('✅ Sight words loaded');
       } catch (err) {
-        console.error('❌ Error loading data:', err);
+        console.error('❌ Error loading sight words:', err);
         notifications.wordsLoadFailed();
       } finally {
         setWordsLoading(false);
