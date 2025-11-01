@@ -29,7 +29,7 @@ export const LimitReachedPrompt = ({ onClose }: LimitReachedPromptProps) => {
           Daily Limit Reached
         </CardTitle>
         <CardDescription className="text-red-700">
-          You've used your daily story for today. Upgrade to unlimited for unlimited stories or wait until tomorrow (midnight CST) for your limit to reset.
+          You've used your daily story for today. Upgrade to premium for unlimited stories or wait until tomorrow (midnight CST) for your limit to reset.
         </CardDescription>
       </CardHeader>
     </Card>

@@ -26,36 +26,16 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   const [limitsLoading, setLimitsLoading] = useState(true);
   const [premiumLoading, setPremiumLoading] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (user) {
-      const initializeComponent = async () => {
-        setIsInitializing(true);
-        await Promise.all([
-          fetchUserLimits(),
-          checkPremiumStatus()
-        ]);
-        setIsInitializing(false);
-      };
-      initializeComponent();
+      fetchUserLimits();
+      checkPremiumStatus();
     } else {
       setLimitsLoading(false);
       setPremiumLoading(false);
-      setIsInitializing(false);
     }
   }, [user]);
-
-  // Add debouncing to ensure state has fully settled
-  useEffect(() => {
-    if (!isInitializing) {
-      const timer = setTimeout(() => setIsReady(true), 50);
-      return () => clearTimeout(timer);
-    } else {
-      setIsReady(false);
-    }
-  }, [isInitializing]);
 
   // Expose refresh function to parent component
   useEffect(() => {
@@ -115,8 +95,8 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
     }
   };
 
-  // Show loading until both operations complete and state has settled
-  if (!isReady || isInitializing || limitsLoading || premiumLoading) {
+  // Show loading until both limits and premium status are loaded
+  if (limitsLoading || premiumLoading) {
     return (
       <Card className="clay-card">
         <CardHeader>
@@ -160,7 +140,7 @@ export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
             className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
           >
             <Crown className="mr-2 h-4 w-4" />
-            Upgrade to Unlimited
+            Upgrade to Premium
           </Button>
           
           <PremiumUpgradeModal 

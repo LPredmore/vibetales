@@ -105,26 +105,6 @@ serve(async (req) => {
 
     console.log('Checking subscription for user:', userEmail);
 
-    // ==========================================
-    // PRIORITY 1: Check always_unlim flag first
-    // ==========================================
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('always_unlim, premium_trial_expires_at')
-      .eq('user_id', userId)
-      .single();
-
-    if (!profileError && profile?.always_unlim === true) {
-      console.log('User has always_unlim access - granting unlimited');
-      return new Response(
-        JSON.stringify({ subscribed: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // ==========================================
-    // PRIORITY 2: Check Stripe subscription
-    // ==========================================
     const stripe = new Stripe(stripeKey, {
       apiVersion: '2023-10-16',
     });
@@ -137,25 +117,6 @@ serve(async (req) => {
 
     if (customers.data.length === 0) {
       console.log('No customer found for email:', userEmail);
-      
-      // ==========================================
-      // PRIORITY 3: Check for active trial code
-      // ==========================================
-      if (profile?.premium_trial_expires_at) {
-        const expiresAt = new Date(profile.premium_trial_expires_at);
-        const now = new Date();
-        
-        if (expiresAt > now) {
-          console.log('User has active trial code access until:', expiresAt.toISOString());
-          return new Response(
-            JSON.stringify({ subscribed: true }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        } else {
-          console.log('Trial code expired at:', expiresAt.toISOString());
-        }
-      }
-      
       return new Response(
         JSON.stringify({ subscribed: false }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -165,8 +126,8 @@ serve(async (req) => {
     // Check for active or trialing subscriptions
     const subscriptions = await stripe.subscriptions.list({
       customer: customers.data[0].id,
-      price: 'price_1QgUGtRFHDig2LCdGMsgjexk',
-      limit: 10,
+      price: 'price_1QgUGtRFHDig2LCdGMsgjexk', // Make sure this matches your Stripe price ID
+      limit: 10, // Get more results to check status
     });
 
     // Filter for active or trialing subscriptions
@@ -178,19 +139,26 @@ serve(async (req) => {
     
     console.log('Stripe subscription status:', isSubscribed);
     
-    // ==========================================
-    // PRIORITY 3: Check for active trial code (fallback)
-    // ==========================================
-    if (!isSubscribed && profile?.premium_trial_expires_at) {
+    // If not subscribed via Stripe, check for active trial code
+    if (!isSubscribed && userId) {
       console.log('Checking for trial code access');
-      const expiresAt = new Date(profile.premium_trial_expires_at);
-      const now = new Date();
       
-      if (expiresAt > now) {
-        console.log('User has active trial code access until:', expiresAt.toISOString());
-        isSubscribed = true;
-      } else {
-        console.log('Trial code expired at:', expiresAt.toISOString());
+      const { data: profile, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('premium_trial_expires_at')
+        .eq('user_id', userId)
+        .single();
+      
+      if (!profileError && profile?.premium_trial_expires_at) {
+        const expiresAt = new Date(profile.premium_trial_expires_at);
+        const now = new Date();
+        
+        if (expiresAt > now) {
+          console.log('User has active trial code access until:', expiresAt.toISOString());
+          isSubscribed = true;
+        } else {
+          console.log('Trial code expired at:', expiresAt.toISOString());
+        }
       }
     }
     

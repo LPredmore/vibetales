@@ -9,17 +9,11 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { DebugToggle } from "@/components/DebugToggle";
 import { EmergencyDebugActivator } from "@/components/EmergencyDebugActivator";
-import { ServiceWorkerRecovery } from "@/components/ServiceWorkerRecovery";
-import { EmergencyRecoveryActivator } from "@/components/EmergencyRecoveryActivator";
-import { SafeModeDetector } from "@/components/SafeModeDetector";
 import { debugLogger } from "@/utils/debugLogger";
-
-// Import test utilities in development
-if (process.env.NODE_ENV === 'development') {
-  import("@/utils/testEmergencyRecovery");
-}
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 
@@ -52,7 +46,12 @@ const queryClient = new QueryClient({
 
 const App = () => {
   useEffect(() => {
-    console.log('✅ App component mounted');
+    debugLogger.logLifecycle('INFO', 'App component mounted');
+    debugLogger.markPerformance('app-component-mount');
+    
+    return () => {
+      debugLogger.logLifecycle('INFO', 'App component unmounting');
+    };
   }, []);
 
   return (
@@ -64,9 +63,6 @@ const App = () => {
             <Sonner />
             <DebugToggle />
             <EmergencyDebugActivator />
-            <ServiceWorkerRecovery />
-            <EmergencyRecoveryActivator />
-            <SafeModeDetector />
             <BrowserRouter>
               <RouteLogger />
               <Routes>
@@ -79,6 +75,8 @@ const App = () => {
                   }
                 />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route 
                   path="/profile" 

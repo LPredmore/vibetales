@@ -4,9 +4,6 @@ import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { isPWA, isTWA } from '@/utils/twaDetection';
 import { debugLogger } from '@/utils/debugLogger';
-import { authRecoverySystem } from '@/utils/authRecoverySystem';
-import { offlineAuthSystem } from '@/utils/offlineAuthSystem';
-import { authFailureHandler } from '@/utils/authFailureHandler';
 
 interface AuthContextType {
   user: User | null;
@@ -17,9 +14,6 @@ interface AuthContextType {
   isLoading: boolean;
   isTWA: boolean;
   isPWA: boolean;
-  authMode: 'full' | 'limited' | 'guest' | 'offline';
-  isOfflineMode: boolean;
-  isGuestMode: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,9 +24,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [twaEnvironment, setTwaEnvironment] = useState(false);
   const [pwaEnvironment, setPwaEnvironment] = useState(false);
-  const [authMode, setAuthMode] = useState<'full' | 'limited' | 'guest' | 'offline'>('full');
-  const [isOfflineMode, setIsOfflineMode] = useState(false);
-  const [isGuestMode, setIsGuestMode] = useState(false);
 
   // Simplified TWA/PWA detection for faster initialization
   useEffect(() => {
@@ -43,162 +34,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('📱 Auth environment detected:', { twaDetected, pwaDetected });
   }, []);
 
-  // Enhanced session recovery function with new recovery system
+  // Enhanced session recovery function
   const recoverSession = useCallback(async () => {
-    debugLogger.logSession('INFO', 'Attempting enhanced session recovery');
+    debugLogger.logSession('INFO', 'Attempting session recovery');
     try {
-      // First try the enhanced recovery system
-      const recoveryResult = await authRecoverySystem.attemptSessionRecovery({
-        enableRetry: true,
-        maxRetries: 2,
-        fallbackToGuest: false,
-        validateIntegrity: true
-      });
-
-      if (recoveryResult.success && recoveryResult.session) {
-        setSession(recoveryResult.session);
-        setUser(recoveryResult.user || null);
-        setAuthMode(recoveryResult.mode);
-        setIsOfflineMode(recoveryResult.mode === 'offline');
-        setIsGuestMode(recoveryResult.mode === 'guest');
-        
-        debugLogger.logSession('INFO', 'Enhanced session recovery successful', {
-          mode: recoveryResult.mode,
-          method: recoveryResult.recoveryMethod
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        debugLogger.logSession('WARN', 'Session recovery error', error);
+        return false;
+      }
+      
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        debugLogger.logSession('INFO', 'Session recovered successfully', {
+          userId: session.user.id,
+          expiresAt: session.expires_at
         });
         return true;
+      } else {
+        debugLogger.logSession('WARN', 'No session found to recover');
+        return false;
       }
-
-      // If enhanced recovery failed, try offline auth
-      const offlineResult = await offlineAuthSystem.recoverOfflineAuth();
-      if (offlineResult.success) {
-        setUser(offlineResult.user || null);
-        setSession(null); // No active session in offline mode
-        setAuthMode('offline');
-        setIsOfflineMode(true);
-        setIsGuestMode(false);
-        
-        debugLogger.logSession('INFO', 'Offline authentication recovery successful');
-        return true;
-      }
-
-      // If all recovery methods failed, check if we should enable guest mode
-      if (!navigator.onLine || recoveryResult.mode === 'guest') {
-        const guestResult = await offlineAuthSystem.enableGuestMode();
-        if (guestResult.success) {
-          setUser(null);
-          setSession(null);
-          setAuthMode('guest');
-          setIsOfflineMode(false);
-          setIsGuestMode(true);
-          
-          debugLogger.logSession('INFO', 'Guest mode enabled as fallback');
-          return true;
-        }
-      }
-
-      debugLogger.logSession('WARN', 'All session recovery methods failed');
-      return false;
-      
     } catch (error) {
-      debugLogger.logSession('ERROR', 'Enhanced session recovery failed', error);
-      
-      // Handle the failure with the failure handler
-      const failureResult = await authFailureHandler.handleAuthFailure(error, {
-        context: 'session_recovery',
-        isTWA: twaEnvironment,
-        isPWA: pwaEnvironment
-      });
-
-      if (failureResult.success) {
-        setUser(failureResult.user || null);
-        setSession(failureResult.session || null);
-        setAuthMode(failureResult.mode);
-        setIsOfflineMode(failureResult.mode === 'offline');
-        setIsGuestMode(failureResult.mode === 'guest');
-        return true;
-      }
-
+      debugLogger.logSession('ERROR', 'Session recovery failed', error);
       return false;
     }
-  }, [twaEnvironment, pwaEnvironment]);
+  }, []);
 
-  // Simplified visibility recovery for PWA/TWA - only on visibility change, not startup
+  // Enhanced PWA/TWA session recovery on app resume and startup
   useEffect(() => {
     if (!pwaEnvironment && !twaEnvironment) return;
 
+    // Immediate session recovery on startup
+    if (!session) {
+      console.log('🚀 PWA/TWA startup session recovery');
+      recoverSession();
+    }
+
     const handleVisibilityChange = () => {
       if (!document.hidden && !session) {
-        console.log('🔄 App resumed, attempting session recovery');
+        debugLogger.logTWA('INFO', 'PWA/TWA app resumed, attempting session recovery', {
+          hidden: document.hidden,
+          hasSession: !!session,
+          isPWA: pwaEnvironment,
+          isTWA: twaEnvironment
+        });
         recoverSession();
       }
     };
 
+    const handleFocus = () => {
+      if (!session) {
+        debugLogger.logTWA('INFO', 'PWA/TWA app focused, attempting session recovery');
+        recoverSession();
+      }
+    };
+
+    // Add multiple event listeners for comprehensive recovery
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [session, twaEnvironment, pwaEnvironment, recoverSession]);
-
-  // Network connectivity monitoring and sync
-  useEffect(() => {
-    const handleOnline = async () => {
-      debugLogger.logAuth('INFO', 'Network connectivity restored');
-      
-      // If we're in offline mode, try to sync and recover full authentication
-      if (isOfflineMode) {
-        try {
-          const syncResult = await offlineAuthSystem.synchronizeWhenOnline();
-          debugLogger.logAuth('INFO', 'Offline sync completed', syncResult);
-          
-          // Try to recover full authentication
-          const recoveryResult = await authRecoverySystem.attemptSessionRecovery();
-          if (recoveryResult.success && recoveryResult.session) {
-            setSession(recoveryResult.session);
-            setUser(recoveryResult.user || null);
-            setAuthMode('full');
-            setIsOfflineMode(false);
-            toast.success('Connection restored! Full features are now available.');
-          }
-        } catch (error) {
-          debugLogger.logAuth('ERROR', 'Online sync failed', error);
-        }
-      }
-      
-      // If we're in guest mode, try to recover authentication
-      if (isGuestMode && !session) {
-        const recoveryResult = await recoverSession();
-        if (recoveryResult) {
-          toast.success('Connection restored! Please log in to access all features.');
-        }
-      }
-    };
-
-    const handleOffline = () => {
-      debugLogger.logAuth('INFO', 'Network connectivity lost');
-      
-      // If we have a valid session, try to enable offline mode
-      if (session && user && !isOfflineMode) {
-        offlineAuthSystem.setupOfflineAuth(
-          user.id,
-          user.email || '',
-          user.user_metadata?.name
-        ).then((success) => {
-          if (success) {
-            setAuthMode('offline');
-            setIsOfflineMode(true);
-            toast.info('You\'re now offline. Some features may be limited.');
-          }
-        });
-      }
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
+    window.addEventListener('focus', handleFocus);
+    
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
     };
-  }, [isOfflineMode, isGuestMode, session, user, recoverSession]);
+  }, [session, twaEnvironment, pwaEnvironment, recoverSession]);
 
   useEffect(() => {
     debugLogger.logAuth('INFO', 'Setting up auth state management');
@@ -248,111 +149,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string, remember: boolean) => {
-    setIsLoading(true);
-    debugLogger.logAuth('INFO', 'Enhanced login attempt started', { email, remember, isTWA: twaEnvironment, isPWA: pwaEnvironment });
-    
-    try {
-      // Use retry mechanism for login
-      const loginResult = await authFailureHandler.retryAuthentication(async () => {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          throw error;
-        }
-
-        if (!data.session) {
-          throw new Error('No session returned from login');
-        }
-
-        return {
-          success: true,
-          session: data.session,
-          user: data.session.user,
-          mode: 'full' as const
-        };
-      }, {
-        maxAttempts: 3,
-        baseDelay: 1000
-      });
-
-      if (!loginResult.success) {
-        throw new Error(loginResult.error || 'Login failed');
-      }
-
-      debugLogger.logAuth('INFO', 'Login successful, setting up enhanced persistence');
-
-      // Setup offline authentication for future use
-      if (loginResult.user) {
-        await offlineAuthSystem.setupOfflineAuth(
-          loginResult.user.id,
-          loginResult.user.email || email,
-          loginResult.user.user_metadata?.name
-        );
-      }
-
-      // Request persistent storage for PWA/TWA
-      if ('storage' in navigator && 'persist' in navigator.storage) {
-        try {
-          const granted = await navigator.storage.persist();
-          debugLogger.logStorage('INFO', 'Persistent storage request', { granted });
-        } catch (persistErr) {
-          debugLogger.logStorage('WARN', 'Persistent storage request failed', persistErr);
-        }
-      }
-
-      // Store "remember me" preference
-      if (remember) {
-        localStorage.setItem('auth-remember-preference', 'true');
-        debugLogger.logStorage('INFO', 'Remember preference saved');
-      } else {
-        localStorage.removeItem('auth-remember-preference');
-        debugLogger.logStorage('INFO', 'Remember preference cleared');
-      }
-
-      setSession(loginResult.session!);
-      setUser(loginResult.user!);
-      setAuthMode('full');
-      setIsOfflineMode(false);
-      setIsGuestMode(false);
-      
-      debugLogger.logAuth('INFO', 'Enhanced login completed successfully');
-      toast.success('Successfully logged in!');
-      
-    } catch (error: any) {
-      debugLogger.logAuth('ERROR', 'Login process failed', error);
-      
-      // Handle login failure with enhanced error handling
-      const failureResult = await authFailureHandler.handleAuthFailure(error, {
-        context: 'login_attempt',
-        email,
-        remember,
-        isTWA: twaEnvironment,
-        isPWA: pwaEnvironment
-      });
-
-      if (failureResult.success) {
-        // Partial success - user is in guest/offline mode
-        setUser(failureResult.user || null);
-        setSession(failureResult.session || null);
-        setAuthMode(failureResult.mode);
-        setIsOfflineMode(failureResult.mode === 'offline');
-        setIsGuestMode(failureResult.mode === 'guest');
-        
-        const friendlyMessage = authFailureHandler.getUserFriendlyMessage(
-          authFailureHandler.categorizeError(error)
-        );
-        toast.warning(`${friendlyMessage} You're now in ${failureResult.mode} mode.`);
-      } else {
-        // Complete failure
-        const friendlyMessage = authFailureHandler.getUserFriendlyMessage(
-          authFailureHandler.categorizeError(error)
-        );
-        toast.error(friendlyMessage);
-        throw error;
-      }
-    } finally {
-      setIsLoading(false);
+  setIsLoading(true);
+  debugLogger.logAuth('INFO', 'Login attempt started', { email, remember, isTWA: twaEnvironment, isPWA: pwaEnvironment });
+  
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      debugLogger.logAuth('ERROR', 'Login failed', error);
+      throw error;
     }
-  };
+
+    debugLogger.logAuth('INFO', 'Login successful, setting up persistence');
+
+    // 1. Session is already persisted by default in Supabase client config
+
+    // 2. Request persistent storage for PWA
+    if ('storage' in navigator && 'persist' in navigator.storage) {
+      try {
+        const granted = await navigator.storage.persist();
+        debugLogger.logStorage('INFO', 'Persistent storage request', { granted });
+      } catch (persistErr) {
+        debugLogger.logStorage('WARN', 'Persistent storage request failed', persistErr);
+      }
+    }
+
+    // 3. Save session backup in sessionStorage
+    if (data.session) {
+      sessionStorage.setItem('session-backup', JSON.stringify(data.session));
+      debugLogger.logSession('INFO', 'Session backup saved', {
+        expiresAt: data.session.expires_at,
+        hasTokens: !!(data.session.access_token && data.session.refresh_token)
+      });
+    }
+
+    // Store "remember me" preference
+    if (remember) {
+      localStorage.setItem('auth-remember-preference', 'true');
+      debugLogger.logStorage('INFO', 'Remember preference saved');
+    } else {
+      localStorage.removeItem('auth-remember-preference');
+      debugLogger.logStorage('INFO', 'Remember preference cleared');
+    }
+
+    setSession(data.session);
+    setUser(data.session.user);
+    debugLogger.logAuth('INFO', 'Login completed successfully');
+    toast.success('Successfully logged in!');
+  } catch (error: any) {
+    debugLogger.logAuth('ERROR', 'Login process failed', error);
+    toast.error(error.message || 'Error logging in');
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const register = async (name: string, email: string, password: string) => {
     try {
@@ -377,14 +227,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      debugLogger.logAuth('INFO', 'Enhanced logout attempt started');
+      debugLogger.logAuth('INFO', 'Logout attempt started');
       
       // Clear local state immediately
       setUser(null);
       setSession(null);
-      setAuthMode('full');
-      setIsOfflineMode(false);
-      setIsGuestMode(false);
       
       // Clear all auth-related localStorage items
       const itemsToRemove = ['auth-remember-preference', 'twa-remember-login', 'auth-remember'];
@@ -395,20 +242,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
       
-      // Clear session backup
       if (sessionStorage.getItem('session-backup')) {
         sessionStorage.removeItem('session-backup');
         debugLogger.logStorage('INFO', 'Removed session backup');
       }
-
-      // Clear offline authentication data
-      await offlineAuthSystem.clearOfflineAuthData();
-      
-      // Clear stored sessions from recovery system
-      await authRecoverySystem.clearStoredSessions();
-      
-      // Clear auth error history
-      authFailureHandler.clearErrorHistory();
       
       // Attempt server logout
       const { error } = await supabase.auth.signOut();
@@ -418,35 +255,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         debugLogger.logAuth('INFO', 'Successfully logged out from server');
       }
       
-      debugLogger.logAuth('INFO', 'Enhanced logout completed successfully');
       toast.success('Successfully logged out');
-      
     } catch (error: any) {
       // Even if server logout fails, clear local state
       debugLogger.logAuth('ERROR', 'Logout error', error);
       setUser(null);
       setSession(null);
-      setAuthMode('full');
-      setIsOfflineMode(false);
-      setIsGuestMode(false);
       toast.success('Successfully logged out');
     }
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      login, 
-      register, 
-      logout, 
-      isLoading, 
-      isTWA: twaEnvironment, 
-      isPWA: pwaEnvironment,
-      authMode,
-      isOfflineMode,
-      isGuestMode
-    }}>
+    <AuthContext.Provider value={{ user, session, login, register, logout, isLoading, isTWA: twaEnvironment, isPWA: pwaEnvironment }}>
       {children}
     </AuthContext.Provider>
   );

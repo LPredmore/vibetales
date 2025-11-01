@@ -229,50 +229,7 @@ class DebugLogger {
     this.checkStorageQuota().then(quota => {
       this.logTWA('INFO', 'Storage Quota', quota);
     });
-    
-    // Enhanced diagnostics with new system
-    this.logEnhancedDiagnostics();
-    
     this.logTWA('INFO', '=== END DIAGNOSTICS ===');
-  }
-
-  // Enhanced diagnostics using new system
-  async logEnhancedDiagnostics() {
-    try {
-      // Import diagnostic collector dynamically to avoid circular dependencies
-      const { diagnosticCollector } = await import('./diagnosticDataCollector');
-      const { healthMonitor } = await import('./healthMonitoring');
-      const { startupErrorDetector } = await import('./startupErrorDetection');
-      
-      // Log health summary
-      const healthSummary = healthMonitor.getHealthSummary();
-      this.logTWA('INFO', 'Health Summary', {
-        overall: healthSummary.overall,
-        healthy: healthSummary.healthy,
-        unhealthy: healthSummary.unhealthy,
-        totalErrors: healthSummary.totalErrors
-      });
-      
-      // Log error summary
-      const errorSummary = startupErrorDetector.getErrorSummary();
-      this.logTWA('INFO', 'Error Summary', {
-        total: errorSummary.total,
-        escalated: errorSummary.escalated,
-        critical: errorSummary.bySeverity?.CRITICAL || 0
-      });
-      
-      // Log TWA environment detection
-      const twaEnv = await diagnosticCollector.detectTWAEnvironment();
-      this.logTWA('INFO', 'TWA Environment', {
-        isTWA: twaEnv.isTWA,
-        playStoreOrigin: twaEnv.playStoreOrigin,
-        capacitorHealth: twaEnv.capacitorBridgeStatus.bridgeHealth,
-        detectionMethods: twaEnv.detectionMethods.length
-      });
-      
-    } catch (error) {
-      this.logTWA('ERROR', 'Enhanced diagnostics failed', error);
-    }
   }
 
   private async checkStorageQuota() {

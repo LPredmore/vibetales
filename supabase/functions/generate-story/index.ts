@@ -98,12 +98,12 @@ function getWordCountTarget(length: string, baseWords: string): string {
 
 function getTokenLimit(length: string): number {
   const tokenLimits = {
-    "short": 600,
-    "medium": 1000,
-    "long": 1500
+    "short": 300,
+    "medium": 500,
+    "long": 800
   };
   
-  return tokenLimits[length as keyof typeof tokenLimits] || 1000;
+  return tokenLimits[length as keyof typeof tokenLimits] || 500;
 }
 
 // Get current date in CST timezone
@@ -191,21 +191,13 @@ async function checkUserLimits(supabase: any, userId: string, storyParams: Story
     };
   }
 
-  return { canGenerate: true };
-}
+  // User can generate, increment counter
+  await supabase
+    .from('user_limits')
+    .update({ daily_stories_used: limits.daily_stories_used + 1 })
+    .eq('user_id', userId);
 
-// Increment user limit counter after successful story generation
-async function incrementUserLimit(supabase: any, userId: string): Promise<void> {
-  const { error } = await supabase.rpc('increment_daily_stories', { 
-    user_id_param: userId 
-  });
-    
-  if (error) {
-    console.error('Error incrementing user limit:', error);
-    throw error;
-  }
-  
-  console.log('User limit incremented successfully');
+  return { canGenerate: true };
 }
 
 async function generateStory(params: StoryRequest): Promise<StoryResponse> {
@@ -392,7 +384,6 @@ serve(async (req: Request) => {
     // Check user limits before generating story
     const limitCheck = await checkUserLimits(supabase, user.id, storyParams);
     if (!limitCheck.canGenerate) {
-      console.log('User limit exceeded - returning 429');
       return new Response(JSON.stringify({ 
         error: limitCheck.error,
         limitReached: true
@@ -402,11 +393,7 @@ serve(async (req: Request) => {
       });
     }
 
-    console.log('User can generate - proceeding with story generation');
     const story = await generateStory(storyParams);
-    
-    console.log('Story generated successfully - incrementing user counter');
-    await incrementUserLimit(supabase, user.id);
     
     console.log('=== STORY GENERATED SUCCESSFULLY ===');
     
@@ -417,11 +404,10 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error('=== STORY GENERATION ERROR ===');
-    console.error('Error details:', error);
+    console.error('Error:', error);
     
-    // Counter is NOT incremented if generation fails
     return new Response(JSON.stringify({ 
-      error: error.message || 'Failed to generate story. Please try again.'
+      error: error.message || 'Failed to generate story'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

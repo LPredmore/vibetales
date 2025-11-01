@@ -14,7 +14,6 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { PremiumUpgradeModal } from "@/components/PremiumUpgradeModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,7 +56,6 @@ const Profile = () => {
   const [confirmText, setConfirmText] = useState("");
   const [subscriptionStatus, setSubscriptionStatus] = useState<'loading' | 'subscribed' | 'not_subscribed'>('loading');
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -497,7 +495,7 @@ const Profile = () => {
             <CardHeader>
               <CardTitle>Subscription Management</CardTitle>
               <CardDescription>
-                Manage your unlimited subscription and billing
+                Manage your premium subscription and billing
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -514,7 +512,7 @@ const Profile = () => {
                           <CheckCircle2 className="h-5 w-5 text-green-600" />
                         </div>
                         <div>
-                          <p className="font-semibold text-green-900">Unlimited Active</p>
+                          <p className="font-semibold text-green-900">Premium Active</p>
                           <p className="text-sm text-green-700">You have unlimited access to all features</p>
                         </div>
                       </div>
@@ -548,23 +546,34 @@ const Profile = () => {
                   </>
                 ) : (
                   <>
+                    <div className="p-4 border border-border rounded-lg bg-muted">
+                      <p className="text-sm text-foreground mb-2">
+                        <strong>Free Plan</strong>
+                      </p>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• 3 daily stories</li>
+                        <li>• Up to 3 sight words</li>
+                        <li>• Basic features</li>
+                      </ul>
+                    </div>
+                    
                     <Button
-                      onClick={() => setShowUpgradeModal(true)}
+                      onClick={() => window.open('https://buy.stripe.com/7sYaEZ7aF0sO4hp4P4fMA01', '_blank')}
                       className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                     >
                       <Sparkles className="mr-2 h-4 w-4" />
-                      Upgrade to Unlimited
+                      Upgrade to Premium
                     </Button>
                     
                     <div className="p-4 border border-purple-200 rounded-lg bg-purple-50">
                       <p className="text-sm font-semibold text-purple-900 mb-2">
-                        Unlimited Benefits:
+                        Premium Benefits:
                       </p>
                       <ul className="text-sm text-purple-800 space-y-1">
-                        <li>✨ Unlimited Story Generation</li>
-                        <li>✨ Unlimited Sight Words</li>
-                        <li>✨ Saving Stories</li>
-                        <li>✨ Early Access to New Features</li>
+                        <li>✨ Unlimited story generation</li>
+                        <li>✨ Unlimited sight words</li>
+                        <li>✨ Priority support</li>
+                        <li>✨ Advanced features</li>
                       </ul>
                     </div>
                   </>
@@ -598,7 +607,6 @@ const Profile = () => {
                     <li>Your favorite stories</li>
                     <li>Your sight word lists</li>
                     <li>Usage history and preferences</li>
-                    <li><strong>Your active subscription will be cancelled immediately</strong></li>
                     <li>Account access</li>
                   </ul>
                 </div>
@@ -669,12 +677,6 @@ const Profile = () => {
           </Card>
         </motion.div>
       </div>
-      
-      <PremiumUpgradeModal 
-        open={showUpgradeModal}
-        onOpenChange={setShowUpgradeModal}
-        onSuccess={checkSubscriptionStatus}
-      />
     </div>
   );
 };

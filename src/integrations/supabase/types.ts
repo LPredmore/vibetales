@@ -118,7 +118,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          always_unlim: boolean
           created_at: string
           email: string | null
           iap_entitlements: Json | null
@@ -135,7 +134,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          always_unlim?: boolean
           created_at?: string
           email?: string | null
           iap_entitlements?: Json | null
@@ -152,7 +150,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          always_unlim?: boolean
           created_at?: string
           email?: string | null
           iap_entitlements?: Json | null
@@ -251,48 +248,6 @@ export type Database = {
         }
         Relationships: []
       }
-      stripe_webhook_logs: {
-        Row: {
-          customer_email: string | null
-          error: string | null
-          event_id: string
-          event_type: string
-          id: string
-          influencer_code: string | null
-          processed_at: string | null
-          promotion_code: string | null
-          raw_event: Json | null
-          subscription_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          customer_email?: string | null
-          error?: string | null
-          event_id: string
-          event_type: string
-          id?: string
-          influencer_code?: string | null
-          processed_at?: string | null
-          promotion_code?: string | null
-          raw_event?: Json | null
-          subscription_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          customer_email?: string | null
-          error?: string | null
-          event_id?: string
-          event_type?: string
-          id?: string
-          influencer_code?: string | null
-          processed_at?: string | null
-          promotion_code?: string | null
-          raw_event?: Json | null
-          subscription_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       user_limits: {
         Row: {
           created_at: string
@@ -349,10 +304,6 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
-      }
-      increment_daily_stories: {
-        Args: { user_id_param: string }
-        Returns: undefined
       }
     }
     Enums: {
