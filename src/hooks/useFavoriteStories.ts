@@ -46,7 +46,38 @@ export const useFavoriteStories = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    // Optimistic update for instant UI feedback
+    onMutate: async (newStory) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['favoriteStories', user?.id] });
+
+      // Snapshot previous value
+      const previousStories = queryClient.getQueryData<FavoriteStory[]>(['favoriteStories', user?.id]);
+
+      // Optimistically update
+      const optimisticStory: FavoriteStory = {
+        id: `temp-${Date.now()}`,
+        user_id: user!.id,
+        ...newStory,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      queryClient.setQueryData<FavoriteStory[]>(
+        ['favoriteStories', user?.id],
+        (old) => [optimisticStory, ...(old || [])]
+      );
+
+      return { previousStories };
+    },
+    onError: (err, newStory, context) => {
+      // Rollback on error
+      if (context?.previousStories) {
+        queryClient.setQueryData(['favoriteStories', user?.id], context.previousStories);
+      }
+    },
+    onSettled: () => {
+      // Refetch to ensure data consistency
       queryClient.invalidateQueries({ queryKey: ['favoriteStories', user?.id] });
     },
   });
@@ -60,7 +91,26 @@ export const useFavoriteStories = () => {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    // Optimistic update for instant UI feedback
+    onMutate: async (deletedId) => {
+      await queryClient.cancelQueries({ queryKey: ['favoriteStories', user?.id] });
+
+      const previousStories = queryClient.getQueryData<FavoriteStory[]>(['favoriteStories', user?.id]);
+
+      // Optimistically remove
+      queryClient.setQueryData<FavoriteStory[]>(
+        ['favoriteStories', user?.id],
+        (old) => (old || []).filter((story) => story.id !== deletedId)
+      );
+
+      return { previousStories };
+    },
+    onError: (err, deletedId, context) => {
+      if (context?.previousStories) {
+        queryClient.setQueryData(['favoriteStories', user?.id], context.previousStories);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['favoriteStories', user?.id] });
     },
   });

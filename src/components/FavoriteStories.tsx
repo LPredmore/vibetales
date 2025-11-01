@@ -4,22 +4,24 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button";
 import { Trash2, Calendar, BookOpen, Palette, Crown, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { PremiumUpgradeModal } from "./LazyModals";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUpgradeModal } from "@/contexts/UpgradeModalContext";
 import { useFavoriteStories } from "@/hooks/useFavoriteStories";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
 
 export const FavoriteStories = () => {
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { isSubscribed, isCheckingSubscription, refreshSubscription } = useAuth();
   const { stories: favorites, isLoading, deleteStory } = useFavoriteStories();
+  const { showUpgradeModal } = useUpgradeModal();
+  const notifications = useToastNotifications();
 
   const handleDelete = async (id: string, title: string) => {
     try {
       deleteStory(id);
-      toast.success(`"${title}" removed from favorites`);
+      notifications.storyDeleted(title);
     } catch (error) {
       console.error("Error deleting favorite:", error);
-      toast.error("Failed to remove story from favorites");
+      notifications.storyDeleteFailed();
     }
   };
 
@@ -45,18 +47,12 @@ export const FavoriteStories = () => {
             Saving stories is an Unlimited feature. Upgrade to unlock unlimited story saving and access your favorite stories anytime!
           </p>
           <Button
-            onClick={() => setShowUpgradeModal(true)}
+            onClick={() => showUpgradeModal(refreshSubscription)}
             className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
           >
             <Crown className="w-4 h-4 mr-2" />
             Upgrade to Unlimited
           </Button>
-          
-          <PremiumUpgradeModal 
-            open={showUpgradeModal}
-            onOpenChange={setShowUpgradeModal}
-            onSuccess={refreshSubscription}
-          />
         </div>
       </motion.div>
     );

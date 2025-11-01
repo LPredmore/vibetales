@@ -4,13 +4,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
 import { motion } from "framer-motion";
 import { Sparkles, Mail, Lock, User } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { login, register } = useAuth();
+  const notifications = useToastNotifications();
   
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -28,10 +29,10 @@ const Auth = () => {
     setIsLoggingIn(true);
     try {
       await login(loginEmail, loginPassword, false);
-      toast.success("Welcome back!");
+      notifications.custom.success("Welcome back!");
       navigate("/");
     } catch (error) {
-      toast.error("Invalid email or password");
+      notifications.custom.error("Invalid email or password");
     } finally {
       setIsLoggingIn(false);
     }
@@ -42,10 +43,10 @@ const Auth = () => {
     setIsRegistering(true);
     try {
       await register(registerName, registerEmail, registerPassword);
-      toast.success("Account created! Welcome to VibeTales!");
+      notifications.custom.success("Account created! Welcome to VibeTales!");
       navigate("/");
     } catch (error) {
-      toast.error("Failed to create account. Please try again.");
+      notifications.custom.error("Failed to create account. Please try again.");
     } finally {
       setIsRegistering(false);
     }

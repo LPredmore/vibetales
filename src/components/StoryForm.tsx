@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
 import { ReadingLevelSelector } from "./ReadingLevelSelector";
 import { InterestLevelSelector } from "./InterestLevelSelector";
 import { ThemeSelector } from "./ThemeSelector";
@@ -43,6 +42,7 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
   const [length, setLength] = useState("");
   const [isDrSeussStyle, setIsDrSeussStyle] = useState(false);
   const [useSightWords, setUseSightWords] = useState(true);
+  const notifications = useToastNotifications();
   
   // Use batched localStorage for better performance
   const { setItem: setLocalStorage } = useLocalStorageBatch();
@@ -125,11 +125,11 @@ export const StoryForm = ({ onSubmit }: StoryFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!readingLevel || !interestLevel || !theme || !language || !length) {
-      toast.error("Please fill in all required fields");
+      notifications.formIncomplete();
       return;
     }
     if (hasThemeLesson && !themeLesson.trim()) {
-      toast.error("Please enter a theme/lesson or disable the option");
+      notifications.themeRequired();
       return;
     }
     onSubmit({

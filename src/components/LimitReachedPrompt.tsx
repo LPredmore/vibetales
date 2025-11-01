@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Crown, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
 
 interface LimitReachedPromptProps {
   onClose: () => void;
@@ -10,10 +10,11 @@ interface LimitReachedPromptProps {
 
 export const LimitReachedPrompt = ({ onClose }: LimitReachedPromptProps) => {
   const { user } = useAuth();
+  const notifications = useToastNotifications();
 
   const handleUpgrade = () => {
     if (!user) {
-      toast.error("Please log in to upgrade");
+      notifications.upgradeRequired();
       return;
     }
 

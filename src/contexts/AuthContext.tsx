@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
-import { toast } from 'sonner';
+import { useToastNotifications } from '@/hooks/useToastNotifications';
 import { isPWA, isTWA } from '@/utils/twaDetection';
 import { debugLogger } from '@/utils/debugLogger';
 
@@ -29,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [pwaEnvironment, setPwaEnvironment] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState<boolean | null>(null);
   const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
+  const notifications = useToastNotifications();
 
   // Simplified TWA/PWA detection for faster initialization
   useEffect(() => {
@@ -230,10 +231,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(data.session);
     setUser(data.session.user);
     debugLogger.logAuth('INFO', 'Login completed successfully');
-    toast.success('Successfully logged in!');
+    notifications.loginSuccess();
   } catch (error: any) {
     debugLogger.logAuth('ERROR', 'Login process failed', error);
-    toast.error(error.message || 'Error logging in');
+    notifications.loginFailed(error.message);
     throw error;
   } finally {
     setIsLoading(false);
@@ -254,9 +255,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) throw error;
-      toast.success('Registration successful! Please check your email to confirm your account.');
+      notifications.registrationSuccess();
     } catch (error: any) {
-      toast.error(error.message || 'Error during registration');
+      notifications.registrationFailed(error.message);
       throw error;
     }
   };
@@ -291,13 +292,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         debugLogger.logAuth('INFO', 'Successfully logged out from server');
       }
       
-      toast.success('Successfully logged out');
+      notifications.logoutSuccess();
     } catch (error: any) {
       // Even if server logout fails, clear local state
       debugLogger.logAuth('ERROR', 'Logout error', error);
       setUser(null);
       setSession(null);
-      toast.success('Successfully logged out');
+      notifications.logoutSuccess();
     }
   };
 

@@ -3,12 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { getUserReports, ContentReport } from "@/services/contentReports";
-import { toast } from "sonner";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
 import { format } from "date-fns";
 
 export const UserReports = () => {
   const [reports, setReports] = useState<ContentReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const notifications = useToastNotifications();
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -17,7 +18,7 @@ export const UserReports = () => {
         setReports(userReports);
       } catch (error: any) {
         console.error("Error fetching reports:", error);
-        toast.error(error.message || "Failed to load reports");
+        notifications.reportsLoadFailed(error.message);
       } finally {
         setLoading(false);
       }

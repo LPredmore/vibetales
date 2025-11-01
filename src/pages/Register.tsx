@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
-import { toast } from "sonner";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -13,15 +13,16 @@ const Register = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const notifications = useToastNotifications();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await register(name, email, password);
-      toast.success("Registration successful!");
+      notifications.registrationSuccess();
       navigate("/");
     } catch (error) {
-      toast.error("Failed to register. Please try again.");
+      notifications.custom.error("Failed to register. Please try again.");
     }
   };
 

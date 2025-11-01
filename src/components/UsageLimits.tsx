@@ -4,17 +4,13 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Clock, Crown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { PremiumUpgradeModal } from "./LazyModals";
+import { useUpgradeModal } from "@/contexts/UpgradeModalContext";
 import { useUserLimits } from "@/hooks/useUserLimits";
 
 export const UsageLimits = () => {
   const { isSubscribed, isCheckingSubscription, refreshSubscription } = useAuth();
   const { limits, isLoading: limitsLoading } = useUserLimits();
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-
-  const handleUpgradeSuccess = () => {
-    refreshSubscription();
-  };
+  const { showUpgradeModal } = useUpgradeModal();
 
   // Show loading until both operations complete
   if (limitsLoading || isCheckingSubscription) {
@@ -57,18 +53,12 @@ export const UsageLimits = () => {
             className="h-2"
           />
           <Button 
-            onClick={() => setShowUpgradeModal(true)}
+            onClick={() => showUpgradeModal(refreshSubscription)}
             className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
           >
             <Crown className="mr-2 h-4 w-4" />
             Upgrade to Unlimited
           </Button>
-          
-          <PremiumUpgradeModal 
-            open={showUpgradeModal}
-            onOpenChange={setShowUpgradeModal}
-            onSuccess={handleUpgradeSuccess}
-          />
         </div>
       </CardContent>
     </Card>

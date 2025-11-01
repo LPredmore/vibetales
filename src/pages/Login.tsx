@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
-import { toast } from "sonner";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
 import { debugLogger } from "@/utils/debugLogger";
 
 const Login = () => {
@@ -15,6 +15,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const notifications = useToastNotifications();
 
   // Auto-check remember me for TWA users and if previously set
   useEffect(() => {
@@ -47,11 +48,11 @@ const Login = () => {
     
     try {
       await login(email, password, remember);
-      toast.success("Successfully logged in!");
+      notifications.loginSuccess();
       navigate("/");
     } catch (error: any) {
       debugLogger.logAuth('ERROR', 'Login form error', error);
-      toast.error(error.message || "Failed to login. Please try again.");
+      notifications.loginFailed(error.message);
     } finally {
       setIsLoading(false);
     }

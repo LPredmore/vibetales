@@ -4,12 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
-import { toast } from "sonner";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const notifications = useToastNotifications();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,12 +23,12 @@ const ResetPassword = () => {
 
       if (error) throw error;
 
-      toast.success(
+      notifications.custom.success(
         "If an account exists with this email, you will receive password reset instructions."
       );
       navigate("/login");
     } catch (error: any) {
-      toast.error(error.message || "Failed to send reset password email");
+      notifications.custom.error(error.message || "Failed to send reset password email");
     } finally {
       setIsSubmitting(false);
     }

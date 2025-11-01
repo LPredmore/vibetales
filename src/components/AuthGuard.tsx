@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { useToastNotifications } from '@/hooks/useToastNotifications';
 import { debugLogger } from '@/utils/debugLogger';
 
 interface AuthGuardProps {
@@ -11,6 +11,7 @@ interface AuthGuardProps {
 export const AuthGuard = ({ children }: AuthGuardProps) => {
   const { user, session, isLoading } = useAuth();
   const navigate = useNavigate();
+  const notifications = useToastNotifications();
 
   useEffect(() => {
     debugLogger.logLifecycle('INFO', 'AuthGuard mounted', {
@@ -36,7 +37,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     const handleAuthError = (event: CustomEvent) => {
       debugLogger.logAuth('ERROR', 'Auth error event received', event.detail);
       console.warn('Auth error detected:', event.detail);
-      toast.error('Session expired. Please log in again.');
+      notifications.sessionExpired();
       navigate('/auth');
     };
 

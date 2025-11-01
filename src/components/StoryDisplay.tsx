@@ -2,9 +2,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Bookmark, BookmarkCheck, Flag, Crown } from "lucide-react";
-import { toast } from "sonner";
-import { ReportDialog, PremiumUpgradeModal } from "./LazyModals";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
+import { ReportDialog } from "./LazyModals";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUpgradeModal } from "@/contexts/UpgradeModalContext";
 import { useFavoriteStories } from "@/hooks/useFavoriteStories";
 
 interface StoryDisplayProps {
@@ -17,13 +18,14 @@ interface StoryDisplayProps {
 export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDisplayProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { isSubscribed, isCheckingSubscription, refreshSubscription } = useAuth();
   const { saveStory, isSaving } = useFavoriteStories();
+  const { showUpgradeModal } = useUpgradeModal();
+  const notifications = useToastNotifications();
 
   const handleSaveToFavorites = async () => {
     if (!readingLevel || !theme) {
-      toast.error("Story information is incomplete");
+      notifications.storyInfoIncomplete();
       return;
     }
 
@@ -35,16 +37,16 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
         theme,
       });
       setIsSaved(true);
-      toast.success("Story saved to favorites!");
+      notifications.storySaved();
       
       // Reset the saved state after 3 seconds
       setTimeout(() => setIsSaved(false), 3000);
     } catch (error: any) {
       console.error("Error saving story:", error);
       if (error.message?.includes("duplicate key")) {
-        toast.error("This story is already in your favorites");
+        notifications.storyAlreadySaved();
       } else {
-        toast.error("Failed to save story to favorites");
+        notifications.storySaveFailed();
       }
     }
   };
@@ -88,7 +90,7 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
               </Button>
             ) : (
               <Button
-                onClick={() => setShowUpgradeModal(true)}
+                onClick={() => showUpgradeModal(refreshSubscription)}
                 variant="outline"
                 className="clay-button w-full sm:w-auto bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white border-0"
               >
@@ -97,11 +99,6 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
               </Button>
             )}
             
-            <PremiumUpgradeModal 
-              open={showUpgradeModal}
-              onOpenChange={setShowUpgradeModal}
-              onSuccess={refreshSubscription}
-            />
             <Button
               onClick={() => setShowReportDialog(true)}
               variant="outline"

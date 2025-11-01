@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { toast } from "sonner";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SightWord } from "@/types/sightWords";
@@ -19,6 +18,7 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { user } = useAuth();
+  const notifications = useToastNotifications();
 
   const activeCount = words.filter(word => word.active).length;
   const totalCount = words.length;
@@ -61,7 +61,7 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
       }
     } catch (err) {
       console.error('Error creating checkout session:', err);
-      toast.error("Failed to start checkout process");
+      notifications.checkoutFailed();
     } finally {
       setIsCheckingOut(false);
     }
@@ -89,25 +89,25 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
       if (error) throw error;
     } catch (err) {
       console.error('Error saving sight words:', err);
-      toast.error("Failed to save words");
+      notifications.wordsSaveFailed();
     }
   };
 
   const handleAddWord = async (newWord: string) => {
     if (words.some(word => word.word.toLowerCase() === newWord.toLowerCase())) {
-      toast.error("This word is already in your list");
+      notifications.wordDuplicate();
       return;
     }
 
     if (!isSubscribed && words.length >= 3) {
-      toast.error("Free accounts are limited to 3 words. Please upgrade to add more words.");
+      notifications.wordLimitReached();
       return;
     }
     
     const updatedWords = [...words, { word: newWord, active: true }];
     setWords(updatedWords);
     await saveWords(updatedWords);
-    toast.success("Word added successfully!");
+    notifications.wordAdded();
   };
 
   const handleToggleWord = async (index: number) => {
@@ -116,28 +116,28 @@ export const SightWordManager = ({ words, setWords, isExternalLoading = false }:
     );
     setWords(updatedWords);
     await saveWords(updatedWords);
-    toast.success(updatedWords[index].active ? "Word activated" : "Word deactivated");
+    notifications.wordToggled(updatedWords[index].active);
   };
 
   const handleDeleteWord = async (indexToDelete: number) => {
     const updatedWords = words.filter((_, index) => index !== indexToDelete);
     setWords(updatedWords);
     await saveWords(updatedWords);
-    toast.success("Word removed successfully!");
+    notifications.wordDeleted();
   };
 
   const handleSelectAll = async () => {
     const updatedWords = words.map(word => ({ ...word, active: true }));
     setWords(updatedWords);
     await saveWords(updatedWords);
-    toast.success("All words activated!");
+    notifications.allWordsActivated();
   };
 
   const handleDeselectAll = async () => {
     const updatedWords = words.map(word => ({ ...word, active: false }));
     setWords(updatedWords);
     await saveWords(updatedWords);
-    toast.success("All words deactivated!");
+    notifications.allWordsDeactivated();
   };
 
   if (isExternalLoading) {

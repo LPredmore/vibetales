@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Crown, Sparkles } from "lucide-react";
-import { PremiumUpgradeModal } from "../LazyModals";
+import { useUpgradeModal } from "@/contexts/UpgradeModalContext";
 
 interface UpgradePromptProps {
   onUpgrade: () => void;
@@ -10,11 +9,7 @@ interface UpgradePromptProps {
 }
 
 export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) => {
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-
-  const handleUpgradeSuccess = () => {
-    onUpgrade();
-  };
+  const { showUpgradeModal } = useUpgradeModal();
 
   return (
     <Card className="border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50">
@@ -29,7 +24,7 @@ export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) =
       </CardHeader>
       <CardContent>
         <Button
-          onClick={() => setShowUpgradeModal(true)}
+          onClick={() => showUpgradeModal(onUpgrade)}
           disabled={isProcessing}
           className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
         >
@@ -45,12 +40,6 @@ export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) =
             </>
           )}
         </Button>
-        
-        <PremiumUpgradeModal 
-          open={showUpgradeModal}
-          onOpenChange={setShowUpgradeModal}
-          onSuccess={handleUpgradeSuccess}
-        />
       </CardContent>
     </Card>
   );

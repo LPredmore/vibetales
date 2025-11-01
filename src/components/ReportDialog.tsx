@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
 import { submitContentReport, getReportReasons, ReportReason } from "@/services/contentReports";
 
 interface ReportDialogProps {
@@ -32,6 +32,7 @@ export const ReportDialog = ({ open, onOpenChange, storyTitle, storyContent }: R
   const [reportDetails, setReportDetails] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reportReasons, setReportReasons] = useState<ReportReason[]>([]);
+  const notifications = useToastNotifications();
 
   useEffect(() => {
     const fetchReasons = async () => {
@@ -50,20 +51,20 @@ export const ReportDialog = ({ open, onOpenChange, storyTitle, storyContent }: R
 
   const handleSubmit = async () => {
     if (!reportReason) {
-      toast.error("Please select a reason for reporting");
+      notifications.reportReasonRequired();
       return;
     }
 
     setIsSubmitting(true);
     try {
       await submitContentReport(storyTitle, storyContent, reportReason, reportDetails);
-      toast.success("Content report submitted successfully");
+      notifications.reportSubmitted();
       onOpenChange(false);
       setReportReason("");
       setReportDetails("");
     } catch (error: any) {
       console.error("Error submitting report:", error);
-      toast.error(error.message || "Failed to submit report");
+      notifications.reportSubmitFailed(error.message);
     } finally {
       setIsSubmitting(false);
     }

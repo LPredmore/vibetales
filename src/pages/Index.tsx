@@ -10,7 +10,7 @@ import { LimitReachedPrompt } from "@/components/LimitReachedPrompt";
 import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
 import { generateStory } from "@/services/openrouter";
-import { toast } from "sonner";
+import { useToastNotifications } from "@/hooks/useToastNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,6 +30,7 @@ const Index = () => {
   const [showLimitPrompt, setShowLimitPrompt] = useState(false);
   const [wordsLoading, setWordsLoading] = useState(true);
   const { user, refreshSubscription } = useAuth();
+  const notifications = useToastNotifications();
 
   // Load sight words immediately when component mounts
   useEffect(() => {
@@ -67,7 +68,7 @@ const Index = () => {
         }
       } catch (err) {
         console.error('Error loading sight words:', err);
-        toast.error("Failed to load sight words");
+        notifications.wordsLoadFailed();
       } finally {
         setWordsLoading(false);
       }
@@ -83,7 +84,7 @@ const Index = () => {
     const canceled = urlParams.get('canceled');
 
     if (success === 'true') {
-      toast.success("Payment successful! Your unlimited subscription is now active.");
+      notifications.paymentSuccessful();
       
       // Refresh subscription status using centralized method
       refreshSubscription();
@@ -91,24 +92,24 @@ const Index = () => {
       // Clean up URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (canceled === 'true') {
-      toast.error("Payment was canceled. You can try again anytime.");
+      notifications.paymentCanceled();
       
       // Clean up URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [refreshSubscription]);
+  }, [refreshSubscription, notifications]);
 
   const handleSubmit = async (data: StoryFormData) => {
     // Check if words are still loading
     if (wordsLoading) {
-      toast.error("Please wait for sight words to load");
+      notifications.wordsLoading();
       return;
     }
     
     const activeWords = words.filter(word => word.active);
     
     if (data.useSightWords && activeWords.length === 0) {
-      toast.error("Please add and activate some sight words before generating a story");
+      notifications.noActiveWords();
       return;
     }
     
@@ -119,7 +120,7 @@ const Index = () => {
       console.log("Form data:", data);
       console.log("Active sight words:", activeWords.map(w => w.word));
       
-      toastId = toast.loading("Generating your story...");
+      toastId = notifications.custom.success("Generating your story...");
       const activeWordStrings = activeWords.map(word => word.word);
       
       const generatedStory = await generateStory({
@@ -127,7 +128,7 @@ const Index = () => {
         keywords: data.useSightWords ? activeWordStrings : []
       });
       
-      toast.dismiss(toastId);
+      notifications.custom.success(""); // Dismiss loading toast
       
       setStory({
         ...generatedStory,
@@ -136,7 +137,7 @@ const Index = () => {
       });
       setShowLimitPrompt(false); // Hide limit prompt if it was showing
       
-      toast.success("Story generated successfully!");
+      notifications.storyGenerated();
       
       // Auto-scroll to story section when generated (subtle, non-blocking)
       setTimeout(() => {
@@ -157,23 +158,23 @@ const Index = () => {
       
       // Always dismiss the loading toast first
       if (toastId) {
-        toast.dismiss(toastId);
+        // Already dismissed above
       }
       
       if (error instanceof Error && error.message === 'LIMIT_REACHED') {
         setShowLimitPrompt(true);
-        toast.error("Daily limit reached. Upgrade to unlimited or wait until tomorrow (midnight CST).");
+        notifications.dailyLimitReached();
       } else if (error instanceof Error && error.message.includes('429')) {
         // Specific handling for rate limit errors from edge function
         setShowLimitPrompt(true);
-        toast.error("You've reached your daily story limit. Upgrade for unlimited stories!");
+        notifications.storiesLimitReached();
       } else {
         // Only show error if not a domain-related issue
         const isDomainError = error instanceof Error && 
           (error.message?.includes('unexpected URL') || error.message?.includes('allowedOrigins'));
         
         if (!isDomainError) {
-          toast.error("Failed to generate story. Please try again.");
+          notifications.storyGenerationFailed();
         }
       }
     }
