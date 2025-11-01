@@ -92,10 +92,6 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
       if (data?.success) {
         setValidationStatus("success");
         setShowCodePricingTable(true);
-        toast({
-          title: "Success!",
-          description: `Welcome ${data.influencerName}! Your promo pricing is now available below.`,
-        });
         
         // Call success callback to refresh subscription status
         if (onSuccess) {
@@ -130,8 +126,8 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(85vh-120px)] pr-4">
-          {/* Section 1: Premium Benefits */}
+        <div className="space-y-6 max-h-[calc(85vh-120px)] overflow-y-auto pr-4">
+          {/* Section 1: Unlimited Benefits */}
           <div className="space-y-3 mb-6">
             <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200">
               <Sparkles className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -152,8 +148,16 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
             <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
               <Save className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-semibold text-purple-900">Save Favorite Stories</h4>
+                <h4 className="font-semibold text-purple-900">Saving Stories</h4>
                 <p className="text-sm text-purple-700">Keep your best stories and access them anytime</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
+              <Sparkles className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-green-900">Early Access to New Features</h4>
+                <p className="text-sm text-green-700">Be the first to try new features as they're released</p>
               </div>
             </div>
           </div>
@@ -252,28 +256,32 @@ export const PremiumUpgradeModal = ({ open, onOpenChange, onSuccess }: PremiumUp
                 <p className="text-sm text-muted-foreground">
                   You get a free week!
                 </p>
-                <stripe-pricing-table 
-                  pricing-table-id="prctbl_1SMrbERFHDig2LCd3awZhYCk"
-                  publishable-key="pk_live_51Q7RAjRFHDig2LCd0VqJDTzZl0PZKDUtJY9CJshGKffP8dg0ompEBRjKAhqrrKw4rtdxw3dQFvqXRgpLfSyJ12mi00Rf52vVsl"
-                  customer-email={user?.email}
-                >
-                </stripe-pricing-table>
+                <div style={{ minHeight: '400px', pointerEvents: 'auto' }}>
+                  <stripe-pricing-table 
+                    pricing-table-id="prctbl_1SMrbERFHDig2LCd3awZhYCk"
+                    publishable-key="pk_live_51Q7RAjRFHDig2LCd0VqJDTzZl0PZKDUtJY9CJshGKffP8dg0ompEBRjKAhqrrKw4rtdxw3dQFvqXRgpLfSyJ12mi00Rf52vVsl"
+                    customer-email={user?.email}
+                  >
+                  </stripe-pricing-table>
+                </div>
               </>
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
                   Choose your plan below. Have a promo code? Enter it above for special pricing!
                 </p>
-                <stripe-pricing-table 
-                  pricing-table-id="prctbl_1SMqbWRFHDig2LCdB0mdlAW5"
-                  publishable-key="pk_live_51Q7RAjRFHDig2LCd0VqJDTzZl0PZKDUtJY9CJshGKffP8dg0ompEBRjKAhqrrKw4rtdxw3dQFvqXRgpLfSyJ12mi00Rf52vVsl"
-                  customer-email={user?.email}
-                >
-                </stripe-pricing-table>
+                <div style={{ minHeight: '400px', pointerEvents: 'auto' }}>
+                  <stripe-pricing-table 
+                    pricing-table-id="prctbl_1SMqbWRFHDig2LCdB0mdlAW5"
+                    publishable-key="pk_live_51Q7RAjRFHDig2LCd0VqJDTzZl0PZKDUtJY9CJshGKffP8dg0ompEBRjKAhqrrKw4rtdxw3dQFvqXRgpLfSyJ12mi00Rf52vVsl"
+                    customer-email={user?.email}
+                  >
+                  </stripe-pricing-table>
+                </div>
               </>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );

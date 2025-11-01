@@ -21,7 +21,7 @@ export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) =
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-amber-800">
           <Crown className="h-5 w-5" />
-          Upgrade to Premium
+          Upgrade to Unlimited
         </CardTitle>
         <CardDescription className="text-amber-700">
           You've reached the free limit of 3 sight words. Upgrade to add unlimited words!
@@ -41,7 +41,7 @@ export const UpgradePrompt = ({ onUpgrade, isProcessing }: UpgradePromptProps) =
           ) : (
             <>
               <Crown className="mr-2 h-4 w-4" />
-              Upgrade to Premium
+              Upgrade to Unlimited
             </>
           )}
         </Button>

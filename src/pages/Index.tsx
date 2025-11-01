@@ -84,7 +84,7 @@ const Index = () => {
     const canceled = urlParams.get('canceled');
 
     if (success === 'true') {
-      toast.success("Payment successful! Your premium subscription is now active.");
+      toast.success("Payment successful! Your unlimited subscription is now active.");
       
       // Refresh subscription status
       if (user) {
@@ -92,10 +92,10 @@ const Index = () => {
           body: { userId: user.id }
         }).then(({ data, error }) => {
           if (!error && data) {
-            toast.success("Premium features are now available!");
+            toast.success("Unlimited features are now available!");
           }
         }).catch(() => {
-          toast.info("Your payment was successful. Premium features may take a moment to activate.");
+          toast.info("Your payment was successful. Unlimited features may take a moment to activate.");
         });
       }
       
@@ -183,7 +183,11 @@ const Index = () => {
       
       if (error instanceof Error && error.message === 'LIMIT_REACHED') {
         setShowLimitPrompt(true);
-        toast.info("You have reached your limit today. Wait until tomorrow or upgrade to premium for unlimited stories.");
+        toast.error("Daily limit reached. Upgrade to unlimited or wait until tomorrow (midnight CST).");
+      } else if (error instanceof Error && error.message.includes('429')) {
+        // Specific handling for rate limit errors from edge function
+        setShowLimitPrompt(true);
+        toast.error("You've reached your daily story limit. Upgrade for unlimited stories!");
       } else {
         // Only show error if not a domain-related issue
         const isDomainError = error instanceof Error && 

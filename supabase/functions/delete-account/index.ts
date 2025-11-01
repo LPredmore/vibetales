@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2'
+import Stripe from 'https://esm.sh/stripe@14.21.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,6 +36,69 @@ Deno.serve(async (req) => {
 
     const userId = user.id;
     console.log(`Starting account deletion for user: ${userId}`);
+
+    // Step 0: Get user email before we delete the profile
+    const { data: profileData, error: profileFetchError } = await supabaseAdmin
+      .from('profiles')
+      .select('email')
+      .eq('user_id', userId)
+      .single();
+    
+    const userEmail = profileData?.email || user.email;
+    console.log(`User email for Stripe cancellation: ${userEmail}`);
+
+    // Step 0.5: Cancel any Stripe subscriptions
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    if (stripeKey && userEmail) {
+      try {
+        console.log('Initializing Stripe to cancel subscriptions...');
+        const stripe = new Stripe(stripeKey, {
+          apiVersion: '2023-10-16',
+        });
+
+        // Find Stripe customer by email
+        const customers = await stripe.customers.list({
+          email: userEmail,
+          limit: 1,
+        });
+
+        if (customers.data.length > 0) {
+          const customerId = customers.data[0].id;
+          console.log(`Found Stripe customer: ${customerId}`);
+
+          // Get all subscriptions for this customer
+          const subscriptions = await stripe.subscriptions.list({
+            customer: customerId,
+            status: 'all',
+            limit: 100,
+          });
+
+          // Cancel each active or trialing subscription immediately
+          let cancelledCount = 0;
+          for (const subscription of subscriptions.data) {
+            if (subscription.status === 'active' || subscription.status === 'trialing') {
+              await stripe.subscriptions.cancel(subscription.id);
+              console.log(`Cancelled subscription: ${subscription.id}`);
+              cancelledCount++;
+            }
+          }
+
+          if (cancelledCount > 0) {
+            console.log(`Successfully cancelled ${cancelledCount} subscription(s)`);
+          } else {
+            console.log('No active subscriptions found to cancel');
+          }
+        } else {
+          console.log('No Stripe customer found for email:', userEmail);
+        }
+      } catch (stripeError) {
+        // Log the error but don't fail the account deletion
+        console.error('Error cancelling Stripe subscriptions:', stripeError);
+        console.log('Continuing with account deletion despite Stripe error...');
+      }
+    } else {
+      console.log('Stripe not configured or no email found, skipping subscription cancellation');
+    }
 
     // Delete all user data in correct order to avoid foreign key violations
     

@@ -8,6 +8,33 @@ const isDev = process.env.NODE_ENV === 'development';
 const isDebugMode = localStorage.getItem('enable-debug') === 'true' || 
                    window.location.search.includes('debug=true');
 
+// Clear old caches on version update
+const clearOldCaches = async () => {
+  try {
+    const currentVersion = '2.0.1';
+    const storedVersion = localStorage.getItem('app-version');
+    
+    if (storedVersion && storedVersion !== currentVersion) {
+      console.log('🔄 Version changed, clearing caches...');
+      
+      if ('serviceWorker' in navigator && 'caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+        console.log('✅ Cache cleared - old version removed');
+      }
+    }
+    
+    localStorage.setItem('app-version', currentVersion);
+  } catch (error) {
+    console.error('Error clearing caches:', error);
+  }
+};
+
+// Run cache clearing before app initialization
+clearOldCaches();
+
 // Essential error handling only
 window.addEventListener('unhandledrejection', (event) => {
   console.error('❌ Unhandled promise rejection:', event.reason);

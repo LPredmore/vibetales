@@ -82,16 +82,16 @@ export const FavoriteStories = () => {
       >
         <div className="max-w-md mx-auto clay-card p-8">
           <Lock className="w-16 h-16 mx-auto mb-4 text-amber-500" />
-          <h3 className="text-xl font-semibold text-gray-700 mb-3">Premium Feature</h3>
+          <h3 className="text-xl font-semibold text-gray-700 mb-3">Unlimited Feature</h3>
           <p className="text-gray-600 mb-6">
-            Saving stories is a Premium feature. Upgrade to unlock unlimited story saving and access your favorite stories anytime!
+            Saving stories is an Unlimited feature. Upgrade to unlock unlimited story saving and access your favorite stories anytime!
           </p>
           <Button
             onClick={() => setShowUpgradeModal(true)}
             className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold"
           >
             <Crown className="w-4 h-4 mr-2" />
-            Upgrade to Premium
+            Upgrade to Unlimited
           </Button>
           
           <PremiumUpgradeModal 
