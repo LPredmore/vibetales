@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, Crown, Zap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { PremiumUpgradeModal } from "./LazyModals";
-import { useUserLimits } from "@/hooks/useUserLimits";
 
-interface UsageLimitsProps {}
+interface UsageLimitsProps {
+  onRefreshLimits?: (refreshFunction: () => Promise<void>) => void;
+}
 
 interface UserLimits {
   daily_stories_used: number;
@@ -17,14 +19,60 @@ interface UserLimits {
   trial_used: boolean;
 }
 
-export const UsageLimits = ({}: UsageLimitsProps) => {
+export const UsageLimits = ({ onRefreshLimits }: UsageLimitsProps) => {
   const { user, isSubscribed, isCheckingSubscription, refreshSubscription } = useAuth();
-  const { limits, isLoading: limitsLoading, refreshLimits } = useUserLimits();
+  const [limits, setLimits] = useState<UserLimits | null>(null);
+  const [limitsLoading, setLimitsLoading] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserLimits();
+    } else {
+      setLimitsLoading(false);
+    }
+  }, [user]);
+
+  // Expose refresh function to parent component
+  useEffect(() => {
+    if (onRefreshLimits) {
+      onRefreshLimits(fetchUserLimits);
+    }
+  }, [onRefreshLimits]);
+
+  const fetchUserLimits = async () => {
+    if (!user?.id) {
+      setLimitsLoading(false);
+      return;
+    }
+
+    try {
+      // Use the database function instead of direct query to avoid auth issues
+      const { data, error } = await supabase
+        .rpc('get_or_create_user_limits', { p_user_id: user.id });
+
+      if (error) {
+        console.error('Error fetching user limits:', error);
+        // If it's an auth error, don't set the limits but don't fail completely
+        if (error.message?.includes('JWT') || error.message?.includes('auth')) {
+          console.warn('Authentication issue detected, user may need to re-login');
+        }
+        return;
+      }
+
+      setLimits(data);
+    } catch (error) {
+      console.error('Error fetching user limits:', error);
+    } finally {
+      setLimitsLoading(false);
+    }
+  };
 
   const handleUpgradeSuccess = () => {
     refreshSubscription();
-    refreshLimits();
+    if (onRefreshLimits) {
+      onRefreshLimits(fetchUserLimits);
+    }
   };
 
   // Show loading until both operations complete

@@ -1,19 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Trash2, Calendar, BookOpen, Palette, Crown, Lock } from "lucide-react";
+import { toast } from "sonner";
+import { getFavoriteStories, deleteFavoriteStory, FavoriteStory } from "@/services/favoriteStories";
 import { PremiumUpgradeModal } from "./LazyModals";
 import { useAuth } from "@/contexts/AuthContext";
-import { useFavoriteStories } from "@/hooks/useFavoriteStories";
 
 export const FavoriteStories = () => {
+  const [favorites, setFavorites] = useState<FavoriteStory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { isSubscribed, isCheckingSubscription } = useAuth();
-  const { favorites, isLoading, deleteFavorite, isDeleting } = useFavoriteStories();
 
-  const handleDelete = async (id: string) => {
-    deleteFavorite(id);
+  const loadFavorites = async () => {
+    try {
+      const data = await getFavoriteStories();
+      setFavorites(data);
+    } catch (error) {
+      console.error("Error loading favorites:", error);
+      toast.error("Failed to load favorite stories");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Only load favorites if user is subscribed
+    if (isSubscribed) {
+      loadFavorites();
+    } else if (!isCheckingSubscription) {
+      setIsLoading(false);
+    }
+  }, [isSubscribed, isCheckingSubscription]);
+
+  const handleDelete = async (id: string, title: string) => {
+    try {
+      await deleteFavoriteStory(id);
+      setFavorites(prev => prev.filter(story => story.id !== id));
+      toast.success(`"${title}" removed from favorites`);
+    } catch (error) {
+      console.error("Error deleting favorite:", error);
+      toast.error("Failed to remove story from favorites");
+    }
   };
 
   if (isCheckingSubscription || isLoading) {
@@ -48,7 +78,7 @@ export const FavoriteStories = () => {
           <PremiumUpgradeModal 
             open={showUpgradeModal}
             onOpenChange={setShowUpgradeModal}
-            onSuccess={() => {}}
+            onSuccess={loadFavorites}
           />
         </div>
       </motion.div>
@@ -124,12 +154,11 @@ export const FavoriteStories = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleDelete(story.id)}
-                  disabled={isDeleting}
+                  onClick={() => handleDelete(story.id, story.title)}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  {isDeleting ? 'Removing...' : 'Remove from Favorites'}
+                  Remove from Favorites
                 </Button>
               </div>
             </AccordionContent>
