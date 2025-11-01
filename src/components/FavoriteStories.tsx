@@ -1,44 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Trash2, Calendar, BookOpen, Palette, Crown, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { getFavoriteStories, deleteFavoriteStory, FavoriteStory } from "@/services/favoriteStories";
 import { PremiumUpgradeModal } from "./LazyModals";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFavoriteStories } from "@/hooks/useFavoriteStories";
 
 export const FavoriteStories = () => {
-  const [favorites, setFavorites] = useState<FavoriteStory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const { isSubscribed, isCheckingSubscription } = useAuth();
-
-  const loadFavorites = async () => {
-    try {
-      const data = await getFavoriteStories();
-      setFavorites(data);
-    } catch (error) {
-      console.error("Error loading favorites:", error);
-      toast.error("Failed to load favorite stories");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // Only load favorites if user is subscribed
-    if (isSubscribed) {
-      loadFavorites();
-    } else if (!isCheckingSubscription) {
-      setIsLoading(false);
-    }
-  }, [isSubscribed, isCheckingSubscription]);
+  const { isSubscribed, isCheckingSubscription, refreshSubscription } = useAuth();
+  const { stories: favorites, isLoading, deleteStory } = useFavoriteStories();
 
   const handleDelete = async (id: string, title: string) => {
     try {
-      await deleteFavoriteStory(id);
-      setFavorites(prev => prev.filter(story => story.id !== id));
+      deleteStory(id);
       toast.success(`"${title}" removed from favorites`);
     } catch (error) {
       console.error("Error deleting favorite:", error);
@@ -78,7 +55,7 @@ export const FavoriteStories = () => {
           <PremiumUpgradeModal 
             open={showUpgradeModal}
             onOpenChange={setShowUpgradeModal}
-            onSuccess={loadFavorites}
+            onSuccess={refreshSubscription}
           />
         </div>
       </motion.div>

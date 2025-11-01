@@ -28,9 +28,8 @@ const Index = () => {
   } | null>(null);
   const [words, setWords] = useState<SightWord[]>([]);
   const [showLimitPrompt, setShowLimitPrompt] = useState(false);
-  const [refreshLimits, setRefreshLimits] = useState<(() => Promise<void>) | null>(null);
   const [wordsLoading, setWordsLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, refreshSubscription } = useAuth();
 
   // Load sight words immediately when component mounts
   useEffect(() => {
@@ -86,18 +85,8 @@ const Index = () => {
     if (success === 'true') {
       toast.success("Payment successful! Your unlimited subscription is now active.");
       
-      // Refresh subscription status
-      if (user) {
-        supabase.functions.invoke('check-subscription', {
-          body: { userId: user.id }
-        }).then(({ data, error }) => {
-          if (!error && data) {
-            toast.success("Unlimited features are now available!");
-          }
-        }).catch(() => {
-          toast.info("Your payment was successful. Unlimited features may take a moment to activate.");
-        });
-      }
+      // Refresh subscription status using centralized method
+      refreshSubscription();
       
       // Clean up URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -107,7 +96,7 @@ const Index = () => {
       // Clean up URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [user]);
+  }, [refreshSubscription]);
 
   const handleSubmit = async (data: StoryFormData) => {
     // Check if words are still loading
@@ -146,16 +135,6 @@ const Index = () => {
         theme: data.theme
       });
       setShowLimitPrompt(false); // Hide limit prompt if it was showing
-      
-      // Refresh usage limits after successful story generation
-      if (refreshLimits && typeof refreshLimits === 'function') {
-        try {
-          await refreshLimits();
-        } catch (refreshError) {
-          console.warn("Failed to refresh usage limits:", refreshError);
-          // Don't affect the main success flow
-        }
-      }
       
       toast.success("Story generated successfully!");
       
@@ -247,7 +226,7 @@ const Index = () => {
               
               <TabsContent value="story">
                 <div className="space-y-6">
-                  <UsageLimits onRefreshLimits={setRefreshLimits} />
+                  <UsageLimits />
                   
                   {showLimitPrompt && (
                     <LimitReachedPrompt onClose={() => setShowLimitPrompt(false)} />

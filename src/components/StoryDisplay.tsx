@@ -3,9 +3,9 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Bookmark, BookmarkCheck, Flag, Crown } from "lucide-react";
 import { toast } from "sonner";
-import { saveFavoriteStory } from "@/services/favoriteStories";
 import { ReportDialog, PremiumUpgradeModal } from "./LazyModals";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFavoriteStories } from "@/hooks/useFavoriteStories";
 
 interface StoryDisplayProps {
   title: string;
@@ -15,11 +15,11 @@ interface StoryDisplayProps {
 }
 
 export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDisplayProps) => {
-  const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { isSubscribed, isCheckingSubscription, refreshSubscription } = useAuth();
+  const { saveStory, isSaving } = useFavoriteStories();
 
   const handleSaveToFavorites = async () => {
     if (!readingLevel || !theme) {
@@ -27,9 +27,13 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
       return;
     }
 
-    setIsSaving(true);
     try {
-      await saveFavoriteStory(title, content, readingLevel, theme);
+      saveStory({
+        title,
+        content,
+        reading_level: readingLevel,
+        theme,
+      });
       setIsSaved(true);
       toast.success("Story saved to favorites!");
       
@@ -42,8 +46,6 @@ export const StoryDisplay = ({ title, content, readingLevel, theme }: StoryDispl
       } else {
         toast.error("Failed to save story to favorites");
       }
-    } finally {
-      setIsSaving(false);
     }
   };
 
