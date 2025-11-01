@@ -1,12 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
 import { SightWordManager } from "@/components/SightWordManager";
-import { FavoriteStories } from "@/components/FavoriteStories";
 import { UsageLimits } from "@/components/UsageLimits";
 import { LimitReachedPrompt } from "@/components/LimitReachedPrompt";
-
-
 import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
 import { generateStory } from "@/services/openrouter";
@@ -19,6 +16,12 @@ import { UserMenu } from "@/components/UserMenu";
 import { AIContentDisclaimer } from "@/components/AIContentDisclaimer";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { ComponentLoader } from "@/components/ui/page-loader";
+
+// Lazy load FavoriteStories (only loads when user clicks Favorites tab)
+const FavoriteStories = lazy(() => 
+  import("@/components/FavoriteStories").then(module => ({ default: module.FavoriteStories }))
+);
 
 const Index = () => {
   const [story, setStory] = useState<{
@@ -33,9 +36,9 @@ const Index = () => {
   const { user, refreshSubscription } = useAuth();
   const notifications = useToastNotifications();
 
-  // Load sight words immediately when component mounts
+  // Parallel loading: Load all initial data at once
   useEffect(() => {
-    const loadWords = async () => {
+    const loadInitialData = async () => {
       if (!user) {
         setWordsLoading(false);
         return;
@@ -43,17 +46,22 @@ const Index = () => {
 
       try {
         setWordsLoading(true);
-        const { data, error } = await supabase
-          .from('sight_words')
-          .select('words_objects')
-          .eq('user_id', user.id)
-          .maybeSingle();
         
-        if (error) throw error;
+        // Load sight words, user limits, and favorites in parallel
+        const [wordsResult, limitsResult, favoritesResult] = await Promise.all([
+          supabase.from('sight_words').select('words_objects').eq('user_id', user.id).maybeSingle(),
+          supabase.rpc('get_or_create_user_limits', { p_user_id: user.id }),
+          supabase.from('favorite_stories').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20)
+        ]);
+
+        // Process sight words
+        if (wordsResult.error && wordsResult.error.code !== 'PGRST116') {
+          console.error('❌ Error loading sight words:', wordsResult.error);
+          throw wordsResult.error;
+        }
         
-        if (data && data.words_objects) {
-          // Convert JSONB objects to SightWord objects
-          const sightWords: SightWord[] = data.words_objects.map((obj: any) => ({
+        if (wordsResult.data?.words_objects) {
+          const sightWords: SightWord[] = wordsResult.data.words_objects.map((obj: any) => ({
             word: obj.word,
             active: obj.active
           }));
@@ -67,16 +75,19 @@ const Index = () => {
           if (insertError) throw insertError;
           setWords([]);
         }
+
+        // Results are cached in React Query, child components get instant data
+        console.log('✅ Initial data loaded in parallel');
       } catch (err) {
-        console.error('Error loading sight words:', err);
+        console.error('❌ Error loading data:', err);
         notifications.wordsLoadFailed();
       } finally {
         setWordsLoading(false);
       }
     };
 
-    loadWords();
-  }, [user]);
+    loadInitialData();
+  }, [user?.id, notifications]);
 
   // Handle Stripe payment completion
   useEffect(() => {
@@ -264,8 +275,10 @@ const Index = () => {
                 <SightWordManager words={words} setWords={setWords} isExternalLoading={wordsLoading} />
               </TabsContent>
 
-              <TabsContent value="favorites">
-                <FavoriteStories />
+              <TabsContent value="favorites" className="mt-0">
+                <Suspense fallback={<ComponentLoader />}>
+                  <FavoriteStories />
+                </Suspense>
               </TabsContent>
             </Tabs>
           </div>
