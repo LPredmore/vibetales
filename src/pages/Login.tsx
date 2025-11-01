@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { useToastNotifications } from "@/hooks/useToastNotifications";
-import { debugLogger } from "@/utils/debugLogger";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -37,21 +36,12 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    debugLogger.logAutofill('INFO', 'Login form submitted', { 
-      email, 
-      remember, 
-      isTWA,
-      formAutoComplete: e.currentTarget?.getAttribute('autocomplete'),
-      emailAutoComplete: document.getElementById('email')?.getAttribute('autocomplete'),
-      passwordAutoComplete: document.getElementById('password')?.getAttribute('autocomplete')
-    });
-    
     try {
       await login(email, password, remember);
       notifications.loginSuccess();
       navigate("/");
     } catch (error: any) {
-      debugLogger.logAuth('ERROR', 'Login form error', error);
+      console.error('[AUTH] Login error:', error);
       notifications.loginFailed(error.message);
     } finally {
       setIsLoading(false);

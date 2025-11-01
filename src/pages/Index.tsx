@@ -1,10 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
 import { SightWordManager } from "@/components/SightWordManager";
-import { FavoriteStories } from "@/components/FavoriteStories";
 import { UsageLimits } from "@/components/UsageLimits";
 import { LimitReachedPrompt } from "@/components/LimitReachedPrompt";
+import { ComponentLoader } from "@/components/ui/page-loader";
+
+// Lazy load FavoriteStories
+const FavoriteStories = lazy(() => 
+  import("@/components/FavoriteStories").then(module => ({ 
+    default: module.FavoriteStories 
+  }))
+);
 
 
 import { SightWord } from "@/types/sightWords";
@@ -265,7 +272,9 @@ const Index = () => {
               </TabsContent>
 
               <TabsContent value="favorites">
-                <FavoriteStories />
+                <Suspense fallback={<ComponentLoader />}>
+                  <FavoriteStories />
+                </Suspense>
               </TabsContent>
             </Tabs>
           </div>
