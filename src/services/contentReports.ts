@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/utils/supabaseHelpers";
 
 export interface ContentReport {
   id: string;
@@ -25,11 +26,7 @@ export const submitContentReport = async (
   reportReason: string,
   reportDetails?: string
 ): Promise<void> => {
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  
-  if (authError || !user) {
-    throw new Error("You must be logged in to report content");
-  }
+  const user = await getCurrentUser();
 
   const { error } = await supabase
     .from("content_reports")
@@ -49,11 +46,7 @@ export const submitContentReport = async (
 };
 
 export const getUserReports = async (): Promise<ContentReport[]> => {
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  
-  if (authError || !user) {
-    throw new Error("You must be logged in to view reports");
-  }
+  const user = await getCurrentUser();
 
   const { data, error } = await supabase
     .from("content_reports")

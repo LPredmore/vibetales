@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { UserMenu } from "@/components/UserMenu";
 import { AIContentDisclaimer } from "@/components/AIContentDisclaimer";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 const Index = () => {
   const [story, setStory] = useState<{
@@ -120,7 +121,7 @@ const Index = () => {
       console.log("Form data:", data);
       console.log("Active sight words:", activeWords.map(w => w.word));
       
-      toastId = notifications.custom.success("Generating your story...");
+      toastId = toast.loading("Generating your story...");
       const activeWordStrings = activeWords.map(word => word.word);
       
       const generatedStory = await generateStory({
@@ -128,7 +129,7 @@ const Index = () => {
         keywords: data.useSightWords ? activeWordStrings : []
       });
       
-      notifications.custom.success(""); // Dismiss loading toast
+      toast.dismiss(toastId);
       
       setStory({
         ...generatedStory,
@@ -158,7 +159,7 @@ const Index = () => {
       
       // Always dismiss the loading toast first
       if (toastId) {
-        // Already dismissed above
+        toast.dismiss(toastId);
       }
       
       if (error instanceof Error && error.message === 'LIMIT_REACHED') {
