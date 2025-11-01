@@ -1,9 +1,12 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { StoryForm, StoryFormData } from "@/components/StoryForm";
 import { StoryDisplay } from "@/components/StoryDisplay";
 import { SightWordManager } from "@/components/SightWordManager";
+import { FavoriteStories } from "@/components/FavoriteStories";
 import { UsageLimits } from "@/components/UsageLimits";
 import { LimitReachedPrompt } from "@/components/LimitReachedPrompt";
+
+
 import { SightWord } from "@/types/sightWords";
 import { motion } from "framer-motion";
 import { generateStory } from "@/services/openrouter";
@@ -16,12 +19,6 @@ import { UserMenu } from "@/components/UserMenu";
 import { AIContentDisclaimer } from "@/components/AIContentDisclaimer";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ComponentLoader } from "@/components/ui/page-loader";
-
-// Lazy load FavoriteStories (only loads when user clicks Favorites tab)
-const FavoriteStories = lazy(() => 
-  import("@/components/FavoriteStories").then(module => ({ default: module.FavoriteStories }))
-);
 
 const Index = () => {
   const [story, setStory] = useState<{
@@ -36,9 +33,9 @@ const Index = () => {
   const { user, refreshSubscription } = useAuth();
   const notifications = useToastNotifications();
 
-  // Load sight words (user limits and favorites handled by React Query hooks)
+  // Load sight words immediately when component mounts
   useEffect(() => {
-    const loadInitialData = async () => {
+    const loadWords = async () => {
       if (!user) {
         setWordsLoading(false);
         return;
@@ -46,20 +43,16 @@ const Index = () => {
 
       try {
         setWordsLoading(true);
-        
-        // Load ONLY sight words (not using React Query)
         const { data, error } = await supabase
           .from('sight_words')
           .select('words_objects')
           .eq('user_id', user.id)
           .maybeSingle();
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('❌ Error loading sight words:', error);
-          throw error;
-        }
         
-        if (data?.words_objects) {
+        if (error) throw error;
+        
+        if (data && data.words_objects) {
+          // Convert JSONB objects to SightWord objects
           const sightWords: SightWord[] = data.words_objects.map((obj: any) => ({
             word: obj.word,
             active: obj.active
@@ -74,18 +67,16 @@ const Index = () => {
           if (insertError) throw insertError;
           setWords([]);
         }
-
-        console.log('✅ Sight words loaded');
       } catch (err) {
-        console.error('❌ Error loading sight words:', err);
+        console.error('Error loading sight words:', err);
         notifications.wordsLoadFailed();
       } finally {
         setWordsLoading(false);
       }
     };
 
-    loadInitialData();
-  }, [user?.id, notifications]);
+    loadWords();
+  }, [user]);
 
   // Handle Stripe payment completion
   useEffect(() => {
@@ -273,10 +264,8 @@ const Index = () => {
                 <SightWordManager words={words} setWords={setWords} isExternalLoading={wordsLoading} />
               </TabsContent>
 
-              <TabsContent value="favorites" className="mt-0">
-                <Suspense fallback={<ComponentLoader />}>
-                  <FavoriteStories />
-                </Suspense>
+              <TabsContent value="favorites">
+                <FavoriteStories />
               </TabsContent>
             </Tabs>
           </div>

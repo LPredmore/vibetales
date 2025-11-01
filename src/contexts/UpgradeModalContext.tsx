@@ -1,11 +1,5 @@
-import { createContext, useContext, useState, ReactNode, lazy, Suspense } from 'react';
-
-// Lazy load the PremiumUpgradeModal component
-const PremiumUpgradeModal = lazy(() => 
-  import('@/components/PremiumUpgradeModal').then(module => ({ 
-    default: module.PremiumUpgradeModal 
-  }))
-);
+import { createContext, useContext, useState, ReactNode } from 'react';
+import { PremiumUpgradeModal } from '@/components/PremiumUpgradeModal';
 
 interface UpgradeModalContextType {
   showUpgradeModal: (onSuccess?: () => void) => void;
@@ -38,15 +32,11 @@ export const UpgradeModalProvider = ({ children }: { children: ReactNode }) => {
   return (
     <UpgradeModalContext.Provider value={{ showUpgradeModal, hideUpgradeModal }}>
       {children}
-      {isOpen && (
-        <Suspense fallback={null}>
-          <PremiumUpgradeModal 
-            open={isOpen}
-            onOpenChange={setIsOpen}
-            onSuccess={handleSuccess}
-          />
-        </Suspense>
-      )}
+      <PremiumUpgradeModal 
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        onSuccess={handleSuccess}
+      />
     </UpgradeModalContext.Provider>
   );
 };

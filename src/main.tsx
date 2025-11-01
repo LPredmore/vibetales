@@ -1,6 +1,12 @@
+
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+
+// Minimal initialization - avoid heavy debug logging on startup
+const isDev = process.env.NODE_ENV === 'development';
+const isDebugMode = localStorage.getItem('enable-debug') === 'true' || 
+                   window.location.search.includes('debug=true');
 
 // Clear old caches on version update
 const clearOldCaches = async () => {
@@ -16,13 +22,13 @@ const clearOldCaches = async () => {
         await Promise.all(
           cacheNames.map(cacheName => caches.delete(cacheName))
         );
-        console.log('✅ Cache cleared');
+        console.log('✅ Cache cleared - old version removed');
       }
     }
     
     localStorage.setItem('app-version', currentVersion);
   } catch (error) {
-    console.error('❌ Error clearing caches:', error);
+    console.error('Error clearing caches:', error);
   }
 };
 
@@ -82,4 +88,18 @@ try {
   }, 100);
   
   throw error;
+}
+
+// Lazy load debug logger only when needed - with TWA diagnostics
+const shouldEnableDebug = isDev || isDebugMode || window.location.search.includes('debug=emergency');
+
+if (shouldEnableDebug) {
+  import('./utils/debugLogger').then(({ debugLogger }) => {
+    debugLogger.logLifecycle('INFO', 'Debug logger loaded');
+    
+    // Run comprehensive TWA startup diagnostics
+    setTimeout(() => {
+      debugLogger.logTWAStartup();
+    }, 1000);
+  });
 }
