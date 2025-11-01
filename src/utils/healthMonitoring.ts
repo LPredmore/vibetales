@@ -195,7 +195,7 @@ class HealthMonitoringSystem {
       this.performHealthChecks();
       this.evaluateRecoveryTriggers();
       this.updatePerformanceMetrics();
-    }, this.checkInterval);
+    }, this.checkInterval) as unknown as number;
 
     // Initial health check
     this.performHealthChecks();
